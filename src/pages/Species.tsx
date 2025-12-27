@@ -83,6 +83,51 @@ export default function SpeciesPage() {
         setEditingSpecies(null);
     };
 
+    // Delete confirmation modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [speciesToDelete, setSpeciesToDelete] = useState<Species | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Open delete confirmation modal
+    const openDeleteModal = (species: Species) => {
+        setSpeciesToDelete(species);
+        setIsDeleteModalOpen(true);
+    };
+
+    // Close delete confirmation modal
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setSpeciesToDelete(null);
+    };
+
+    // Handle species deletion (called from modal)
+    const confirmDelete = async () => {
+        if (!speciesToDelete) return;
+
+        setDeleteLoading(true);
+        closeDeleteModal();
+
+        try {
+            const { error } = await supabase
+                .from('especie')
+                .delete()
+                .eq('id', speciesToDelete.id);
+
+            if (error) throw error;
+
+            // Update local state to remove the deleted species
+            setSpecies(prev => prev.filter(s => s.id !== speciesToDelete.id));
+            setTotalCount(prev => prev - 1);
+
+            alert('Espécie excluída com sucesso!');
+        } catch (error: any) {
+            console.error('Delete error:', error);
+            alert(error.message || 'Erro ao excluir espécie.');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
     // Export loading state
     const [exportLoading, setExportLoading] = useState(false);
     const [singleReportLoading, setSingleReportLoading] = useState<string | null>(null);
@@ -495,7 +540,12 @@ export default function SpeciesPage() {
                                                     >
                                                         <Pencil size={18} />
                                                     </button>
-                                                    <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                                                    <button
+                                                        onClick={() => openDeleteModal(specie)}
+                                                        disabled={deleteLoading}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                                        title="Excluir"
+                                                    >
                                                         <Trash2 size={18} />
                                                     </button>
                                                 </div>
@@ -548,6 +598,58 @@ export default function SpeciesPage() {
                 onSave={fetchSpecies}
                 initialData={editingSpecies}
             />
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={closeDeleteModal}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
+                        {/* Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="text-red-600" size={32} />
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                            Excluir Espécie?
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 text-center mb-6">
+                            Você tem certeza que deseja remover a espécie{' '}
+                            <strong className="text-gray-900 italic">{speciesToDelete?.nome_cientifico}</strong>?
+                            <br />
+                            <span className="text-sm text-gray-500">
+                                Esta ação não pode ser desfeita.
+                            </span>
+                        </p>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeDeleteModal}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+                            >
+                                Sim, Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
