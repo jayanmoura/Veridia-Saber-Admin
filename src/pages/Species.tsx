@@ -18,7 +18,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Filter,
-    Loader2
+    Loader2,
+    X,
+    CheckCircle
 } from 'lucide-react';
 
 interface Species {
@@ -27,7 +29,7 @@ interface Species {
     nome_popular?: string;
     familia_id: string;
     familia?: { familia_nome: string };
-    especie_imagens?: { url_imagem: string }[];
+    imagens?: { url_imagem: string; local_id?: string | number | null }[];
 }
 
 interface FamilyOption {
@@ -88,6 +90,14 @@ export default function SpeciesPage() {
     const [speciesToDelete, setSpeciesToDelete] = useState<Species | null>(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+    // Block Modal State (FK Violation)
+    const [showBlockModal, setShowBlockModal] = useState(false);
+    const [blockedSpeciesName, setBlockedSpeciesName] = useState('');
+
+    // Success Modal State
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [deletedSpeciesName, setDeletedSpeciesName] = useState('');
+
     // Open delete confirmation modal
     const openDeleteModal = (species: Species) => {
         setSpeciesToDelete(species);
@@ -104,6 +114,7 @@ export default function SpeciesPage() {
     const confirmDelete = async () => {
         if (!speciesToDelete) return;
 
+        const speciesName = speciesToDelete.nome_cientifico;
         setDeleteLoading(true);
         closeDeleteModal();
 
@@ -115,14 +126,31 @@ export default function SpeciesPage() {
 
             if (error) throw error;
 
-            // Update local state to remove the deleted species
+            // Update local state ONLY on success
             setSpecies(prev => prev.filter(s => s.id !== speciesToDelete.id));
             setTotalCount(prev => prev - 1);
 
-            alert('Espécie excluída com sucesso!');
+            // Show success modal
+            setDeletedSpeciesName(speciesName);
+            setShowSuccessModal(true);
         } catch (error: any) {
             console.error('Delete error:', error);
-            alert(error.message || 'Erro ao excluir espécie.');
+
+            // Check for Foreign Key Violation (Postgres Code 23503)
+            if (error?.code === '23503' || error?.message?.includes('violates foreign key constraint')) {
+                setBlockedSpeciesName(speciesName);
+                setShowBlockModal(true);
+            }
+            // Check for RLS/Permission Error (403 or 401)
+            else if (error?.code === '42501' || error?.code === '403' || error?.message?.includes('violates row-level security policy')) {
+                alert("🚫 Você não tem permissão para excluir esta espécie.");
+            }
+            else {
+                alert(error.message || 'Erro ao excluir espécie.');
+            }
+
+            // Re-fetch to ensure UI sync if something went wrong but we already optimistic-updated (though we disabled optimistic update, re-fetch is safe)
+            fetchSpecies();
         } finally {
             setDeleteLoading(false);
         }
@@ -133,7 +161,7 @@ export default function SpeciesPage() {
     const [singleReportLoading, setSingleReportLoading] = useState<string | null>(null);
 
     // Check user role
-    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
+    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
 
     // Handle species export based on user role
     const handleExportSpecies = async () => {
@@ -213,7 +241,7 @@ export default function SpeciesPage() {
         setSingleReportLoading(speciesId);
         try {
             // Fetch complete species data with all relations
-            const { data, error } = await supabase
+            const { data: speciesData, error } = await supabase
                 .from('especie')
                 .select(`
                     id,
@@ -227,21 +255,36 @@ export default function SpeciesPage() {
                     cuidados_nutrientes,
                     familia(familia_nome),
                     locais(nome),
-                    especie_imagens(url_imagem)
+                    imagens(url_imagem)
                 `)
                 .eq('id', speciesId)
                 .single();
 
             if (error) throw error;
-            if (!data) {
+            if (!speciesData) {
                 alert('Espécie não encontrada.');
                 return;
             }
 
-            const safeName = data.nome_cientifico.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            // If user is a local manager, fetch local details
+            let localDetails = {};
+            if (profile?.local_id) {
+                const { data: localData } = await supabase
+                    .from('especie_local')
+                    .select('descricao_ocorrencia, detalhes_localizacao, latitude, longitude')
+                    .eq('especie_id', speciesId)
+                    .eq('local_id', profile.local_id)
+                    .maybeSingle();
+
+                if (localData) {
+                    localDetails = localData;
+                }
+            }
+
+            const safeName = speciesData.nome_cientifico.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
 
             await generateSingleSpeciesReport(
-                data,
+                { ...speciesData, ...localDetails },
                 `ficha_${safeName}.pdf`,
                 {
                     userName: profile?.full_name,
@@ -261,6 +304,11 @@ export default function SpeciesPage() {
         profile?.role === 'Coordenador Científico' ||
         profile?.role === 'Gestor de Acervo' ||
         profile?.role?.includes('Taxonomista');
+
+    // Report Access: Only Curador, Coordenador, Gestor
+    const canGenerateReports = profile?.role === 'Curador Mestre' ||
+        profile?.role === 'Coordenador Científico' ||
+        profile?.role === 'Gestor de Acervo';
     // Assuming catalogers might access this too, but complying with request context "Admin Panel". Only explicit "Access Denied" if strict.
     // The prompt implies strict "Curador Mestre" logic from Families wasn't explicitly repeated but "Atue como Senior... Crie a página".
     // I'll stick to Global/Local admin logic or similar. Let's replicate Families check for now to be safe, or allow all admins.
@@ -295,31 +343,52 @@ export default function SpeciesPage() {
             const from = (page - 1) * ITEMS_PER_PAGE;
             const to = from + ITEMS_PER_PAGE - 1;
 
-            let query = supabase
+            // Check if user is a global admin (sees all images) or project user (sees only their project's images)
+            const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
+            const userLocalId = profile?.local_id;
+
+            // Fetch species with images (include local_id for filtering)
+            const query = supabase
                 .from('especie')
                 .select(`
-          *,
-          familia (familia_nome),
-          especie_imagens (url_imagem)
-        `, { count: 'exact' })
-                .order('nome_cientifico') // Ordered by scientific name usually
+                    *,
+                    familia (familia_nome),
+                    imagens (url_imagem, local_id)
+                `, { count: 'exact' })
+                .order('nome_cientifico')
                 .range(from, to);
 
+            let finalQuery = query;
+
             if (search) {
-                // Search in scientific name OR popular name (if explicit OR filter needed, syntax is different)
-                // .or(`nome_cientifico.ilike.%${search}%,nome_popular.ilike.%${search}%`)
-                query = query.ilike('nome_cientifico', `%${search}%`);
+                finalQuery = finalQuery.ilike('nome_cientifico', `%${search}%`);
             }
 
             if (selectedFamily) {
-                query = query.eq('familia_id', selectedFamily);
+                finalQuery = finalQuery.eq('familia_id', selectedFamily);
             }
 
-            const { data, error, count } = await query;
+            const { data, error, count } = await finalQuery;
 
             if (error) throw error;
 
-            const formattedData: Species[] = data || [];
+            // Filter images client-side for project users
+            let formattedData: Species[] = (data || []).map((species: any) => {
+                let filteredImages = species.imagens || [];
+
+                // If not global admin and has local_id, filter images by local_id
+                if (!isGlobalAdmin && userLocalId && filteredImages.length > 0) {
+                    filteredImages = filteredImages.filter((img: any) =>
+                        img.local_id === userLocalId || img.local_id === String(userLocalId)
+                    );
+                }
+
+                return {
+                    ...species,
+                    imagens: filteredImages
+                };
+            });
+
             setSpecies(formattedData);
             setTotalCount(count || 0);
             calculateStats(formattedData, count || 0);
@@ -333,7 +402,7 @@ export default function SpeciesPage() {
 
     const calculateStats = (data: Species[], total: number) => {
         // 1. Missing Images (in current page)
-        const missingImages = data.filter(s => !s.especie_imagens || s.especie_imagens.length === 0).length;
+        const missingImages = data.filter(s => !s.imagens || s.imagens.length === 0).length;
 
         // 2. Top Epithet Logic (in current page)
         const epithetCounts: Record<string, number> = {};
@@ -457,14 +526,16 @@ export default function SpeciesPage() {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button
-                        onClick={handleExportSpecies}
-                        disabled={exportLoading}
-                        className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 md:flex-none disabled:opacity-50"
-                    >
-                        {exportLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                        <span className="hidden sm:inline">{exportLoading ? 'Gerando...' : 'Exportar'}</span>
-                    </button>
+                    {canGenerateReports && (
+                        <button
+                            onClick={handleExportSpecies}
+                            disabled={exportLoading}
+                            className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 md:flex-none disabled:opacity-50"
+                        >
+                            {exportLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                            <span className="hidden sm:inline">{exportLoading ? 'Gerando...' : 'Exportar'}</span>
+                        </button>
+                    )}
                     <button
                         onClick={handleNewSpecies}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
@@ -499,7 +570,7 @@ export default function SpeciesPage() {
                                 ))
                             ) : species.length > 0 ? (
                                 species.map((specie) => {
-                                    const imageUrl = specie.especie_imagens?.[0]?.url_imagem;
+                                    const imageUrl = specie.imagens?.[0]?.url_imagem;
 
                                     return (
                                         <tr key={specie.id} className="group hover:bg-gray-50/80 transition-colors">
@@ -521,18 +592,16 @@ export default function SpeciesPage() {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     {/* Report button - only for Curador, Coordenador, Gestor */}
-                                                    {(profile?.role === 'Curador Mestre' ||
-                                                        profile?.role === 'Coordenador Científico' ||
-                                                        profile?.role === 'Gestor de Acervo') && (
-                                                            <button
-                                                                onClick={() => handleGenerateSingleReport(specie.id)}
-                                                                disabled={singleReportLoading === specie.id}
-                                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                                                                title="Ficha Técnica"
-                                                            >
-                                                                {singleReportLoading === specie.id ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
-                                                            </button>
-                                                        )}
+                                                    {canGenerateReports && (
+                                                        <button
+                                                            onClick={() => handleGenerateSingleReport(specie.id)}
+                                                            disabled={singleReportLoading === specie.id}
+                                                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                                            title="Ficha Técnica"
+                                                        >
+                                                            {singleReportLoading === specie.id ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleEditSpecies(specie)}
                                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -600,51 +669,151 @@ export default function SpeciesPage() {
             />
 
             {/* Delete Confirmation Modal */}
-            {isDeleteModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center">
-                    {/* Overlay */}
+            {
+                isDeleteModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                        {/* Overlay */}
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={closeDeleteModal}
+                        />
+
+                        {/* Modal */}
+                        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
+                            {/* Icon */}
+                            <div className="flex justify-center mb-4">
+                                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                    <AlertTriangle className="text-red-600" size={32} />
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                                Excluir Espécie?
+                            </h3>
+
+                            {/* Description */}
+                            <p className="text-gray-600 text-center mb-6">
+                                Você tem certeza que deseja remover a espécie{' '}
+                                <strong className="text-gray-900 italic">{speciesToDelete?.nome_cientifico}</strong>?
+                                <br />
+                                <span className="text-sm text-gray-500">
+                                    Esta ação não pode ser desfeita.
+                                </span>
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={closeDeleteModal}
+                                    className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+                                >
+                                    Sim, Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Block Delete Modal (FK Violation) */}
+            {showBlockModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={closeDeleteModal}
+                        className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-all duration-300"
+                        onClick={() => setShowBlockModal(false)}
                     />
 
                     {/* Modal */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4">
-                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                                <AlertTriangle className="text-red-600" size={32} />
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowBlockModal(false)}
+                            className="absolute top-4 right-4 p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex flex-col items-center text-center">
+                            {/* Icon with Ring Effect */}
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 bg-amber-100 rounded-full animate-ping opacity-20"></div>
+                                <div className="relative w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                    <AlertTriangle size={40} className="text-amber-500" />
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Title */}
-                        <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
-                            Excluir Espécie?
-                        </h3>
+                            {/* Content */}
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Exclusão Bloqueada</h3>
 
-                        {/* Description */}
-                        <p className="text-gray-600 text-center mb-6">
-                            Você tem certeza que deseja remover a espécie{' '}
-                            <strong className="text-gray-900 italic">{speciesToDelete?.nome_cientifico}</strong>?
-                            <br />
-                            <span className="text-sm text-gray-500">
-                                Esta ação não pode ser desfeita.
-                            </span>
-                        </p>
+                            <p className="text-gray-600 mb-8 leading-relaxed text-base">
+                                A espécie <strong className="text-gray-900 italic">"{blockedSpeciesName}"</strong> não pode ser removida pois existem registros vinculados a ela (Ex: árvores plantada, monitoramentos, etc).
+                                <br /><br />
+                                <span className="inline-block bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-sm font-medium border border-amber-100">
+                                    💡 Solução: Entre em contato com o suporte.
+                                </span>
+                            </p>
 
-                        {/* Buttons */}
-                        <div className="flex gap-3">
+                            {/* Action */}
                             <button
-                                onClick={closeDeleteModal}
-                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                onClick={() => setShowBlockModal(false)}
+                                className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-semibold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-gray-200"
                             >
-                                Cancelar
+                                Entendi
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-all duration-300"
+                        onClick={() => setShowSuccessModal(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowSuccessModal(false)}
+                            className="absolute top-4 right-4 p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex flex-col items-center text-center">
+                            {/* Icon with Ring Effect */}
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+                                <div className="relative w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                    <CheckCircle size={40} className="text-emerald-500" />
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Espécie Excluída</h3>
+
+                            <p className="text-gray-600 mb-8 leading-relaxed text-base">
+                                A espécie <strong className="text-gray-900 italic">"{deletedSpeciesName}"</strong> foi removida com sucesso do catálogo.
+                            </p>
+
+                            {/* Action */}
                             <button
-                                onClick={confirmDelete}
-                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+                                onClick={() => setShowSuccessModal(false)}
+                                className="w-full py-3.5 bg-emerald-600 text-white rounded-2xl font-semibold hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-200"
                             >
-                                Sim, Excluir
+                                Fechar
                             </button>
                         </div>
                     </div>

@@ -4,8 +4,9 @@ import Overview from '../pages/Overview';
 import Users from '../pages/Users';
 import Families from '../pages/Families';
 import Species from '../pages/Species';
-
 import Projects from '../pages/Projects';
+import ProjectDetails from '../pages/ProjectDetails';
+import EducationalContent from '../pages/EducationalContent';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import React from 'react';
@@ -31,6 +32,28 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     }
 
     return <>{children}</>;
+}
+
+import AuditLogs from '../pages/AuditLogs';
+
+// ... (PrivateRoute remains same)
+
+function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
+    const { profile, loading } = useAuth(); // Reuse hook
+
+    if (loading) return null; // Or spinner
+
+    if (profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico') {
+        return <>{children}</>;
+    }
+
+    return (
+        <div className="h-full flex flex-col items-center justify-center bg-gray-50 space-y-4">
+            <h1 className="text-2xl font-bold text-gray-800">Acesso Restrito</h1>
+            <p className="text-gray-600">Você não tem permissão para acessar logs de auditoria.</p>
+            <Navigate to="/" replace />
+        </div>
+    );
 }
 
 export const router = createBrowserRouter([
@@ -66,6 +89,23 @@ export const router = createBrowserRouter([
                 path: 'projects',
                 element: <Projects />,
             },
+            {
+                path: 'projects/:id',
+                element: <ProjectDetails />,
+            },
+            {
+                path: 'conteudo-didatico',
+                element: <EducationalContent />,
+            },
+            {
+                path: 'seguranca/logs',
+                element: (
+                    <OnlyGlobalAdmin>
+                        <AuditLogs />
+                    </OnlyGlobalAdmin>
+                ),
+            },
         ],
     },
 ]);
+

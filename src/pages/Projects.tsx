@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { StatCard } from '../components/Dashboard/StatCard';
@@ -26,6 +27,27 @@ interface Project {
     quantidade_especies: number; // Mapped number for display
 }
 
+// Helper to normalize and format the 'tipo' field from database
+const formatTipo = (tipo: string | null): string => {
+    if (!tipo) return '';
+    const normalized = tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const tipoMap: Record<string, string> = {
+        'instituicao': 'Instituição',
+        'intituicao': 'Instituição', // common typo
+        'parque': 'Parque',
+        'reserva': 'Reserva',
+        'jardim': 'Jardim',
+    };
+    return tipoMap[normalized] || tipo; // fallback to original if not mapped
+};
+
+// Helper to check if tipo is an institution
+const isInstituicao = (tipo: string | null): boolean => {
+    if (!tipo) return false;
+    const normalized = tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return normalized === 'instituicao' || normalized === 'intituicao';
+};
+
 interface ProjectStats {
     total: number;
     topProject: { name: string; count: number } | null;
@@ -33,6 +55,7 @@ interface ProjectStats {
 
 export default function Projects() {
     const { profile } = useAuth();
+    const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -172,7 +195,11 @@ export default function Projects() {
             ) : filteredProjects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProjects.map((project) => (
-                        <div key={project.id} className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                        <div
+                            key={project.id}
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                            className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        >
                             {/* Card Image */}
                             <div className="relative h-48 bg-gray-100">
                                 {project.imagem_capa ? (
@@ -190,8 +217,8 @@ export default function Projects() {
                                 {/* Badge Type */}
                                 {project.tipo && (
                                     <div className="absolute top-3 right-3 px-3 py-1 bg-white/90 backdrop-blur-sm shadow-sm rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1">
-                                        {project.tipo === 'Instituição' ? <Building2 size={12} /> : <Trees size={12} />}
-                                        {project.tipo}
+                                        {isInstituicao(project.tipo) ? <Building2 size={12} /> : <Trees size={12} />}
+                                        {formatTipo(project.tipo)}
                                     </div>
                                 )}
                             </div>
@@ -214,15 +241,26 @@ export default function Projects() {
 
                             {/* Card Footer Actions */}
                             <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                                <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); /* TODO: Gerar relatório */ }}
+                                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                                >
                                     <FileText size={16} />
                                     <span className="hidden sm:inline">Relatório</span>
                                 </button>
                                 <div className="flex items-center gap-2">
-                                    <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); /* TODO: Editar */ }}
+                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                        title="Editar"
+                                    >
                                         <Pencil size={18} />
                                     </button>
-                                    <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); /* TODO: Excluir */ }}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Excluir"
+                                    >
                                         <Trash2 size={18} />
                                     </button>
                                 </div>

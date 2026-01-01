@@ -896,7 +896,12 @@ interface SingleSpeciesData {
     cuidados_nutrientes?: string | null;
     familia?: { familia_nome: string } | { familia_nome: string }[] | null;
     locais?: { nome: string } | { nome: string }[] | null;
-    especie_imagens?: { url_imagem: string }[] | null;
+    imagens?: { url_imagem: string }[] | null;
+    // Local fields
+    descricao_ocorrencia?: string | null;
+    detalhes_localizacao?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
 }
 
 /**
@@ -1016,8 +1021,13 @@ export async function generateSingleSpeciesReport(
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(14);
         doc.setTextColor(COLORS.text);
-        doc.text(`"${species.nome_popular}"`, marginLeft, currentY);
-        currentY += 10;
+
+        // Fix: Auto-wrap text to prevent overlap with image
+        const popNameLines = doc.splitTextToSize(`"${species.nome_popular}"`, maxTextWidth);
+        doc.text(popNameLines, marginLeft, currentY);
+
+        // Adjust Y based on number of lines (approx 7mm per line for font size 14)
+        currentY += popNameLines.length * 7 + 3;
     }
 
     // Project name for local users (bottom left of header area)
@@ -1029,7 +1039,7 @@ export async function generateSingleSpeciesReport(
     }
 
     // === RIGHT COLUMN: Featured Image ===
-    const imageUrl = species.especie_imagens?.[0]?.url_imagem;
+    const imageUrl = species.imagens?.[0]?.url_imagem;
     if (imageUrl) {
         const base64Image = await getBase64FromUrl(imageUrl);
         if (base64Image) {
@@ -1053,20 +1063,28 @@ export async function generateSingleSpeciesReport(
     doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
     currentY += 12;
 
-    // === SECTION 1: Botanical Description ===
+    // === SECTION 1: Description (Dynamic Source) ===
     checkPageBreak(20);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(COLORS.primary);
-    doc.text('Descrição Botânica', marginLeft, currentY);
+
+    // Choose title and value based on role
+    const descriptionTitle = isLocalUser ? 'Descrição Local da Ocorrência' : 'Descrição Botânica';
+    // Priority: Local Description -> Global Description -> Empty
+    const descriptionValue = (isLocalUser && species.descricao_ocorrencia)
+        ? species.descricao_ocorrencia
+        : species.descricao_especie;
+
+    doc.text(descriptionTitle, marginLeft, currentY);
     currentY += 8;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(COLORS.text);
 
-    if (species.descricao_especie) {
-        const descLines = doc.splitTextToSize(species.descricao_especie, contentWidth);
+    if (descriptionValue) {
+        const descLines = doc.splitTextToSize(descriptionValue, contentWidth);
         // Print line by line with page break protection
         descLines.forEach((line: string) => {
             checkPageBreak(6);
@@ -1077,41 +1095,73 @@ export async function generateSingleSpeciesReport(
     } else {
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(COLORS.textLight);
-        doc.text('Nenhuma descrição cadastrada.', marginLeft, currentY);
+        doc.text('Nenhuma descrição disponível.', marginLeft, currentY);
         currentY += 10;
     }
 
-    // === SECTION 2: Cultivation Guide ===
+    // === SECTION 2: Conditional Content (Cultivation OR Field Notes) ===
     checkPageBreak(25);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(COLORS.primary);
-    doc.text('Guia de Cultivo', marginLeft, currentY);
-    currentY += 8;
 
-    doc.setFontSize(10);
-    doc.setTextColor(COLORS.text);
+    if (isLocalUser) {
+        // --- FIELD NOTES (For Gestor de Acervo) ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(COLORS.primary);
+        doc.text('Detalhes de Campo & Localização', marginLeft, currentY);
+        currentY += 8;
 
-    const careItems = [
-        { label: 'Luminosidade', value: species.cuidados_luz },
-        { label: 'Rega', value: species.cuidados_agua },
-        { label: 'Temperatura', value: species.cuidados_temperatura },
-        { label: 'Substrato', value: species.cuidados_substrato },
-        { label: 'Nutrientes', value: species.cuidados_nutrientes },
-    ];
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.text);
 
-    let hasCareInfo = false;
-    careItems.forEach(item => {
-        if (item.value) {
-            hasCareInfo = true;
-            printBlock(item.label, item.value);
+        // Technical Field Notes
+        if (species.detalhes_localizacao) {
+            printBlock('Notas de Campo', species.detalhes_localizacao);
         }
-    });
 
-    if (!hasCareInfo) {
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(COLORS.textLight);
-        doc.text('Nenhuma informação de cultivo cadastrada.', marginLeft, currentY);
+        // GPS Coordinates
+        if (species.latitude || species.longitude) {
+            const gpsText = `Lat: ${species.latitude || '-'} | Long: ${species.longitude || '-'}`;
+            printBlock('Coordenadas GPS', gpsText);
+        }
+
+        if (!species.detalhes_localizacao && !species.latitude && !species.longitude) {
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(COLORS.textLight);
+            doc.text('Nenhum dado de campo registrado para este projeto.', marginLeft, currentY);
+        }
+
+    } else {
+        // --- CULTIVATION GUIDE (For General/Admin) ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(COLORS.primary);
+        doc.text('Guia de Cultivo', marginLeft, currentY);
+        currentY += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.text);
+
+        const careItems = [
+            { label: 'Luminosidade', value: species.cuidados_luz },
+            { label: 'Rega', value: species.cuidados_agua },
+            { label: 'Temperatura', value: species.cuidados_temperatura },
+            { label: 'Substrato', value: species.cuidados_substrato },
+            { label: 'Nutrientes', value: species.cuidados_nutrientes },
+        ];
+
+        let hasCareInfo = false;
+        careItems.forEach(item => {
+            if (item.value) {
+                hasCareInfo = true;
+                printBlock(item.label, item.value);
+            }
+        });
+
+        if (!hasCareInfo) {
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(COLORS.textLight);
+            doc.text('Nenhuma informação de cultivo cadastrada.', marginLeft, currentY);
+        }
     }
 
     // Add footer

@@ -44,7 +44,8 @@ const ALL_ROLES = [
     { value: 'Curador Mestre', label: 'Curador Mestre' },
     { value: 'Coordenador Científico', label: 'Coordenador Científico' },
     { value: 'Gestor de Acervo', label: 'Gestor de Acervo' },
-    { value: 'Taxonomista', label: 'Taxonomista' },
+    { value: 'Taxonomista Sênior', label: 'Taxonomista Sênior' },
+    { value: 'Taxonomista de Campo', label: 'Taxonomista de Campo' },
     { value: 'Consulente', label: 'Consulente' },
 ];
 
@@ -107,9 +108,12 @@ export default function Users() {
             return roleValue === 'Curador Mestre' || roleValue === 'Coordenador Científico';
         }
 
-        // Gestor cannot select Curador, Coordenador, or Gestor
+        // Gestor cannot select Curador, Coordenador, Gestor, or Taxonomista Sênior
         if (isGestorAcervo) {
-            return roleValue === 'Curador Mestre' || roleValue === 'Coordenador Científico' || roleValue === 'Gestor de Acervo';
+            return roleValue === 'Curador Mestre' ||
+                roleValue === 'Coordenador Científico' ||
+                roleValue === 'Gestor de Acervo' ||
+                roleValue === 'Taxonomista Sênior';
         }
 
         return true; // Default: disable all
@@ -241,9 +245,13 @@ export default function Users() {
     const handleEditSave = async () => {
         if (!editingUser) return;
 
-        // Validation: Coordenador MUST always assign a local
-        if (isCoordenadorCientifico && !editProjectId) {
-            alert('É obrigatório selecionar um local para o usuário.');
+        // Validation Rules:
+        // 1. Coordenador Científico (User Role) -> ALWAYS assign a local.
+        // 2. Taxonomista de Campo (Target Role) -> ALWAYS assign a local (Mandatory).
+        const isFieldTaxonomist = editRole === 'Taxonomista de Campo';
+
+        if ((isCoordenadorCientifico || isFieldTaxonomist) && !editProjectId) {
+            alert('É obrigatório selecionar um local/projeto para este cargo/perfil.');
             return;
         }
 
@@ -251,17 +259,22 @@ export default function Users() {
         try {
             const updateData: { role: string; local_id?: string | null } = { role: editRole };
 
-            // Curador Mestre can set local_id freely (or null for global roles)
-            // Coordenador/Gestor always send the selected local_id
+            // Logic for local_id assignment
             if (isCuradorMestre) {
-                // For global roles, clear local_id; otherwise use selected value
-                if (editRole === 'Curador Mestre' || editRole === 'Coordenador Científico') {
-                    updateData.local_id = null;
-                } else {
+                // Global roles or Taxonomista Sênior (GLOBAL) -> local_id = null
+                // Field Taxonomist -> ALWAYS local_id
+                if (editRole === 'Taxonomista de Campo') {
                     updateData.local_id = editProjectId;
+                } else if (editRole === 'Curador Mestre' || editRole === 'Coordenador Científico' || editRole === 'Taxonomista Sênior') {
+                    // Global roles
+                    updateData.local_id = editProjectId || null; // Allow setting if they want, but usually null
+                    if (!editProjectId) updateData.local_id = null;
+                } else {
+                    // Gestor, Consulente, etc -> Use what is selected
+                    updateData.local_id = editProjectId || null;
                 }
             } else {
-                // Coordenador and Gestor always assign the selected local
+                // Coordenador and Gestor always assign the selected local based on their scope/selection
                 updateData.local_id = editProjectId;
             }
 
@@ -605,33 +618,42 @@ export default function Users() {
                                 </select>
                             </div>
 
-                            {/* Project/Local Select - visibility and mandatory rules based on logged user's role */}
-                            {/* Curador: always shown (optional). Coordenador: always shown (mandatory). Gestor: shown for roles below them */}
-                            {(isCuradorMestre || isCoordenadorCientifico || (isGestorAcervo && (editRole === 'Taxonomista' || editRole === 'Consulente'))) && (
+                            {/* Project/Local Select - Rules:
+                                - Visible for: Curador, Coordenador, Gestor (always).
+                                - Note: Gestor is implied by the component logic (can't see global edits anyway).
+                                - Form Logic handles if it's rendered or not depending on context, but here we define Visibility.
+                                - Field Taxonomist: Mandatory (*)
+                                - Senior Taxonomist: Optional
+                                - Global Roles: Optional
+                             */}
+                            {(isCuradorMestre || isCoordenadorCientifico || isGestorAcervo) && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Local / Projeto {isCoordenadorCientifico && <span className="text-red-500">*</span>}
+                                        Local / Projeto
+                                        {(isCoordenadorCientifico || editRole === 'Taxonomista de Campo') && <span className="text-red-500">*</span>}
                                     </label>
                                     <select
                                         value={editProjectId || ''}
                                         onChange={(e) => setEditProjectId(e.target.value || null)}
                                         className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
                                     >
-                                        <option value="">Selecione um local</option>
+                                        <option value="">
+                                            {editRole === 'Taxonomista Sênior' || editRole === 'Curador Mestre' ? 'Global (Sem Projeto)' : 'Selecione um local'}
+                                        </option>
                                         {projects.map((project) => (
                                             <option key={project.id} value={project.id}>
                                                 {project.nome}
                                             </option>
                                         ))}
                                     </select>
-                                    {isCoordenadorCientifico && (
+                                    {(isCoordenadorCientifico || editRole === 'Taxonomista de Campo') && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            É obrigatório vincular o usuário a um local.
+                                            Obrigatório para este nível de cargo.
                                         </p>
                                     )}
-                                    {isCuradorMestre && (
+                                    {(editRole === 'Taxonomista Sênior') && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Opcional. Deixe vazio para cargos globais.
+                                            Opcional. Taxonomistas Sêniores podem atuar globalmente.
                                         </p>
                                     )}
                                 </div>

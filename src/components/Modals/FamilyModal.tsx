@@ -35,6 +35,66 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         link_referencia: '',
     });
 
+    // Duplicate check state
+    const [isChecking, setIsChecking] = useState(false);
+    const [duplicateError, setDuplicateError] = useState<string | null>(null);
+    const [similarFamilies, setSimilarFamilies] = useState<string[]>([]);
+    const checkTimeout = useRef<any>(null);
+
+    const checkFamilyName = async (name: string) => {
+        // Clear previous timeout
+        if (checkTimeout.current) {
+            clearTimeout(checkTimeout.current);
+        }
+
+        // If empty or same as initial (editing), clear errors
+        if (!name.trim() || (initialData && name.trim().toLowerCase() === initialData.familia_nome.toLowerCase())) {
+            setDuplicateError(null);
+            setSimilarFamilies([]);
+            setIsChecking(false);
+            return;
+        }
+
+        setIsChecking(true);
+        setDuplicateError(null);
+
+        // Debounce 500ms
+        checkTimeout.current = setTimeout(async () => {
+            try {
+                // Check exact match
+                const { data: exactMatch } = await supabase
+                    .from('familia')
+                    .select('familia_nome')
+                    .ilike('familia_nome', name.trim())
+                    .maybeSingle();
+
+                if (exactMatch) {
+                    setDuplicateError(`A família "${exactMatch.familia_nome}" já está cadastrada no sistema.`);
+                    setSimilarFamilies([]);
+                } else {
+                    // Check similars (optional, simple logic using ilike with %)
+                    // A proper "similarity" search usually requires pg_trgm extension, forcing simple partial match for now.
+                    // If user typed "Olea", find "Oleaceae"
+                    const { data: similars } = await supabase
+                        .from('familia')
+                        .select('familia_nome')
+                        .ilike('familia_nome', `%${name.trim()}%`)
+                        .limit(3);
+
+                    if (similars && similars.length > 0) {
+                        setSimilarFamilies(similars.map(f => f.familia_nome));
+                    } else {
+                        setSimilarFamilies([]);
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking family name", err);
+            } finally {
+                setIsChecking(false);
+            }
+        }, 500);
+    };
+
     // Reset form when modal opens/closes or initialData changes
     useEffect(() => {
         if (isOpen) {
@@ -58,6 +118,8 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                 setImagePreview(null);
             }
             setImageFile(null);
+            setDuplicateError(null);
+            setSimilarFamilies([]);
         }
     }, [isOpen, initialData]);
 
@@ -122,6 +184,11 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
         if (!formData.familia_nome.trim()) {
             alert('O nome da família é obrigatório.');
+            return;
+        }
+
+        if (duplicateError) {
+            alert("Corrija o erro de nome duplicado antes de salvar.");
             return;
         }
 
@@ -247,11 +314,41 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                         <input
                             type="text"
                             value={formData.familia_nome}
-                            onChange={(e) => setFormData(prev => ({ ...prev, familia_nome: e.target.value }))}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                            onChange={(e) => {
+                                const newName = e.target.value;
+                                setFormData(prev => ({ ...prev, familia_nome: newName }));
+                                checkFamilyName(newName);
+                            }}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${duplicateError
+                                ? 'border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50'
+                                : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                                }`}
                             placeholder="Ex: Fabaceae"
                             required
                         />
+                        {/* Status Checker */}
+                        <div className="mt-2 min-h-[20px]">
+                            {isChecking ? (
+                                <p className="text-xs text-gray-400 flex items-center gap-1">
+                                    <Loader2 size={12} className="animate-spin" /> Verificando disponibilidade...
+                                </p>
+                            ) : duplicateError ? (
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1 animate-in slide-in-from-top-1">
+                                    <span>⚠️</span> {duplicateError}
+                                </p>
+                            ) : similarFamilies.length > 0 ? (
+                                <div className="text-xs text-gray-500 animate-in fade-in">
+                                    <span className="font-medium text-gray-600">Famílias similares encontradas:</span>
+                                    <ul className="flex flex-wrap gap-2 mt-1">
+                                        {similarFamilies.map(f => (
+                                            <li key={f} className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : null}
+                        </div>
                     </div>
 
                     {/* Características */}
@@ -325,7 +422,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                         type="submit"
                         form="family-form"
                         onClick={handleSubmit}
-                        disabled={loading}
+                        disabled={loading || !!duplicateError || isChecking}
                         className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (

@@ -17,7 +17,9 @@ import {
     AlertTriangle,
     ChevronLeft,
     ChevronRight,
-    Loader2
+    Loader2,
+    X,
+    CheckCircle
 } from 'lucide-react';
 
 interface Family {
@@ -77,6 +79,14 @@ export default function Families() {
     // Delete confirmation modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [familyToDelete, setFamilyToDelete] = useState<Family | null>(null);
+
+    // Block Modal State (FK Violation)
+    const [showBlockModal, setShowBlockModal] = useState(false);
+    const [blockedFamilyName, setBlockedFamilyName] = useState('');
+
+    // Success Modal State
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [deletedFamilyName, setDeletedFamilyName] = useState('');
 
     // Open delete confirmation modal
     const openDeleteModal = (family: Family) => {
@@ -174,6 +184,7 @@ export default function Families() {
     const confirmDelete = async () => {
         if (!familyToDelete) return;
 
+        const familyName = familyToDelete.familia_nome; // Capture name before clearing state
         setDeleteLoading(familyToDelete.id);
         closeDeleteModal();
 
@@ -205,18 +216,32 @@ export default function Families() {
                 user_id: profile?.id
             });
 
-            // 4. Refresh table
+            // 4. Show success modal
+            setDeletedFamilyName(familyName);
+            setShowSuccessModal(true);
+
+            // 5. Refresh table
             fetchFamilies();
         } catch (error: any) {
             console.error('Delete error:', error);
-            alert(error.message || 'Erro ao excluir família.');
+
+            // Check for Foreign Key Violation (Postgres Code 23503)
+            if (error?.code === '23503' || error?.message?.includes('violates foreign key constraint')) {
+                setBlockedFamilyName(familyName);
+                setShowBlockModal(true);
+            } else {
+                alert(error.message || 'Erro ao excluir família.');
+            }
         } finally {
             setDeleteLoading(null);
         }
     };
 
     // Permissions Check: Only Global Admins
-    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
+    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
+
+    // Reports Access: Only Curador and Coordenador (Senior Taxonomist excluded)
+    const canGenerateReports = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
 
     useEffect(() => {
         if (isGlobalAdmin) fetchFamilies();
@@ -294,7 +319,7 @@ export default function Families() {
                 </div>
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Acesso Negado</h1>
                 <p className="text-gray-500 max-w-md">
-                    Esta área é restrita para Curadores Mestres e Coordenadores Científicos.
+                    Esta área é restrita para Curadores Mestres, Coordenadores Científicos e Taxonomistas Sêniores.
                 </p>
             </div>
         );
@@ -347,14 +372,16 @@ export default function Families() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button
-                            onClick={handleExportAll}
-                            disabled={exportLoading}
-                            className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 sm:flex-none disabled:opacity-50"
-                        >
-                            {exportLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                            <span>{exportLoading ? 'Exportando...' : 'Exportar'}</span>
-                        </button>
+                        {canGenerateReports && (
+                            <button
+                                onClick={handleExportAll}
+                                disabled={exportLoading}
+                                className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 sm:flex-none disabled:opacity-50"
+                            >
+                                {exportLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                <span>{exportLoading ? 'Exportando...' : 'Exportar'}</span>
+                            </button>
+                        )}
                         <button
                             onClick={handleNewFamily}
                             className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 sm:flex-none"
@@ -424,14 +451,16 @@ export default function Families() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => generateFamilyReport(family)}
-                                                        disabled={reportLoading === family.id}
-                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                                                        title="Relatório"
-                                                    >
-                                                        {reportLoading === family.id ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
-                                                    </button>
+                                                    {canGenerateReports && (
+                                                        <button
+                                                            onClick={() => generateFamilyReport(family)}
+                                                            disabled={reportLoading === family.id}
+                                                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                                            title="Relatório"
+                                                        >
+                                                            {reportLoading === family.id ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleEditFamily(family)}
                                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -544,6 +573,104 @@ export default function Families() {
                                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
                             >
                                 Sim, Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Block Delete Modal (FK Violation) */}
+            {showBlockModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-all duration-300"
+                        onClick={() => setShowBlockModal(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowBlockModal(false)}
+                            className="absolute top-4 right-4 p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex flex-col items-center text-center">
+                            {/* Icon with Ring Effect */}
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 bg-amber-100 rounded-full animate-ping opacity-20"></div>
+                                <div className="relative w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                    <AlertTriangle size={40} className="text-amber-500" />
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Exclusão Bloqueada</h3>
+
+                            <p className="text-gray-600 mb-8 leading-relaxed text-base">
+                                A família <strong className="text-gray-900">"{blockedFamilyName}"</strong> não pode ser removida pois possui espécies associadas.
+                                <br /><br />
+                                <span className="inline-block bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-sm font-medium border border-amber-100">
+                                    💡 Sugestão: Remova ou mova as espécies primeiro.
+                                </span>
+                            </p>
+
+                            {/* Action */}
+                            <button
+                                onClick={() => setShowBlockModal(false)}
+                                className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-semibold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-gray-200"
+                            >
+                                Entendi, vou verificar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-all duration-300"
+                        onClick={() => setShowSuccessModal(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowSuccessModal(false)}
+                            className="absolute top-4 right-4 p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex flex-col items-center text-center">
+                            {/* Icon with Ring Effect */}
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+                                <div className="relative w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                    <CheckCircle size={40} className="text-emerald-500" />
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Família Excluída</h3>
+
+                            <p className="text-gray-600 mb-8 leading-relaxed text-base">
+                                A família <strong className="text-gray-900">"{deletedFamilyName}"</strong> foi removida com sucesso do sistema.
+                            </p>
+
+                            {/* Action */}
+                            <button
+                                onClick={() => setShowSuccessModal(false)}
+                                className="w-full py-3.5 bg-emerald-600 text-white rounded-2xl font-semibold hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-200"
+                            >
+                                Fechar
                             </button>
                         </div>
                     </div>

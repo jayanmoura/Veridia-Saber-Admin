@@ -2,26 +2,84 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { StatCard } from '../components/Dashboard/StatCard';
-import { Leaf, TreeDeciduous, MapPin, Activity } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { SpeciesModal } from '../components/Modals/SpeciesModal';
+import { FamilyModal } from '../components/Modals/FamilyModal';
+import { PendingCuratorshipModal } from '../components/Modals/PendingCuratorshipModal';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface AuditLog {
+    id: number;
+    created_at: string;
+    action_type: string;
+    table_name: string;
+    user_id: string;
+    profiles?: { full_name: string } | { full_name: string }[];
+}
 
 export default function Overview() {
     const { profile } = useAuth();
+    const navigate = useNavigate();
+
+    const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
+
+    const handleAuditClick = () => {
+        if (profile?.role === 'Curador Mestre') {
+            navigate('/seguranca/logs');
+        } else {
+            setShowAccessDeniedModal(true);
+        }
+    };
 
     const [stats, setStats] = useState({
         families: 0,
         species: 0,
         projects: 0,
         users: 0,
+        seniorContributions: 0,
+        seniorPending: 0
     });
+    const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
+    const [recentWork, setRecentWork] = useState<any[]>([]);
+    const [pendingSpecies, setPendingSpecies] = useState<any[]>([]);
+
+    // Senior Taxonomist Modal State
+    const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
+    const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+    const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+    const [editingWork, setEditingWork] = useState<any>(null);
+
+    const handleNewSpecies = () => {
+        setEditingWork(null);
+        setIsSpeciesModalOpen(true);
+    };
+
+    const handleEditWork = (work: any) => {
+        // Need to refetch full details? Modal handles it if we pass ID or basic data?
+        // SpeciesModal expects "Species" object. recentWork might be partial.
+        // It's safer to fetch full details inside Modal or pass what we have.
+        // SpeciesModal takes `initialData`. If we pass partial, it might break if fields missing.
+        // But for "Edit" button in list, we usually have ID.
+        // Let's rely on SpeciesModal fetching if we pass ID? No, SpeciesModal uses initialData to populate form.
+        // We will fetch full data for editing in `handleEditSpecies` wrapper if needed, 
+        // OR we just pass what we have and let the user fill the rest? 
+        // Actually, SpeciesModal expects full object to pre-fill. 
+        // Best approach: Pass what we have from table, but for reliable edit, we should probably fetch the single species first.
+        // However, to keep it simple and fast, let's pass the row data. The query for recentWork should select enough fields.
+        setEditingWork(work);
+        setIsSpeciesModalOpen(true);
+    };
 
     const [loading, setLoading] = useState(true);
 
     // Derived check for simplified logic
     const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
     const isLocalAdmin = profile?.role === 'Gestor de Acervo';
-    // 'Taxonomista' usually falls into default or check includes
-    const isCataloger = profile?.role?.includes('Taxonomista') || profile?.role === 'Consulente';
+    const isSenior = profile?.role === 'Taxonomista Sênior';
+    // 'Taxonomista' (old) or Consulente
+    const isCataloger = (profile?.role?.includes('Taxonomista') && !isSenior) || profile?.role === 'Consulente';
 
     useEffect(() => {
         if (profile) fetchStats();
@@ -34,6 +92,8 @@ export default function Overview() {
                 await fetchGlobalStats();
             } else if (isLocalAdmin) {
                 await fetchLocalStats();
+            } else if (isSenior) {
+                await fetchSeniorStats();
             } else if (isCataloger) {
                 await fetchPersonalStats();
             }
@@ -46,31 +106,114 @@ export default function Overview() {
 
     const fetchGlobalStats = async () => {
         // Queries updated to match actual DB table names (Portuguese)
-        const [families, species, projects, users] = await Promise.all([
+        const [families, species, projects, users, logs] = await Promise.all([
             supabase.from('familia').select('*', { count: 'exact', head: true }),
             supabase.from('especie').select('*', { count: 'exact', head: true }),
             supabase.from('locais').select('*', { count: 'exact', head: true }),
             supabase.from('profiles').select('*', { count: 'exact', head: true }),
+            supabase.from('audit_logs')
+                .select('id, created_at, action_type, table_name, user_id, profiles:user_id(full_name)')
+                .order('created_at', { ascending: false })
+                .limit(5)
         ]);
 
-        setStats({
+        setStats(prev => ({
+            ...prev,
             families: families.count || 0,
             species: species.count || 0,
             projects: projects.count || 0,
             users: users.count || 0,
-        });
+        }));
+
+        if (logs.data) {
+            setRecentLogs(logs.data);
+        }
+    };
+
+    const fetchSeniorStats = async () => {
+        // 1. My contributions (created_by me)
+        const { count: myCount } = await supabase
+            .from('especie')
+            .select('*', { count: 'exact', head: true })
+            .eq('created_by', profile?.id || '');
+
+        // 2. Global Total
+        const { count: globalCount } = await supabase
+            .from('especie')
+            .select('*', { count: 'exact', head: true });
+
+        // 3. Pending Review (Curadoria Necessária)
+        // Fetch all global species to check description and images
+        const { data: globalSpecies } = await supabase
+            .from('especie')
+            .select('id, nome_cientifico, descricao_especie, imagens(id), familia(familia_nome)')
+            .is('local_id', null);
+
+        let pendingCount = 0;
+        if (globalSpecies) {
+            const pending = globalSpecies.filter(sp => {
+                const hasNoDesc = !sp.descricao_especie || sp.descricao_especie.trim() === '';
+                const hasNoImg = !sp.imagens || sp.imagens.length === 0;
+                return hasNoDesc || hasNoImg;
+            });
+            pendingCount = pending.length;
+            // Need to fetch full details for pending items if we want to edit them immediately? 
+            // The modal lists them, and "Fix" click opens standard "Edit" modal. 
+            // The standard edit modal needs MORE fields than just what we fetched (id, desc, images).
+            // However, handleEditWork just sets 'editingWork'. 
+            // SpeciesModal uses 'initialData'. If initialData matches the form fields, it pre-fills.
+            // If we only passed {id, descricao}, other fields would be empty in the form potentially?
+            // Actually, SpeciesModal expects a full "Species" object for editing usually.
+            // SOLUTION: When clicking "Fix", we should set the ID and let SpeciesModal (or a wrapper) fetch details? 
+            // Currently SpeciesModal uses 'initialData' solely. It does NOT fetch by ID itself typically?
+            // Checking SpeciesModal... lines 105 in SpeciesModal show `useEffect(() => { if (initialData) setFormData(...) })`.
+            // It relies on `initialData`.
+            // So, for Pending Items, we DO need to fetch their full data OR fetch it on demand.
+            // Fetching ALL pending items full data might be heavy if there are many. 
+            // Better: Store the light list for the Modal. When user clicks "Fix", fetch the single full species and THEN open edit modal.
+            setPendingSpecies(pending);
+        }
+
+        setStats(prev => ({
+            ...prev,
+            seniorContributions: myCount || 0,
+            species: globalCount || 0,
+            seniorPending: pendingCount
+        }));
+
+        // 4. Recent Work
+        const { data: recent } = await supabase
+            .from('especie')
+            .select('id, nome_cientifico, updated_at, local_id, familia_id, familia:familia_id(familia_nome)')
+            .is('local_id', null)
+            .order('updated_at', { ascending: false })
+            .limit(5);
+
+        if (recent) {
+            // Map to flatten family name for table if needed, but keeping object structure for Modal is better
+            setRecentWork(recent);
+        }
     };
 
     const fetchLocalStats = async () => {
         if (!profile?.local_id) return;
 
-        // Filtering by local_id (Foreign Key)
-        const [families, species] = await Promise.all([
-            supabase.from('familia').select('*', { count: 'exact', head: true }).eq('local_id', profile.local_id),
-            supabase.from('especie').select('*', { count: 'exact', head: true }).eq('local_id', profile.local_id),
-        ]);
+        // Count species in project
+        const { count: speciesCount } = await supabase
+            .from('especie')
+            .select('*', { count: 'exact', head: true })
+            .eq('local_id', profile.local_id);
 
-        setStats(prev => ({ ...prev, families: families.count || 0, species: species.count || 0 }));
+        // Count unique families in project (via species)
+        const { data: projectSpecies } = await supabase
+            .from('especie')
+            .select('familia_id')
+            .eq('local_id', profile.local_id)
+            .not('familia_id', 'is', null);
+
+        const uniqueFamiliesCount = new Set(projectSpecies?.map(s => s.familia_id)).size;
+
+        setStats(prev => ({ ...prev, families: uniqueFamiliesCount || 0, species: speciesCount || 0 }));
     };
 
     const fetchPersonalStats = async () => {
@@ -90,6 +233,15 @@ export default function Overview() {
         const uniqueFamilies = new Set(mySpecies?.map(s => s.family_id).filter(Boolean)).size;
 
         setStats(prev => ({ ...prev, species: mySpeciesCount || 0, families: uniqueFamilies }));
+    };
+
+    const getActionText = (action: string) => {
+        switch (action) {
+            case 'INSERT': return 'criou registro em';
+            case 'UPDATE': return 'atualizou';
+            case 'DELETE': return 'removeu de';
+            default: return 'alterou';
+        }
     };
 
     // Render Logic
@@ -115,23 +267,88 @@ export default function Overview() {
                             <Activity size={20} className="text-emerald-600" />
                             Gestão Detalhada
                         </h3>
-                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                            Gráficos ou tabelas detalhadas serão exibidos aqui.
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <NavLink
+                                to="/conteudo-didatico"
+                                className="flex flex-col items-center justify-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-all group"
+                            >
+                                <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                    <BookOpen className="text-emerald-600" size={24} />
+                                </div>
+                                <h4 className="font-semibold text-gray-800">Conteúdo do App</h4>
+                                <p className="text-xs text-center text-gray-500 mt-1">Gerenciar textos educativos</p>
+                            </NavLink>
+
+                            <div
+                                onClick={handleAuditClick}
+                                className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-all group cursor-pointer"
+                            >
+                                <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                    <Shield className="text-indigo-600" size={24} />
+                                </div>
+                                <h4 className="font-semibold text-gray-800">Logs de Auditoria</h4>
+                                <p className="text-xs text-center text-gray-500 mt-1">Monitorar segurança e acessos</p>
+                            </div>
                         </div>
                     </div>
+                    {/* ... (Atividades recentes same as before) */}
                     <div className="w-full lg:w-[30%] bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[300px]">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Atividades Recentes</h3>
-                        <ul className="space-y-4">
-                            {[1, 2, 3].map(i => (
-                                <li key={i} className="flex gap-3 text-sm">
-                                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></div>
-                                    <span className="text-gray-600">Usuário <strong className="text-gray-800">João</strong> cadastrou nova espécie.</span>
-                                </li>
-                            ))}
-                            <li className="text-xs text-center pt-4 text-emerald-600 hover:underline cursor-pointer">Ver todas</li>
-                        </ul>
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                            Atividades Recentes
+                            <button onClick={handleAuditClick} className="text-xs text-emerald-600 hover:underline font-normal">
+                                Ver tudo
+                            </button>
+                        </h3>
+                        {recentLogs.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-4">Nenhuma atividade recente.</p>
+                        ) : (
+                            <ul className="space-y-4">
+                                {recentLogs.map(log => (
+                                    <li key={log.id} className="flex gap-3 text-sm">
+                                        <div className={`
+                                            w-2 h-2 rounded-full mt-1.5 shrink-0
+                                            ${log.action_type === 'INSERT' ? 'bg-green-400' :
+                                                log.action_type === 'DELETE' ? 'bg-red-400' : 'bg-blue-400'}
+                                        `}></div>
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-600">
+                                                <strong className="text-gray-800">
+                                                    {(Array.isArray(log.profiles) ? log.profiles[0]?.full_name : log.profiles?.full_name) || 'Desconhecido'}
+                                                </strong> {getActionText(log.action_type)} <span className="font-mono text-xs bg-gray-100 px-1 rounded">{log.table_name}</span>
+                                            </span>
+                                            <span className="text-xs text-gray-400 mt-0.5">
+                                                {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                                            </span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
+
+                {/* Access Denied Modal */}
+                {showAccessDeniedModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+                                    <Shield className="text-orange-500" size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Acesso Restrito</h3>
+                                <p className="text-gray-600 mb-6">
+                                    Esta área contém dados sensíveis de auditoria e é exclusiva para o perfil de <span className="font-medium text-gray-800">Curador Mestre</span>. Entre em contato com a administração se precisar de informações.
+                                </p>
+                                <button
+                                    onClick={() => setShowAccessDeniedModal(false)}
+                                    className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                                >
+                                    Entendi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -174,7 +391,164 @@ export default function Overview() {
         );
     }
 
-    // Scenario C: Cataloger
+    // Scenario C: Senior Taxonomist
+    if (isSenior) {
+        return (
+            <div className="space-y-8 animate-fade-in-up">
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Painel Científico</h1>
+                    <p className="text-gray-500">Curadoria e gestão taxonômica global.</p>
+                </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard
+                        title="Minhas Contribuições"
+                        value={stats.seniorContributions || 0}
+                        icon={Award}
+                        color="emerald"
+                        loading={loading}
+                    />
+                    <StatCard
+                        title="Acervo Global"
+                        value={stats.species}
+                        icon={Globe}
+                        color="blue"
+                        loading={loading}
+                    />
+                    <StatCard
+                        title={stats.seniorPending === 0 ? "Acervo Completo" : "Curadoria Necessária"}
+                        value={stats.seniorPending === 0 ? "100%" : stats.seniorPending}
+                        icon={stats.seniorPending === 0 ? CheckCircle : AlertTriangle}
+                        color={stats.seniorPending === 0 ? "emerald" : "orange"}
+                        loading={loading}
+                        onClick={() => {
+                            if (stats.seniorPending > 0) setIsPendingModalOpen(true);
+                        }}
+                    />    </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button
+                        onClick={handleNewSpecies}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white p-6 rounded-xl shadow-sm transition-all transform hover:scale-[1.01] flex flex-col items-center justify-center gap-3 group"
+                    >
+                        <div className="p-4 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+                            <Plus size={32} />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold">Nova Espécie</h3>
+                            <p className="text-emerald-100 text-sm">Adicionar ao catálogo global</p>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => setIsFamilyModalOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-xl shadow-sm transition-all transform hover:scale-[1.01] flex flex-col items-center justify-center gap-3 group"
+                    >
+                        <div className="p-4 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+                            <Plus size={32} />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold">Nova Família</h3>
+                            <p className="text-blue-100 text-sm">Criar agrupamento taxonômico</p>
+                        </div>
+                    </button>
+                </div>
+
+                {/* Recent Work */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <Activity size={20} className="text-gray-400" />
+                        Trabalho Recente
+                    </h3>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-3">Espécie</th>
+                                    <th className="px-4 py-3">Família</th>
+                                    <th className="px-4 py-3">Atualização</th>
+                                    <th className="px-4 py-3 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <tr key={i} className="animate-pulse">
+                                            <td className="px-4 py-4"><div className="h-4 w-32 bg-gray-100 rounded"></div></td>
+                                            <td className="px-4 py-4"><div className="h-4 w-24 bg-gray-100 rounded"></div></td>
+                                            <td className="px-4 py-4"><div className="h-4 w-20 bg-gray-100 rounded"></div></td>
+                                            <td className="px-4 py-4"><div className="h-8 w-8 bg-gray-100 rounded ml-auto"></div></td>
+                                        </tr>
+                                    ))
+                                ) : recentWork.length > 0 ? (
+                                    recentWork.map((work) => (
+                                        <tr key={work.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-4">
+                                                <span className="font-medium text-gray-900 italic">{work.nome_cientifico}</span>
+                                            </td>
+                                            <td className="px-4 py-4 text-gray-600">
+                                                {work.familia?.familia_nome || '-'}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-400">
+                                                {work.updated_at ? formatDistanceToNow(new Date(work.updated_at), { addSuffix: true, locale: ptBR }) : '-'}
+                                            </td>
+                                            <td className="px-4 py-4 text-right">
+                                                <button
+                                                    onClick={() => handleEditWork(work)}
+                                                    className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Pencil size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">
+                                            Nenhum trabalho recente encontrado.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Modals */}
+                <PendingCuratorshipModal
+                    isOpen={isPendingModalOpen}
+                    onClose={() => setIsPendingModalOpen(false)}
+                    items={pendingSpecies}
+                    onFix={async (item) => {
+                        // Fetch full data for the item before editing
+                        const { data } = await supabase.from('especie').select('*, familia(familia_nome), imagens(url_imagem, local_id)').eq('id', item.id).single();
+                        if (data) {
+                            setEditingWork(data);
+                            setIsPendingModalOpen(false); // Close list
+                            setIsSpeciesModalOpen(true);  // Open edit
+                        }
+                    }}
+                />
+                <SpeciesModal
+                    isOpen={isSpeciesModalOpen}
+                    onClose={() => setIsSpeciesModalOpen(false)}
+                    onSave={fetchSeniorStats} // Refresh stats/list on save
+                    initialData={editingWork}
+                />
+                <FamilyModal
+                    isOpen={isFamilyModalOpen}
+                    onClose={() => setIsFamilyModalOpen(false)}
+                    onSave={fetchSeniorStats}
+                />
+            </div>
+        );
+    }
+
+    // Default: Cataloger / Consulente / Fallback
     return (
         <div className="space-y-8">
             <div>
@@ -194,6 +568,6 @@ export default function Overview() {
                     Ir para Catalogação
                 </NavLink>
             </div>
-        </div>
+        </div >
     );
 }

@@ -25,7 +25,7 @@ export function Sidebar() {
             label: 'Famílias',
             path: '/families',
             icon: TreeDeciduous,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico']
+            allowedRoles: ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior']
         },
         {
             label: 'Espécies',
