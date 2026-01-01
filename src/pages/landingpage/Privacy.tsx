@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import logoIcon from '/icon.png';
@@ -70,6 +71,11 @@ function Footer() {
 
 // ============ PRIVACY PAGE ============
 export default function Privacy() {
+    // Scroll to top when page loads
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />

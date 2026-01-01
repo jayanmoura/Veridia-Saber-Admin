@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, AlertTriangle } from 'lucide-react';
 import logoIcon from '/icon.png';
@@ -70,6 +71,11 @@ function Footer() {
 
 // ============ TERMS PAGE ============
 export default function Terms() {
+    // Scroll to top when page loads
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />

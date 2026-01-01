@@ -10,10 +10,102 @@ import {
     Download,
     AlertCircle,
     CheckCircle,
-    Loader2
+    Loader2,
+    Bot,
+    BookOpen
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import logoIcon from '/icon.png';
+
+// ============ SECTION IDS FOR NAVIGATION ============
+const SECTIONS = [
+    { id: 'hero', label: 'Início' },
+    { id: 'features', label: 'Diferenciais' },
+    { id: 'about', label: 'Sobre' },
+    { id: 'creator', label: 'Criador' },
+];
+
+// ============ DOTS NAVIGATION ============
+function DotsNavigation({ activeSection }: { activeSection: string }) {
+    const scrollToSection = (sectionId: string) => {
+        const element = document.getElementById(sectionId);
+        element?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    return (
+        <nav className="fixed right-4 md:right-6 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center gap-3">
+            {SECTIONS.map((section) => (
+                <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className="group relative flex items-center"
+                    aria-label={`Ir para ${section.label}`}
+                >
+                    {/* Tooltip */}
+                    <span className="absolute right-8 px-3 py-1.5 bg-gray-900/90 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        {section.label}
+                    </span>
+                    {/* Dot */}
+                    <span
+                        className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${activeSection === section.id
+                            ? 'bg-emerald-500 border-emerald-500 scale-125'
+                            : 'bg-transparent border-gray-400 hover:border-emerald-400 hover:scale-110'
+                            }`}
+                    />
+                </button>
+            ))}
+        </nav>
+    );
+}
+
+// ============ FIXED HEADER ============
+function Header() {
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const container = document.getElementById('scroll-container');
+        const handleScroll = () => {
+            setIsScrolled((container?.scrollTop || 0) > 50);
+        };
+        container?.addEventListener('scroll', handleScroll);
+        return () => container?.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    return (
+        <header
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md ${isScrolled
+                ? 'bg-white/95 shadow-lg py-3'
+                : 'bg-black/20 py-4'
+                }`}
+        >
+            <div className="container mx-auto px-6 flex items-center justify-between">
+                {/* Logo */}
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center p-1 transition-all ${isScrolled ? 'bg-emerald-50' : 'bg-white/20 backdrop-blur-sm'}`}>
+                        <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
+                    </div>
+                    <span className={`font-bold text-lg transition-colors ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
+                        Veridia Saber
+                    </span>
+                </div>
+
+                {/* Nav Links (Desktop) */}
+                <nav className="hidden md:flex items-center gap-6">
+                    {SECTIONS.map((section) => (
+                        <a
+                            key={section.id}
+                            href={`#${section.id}`}
+                            className={`text-sm font-medium transition-colors hover:text-emerald-500 ${isScrolled ? 'text-gray-600' : 'text-white/80'
+                                }`}
+                        >
+                            {section.label}
+                        </a>
+                    ))}
+                </nav>
+            </div>
+        </header>
+    );
+}
 
 // ============ BETA DOWNLOAD MODAL ============
 interface BetaDownloadModalProps {
@@ -32,7 +124,6 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
         setErrorMessage('');
 
         try {
-            // Check if email exists in beta_testers table
             const { data, error } = await supabase
                 .from('beta_testers')
                 .select('id, email')
@@ -46,7 +137,6 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
                 return;
             }
 
-            // Delete email after successful verification (one-time use)
             await supabase
                 .from('beta_testers')
                 .delete()
@@ -54,7 +144,6 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
 
             setStatus('success');
 
-            // Trigger download after short delay
             setTimeout(() => {
                 const link = document.createElement('a');
                 link.href = '/downloads/Beta-Teste-VeridiaSaber.apk';
@@ -80,24 +169,13 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={handleClose}
-            />
-
-            {/* Modal */}
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-fade-in">
-                {/* Close button */}
-                <button
-                    onClick={handleClose}
-                    className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
+                <button onClick={handleClose} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors">
                     <X size={20} />
                 </button>
 
-                {/* Content */}
                 {status === 'success' ? (
                     <div className="text-center py-6">
                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -120,9 +198,7 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Email cadastrado
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email cadastrado</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                     <input
@@ -178,24 +254,22 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
 // ============ HERO SECTION ============
 function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void }) {
     return (
-        <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-[#1a472a] via-[#234d32] to-[#1a3a24]">
+        <section
+            id="hero"
+            className="h-screen w-full snap-start flex items-center relative overflow-hidden bg-gradient-to-br from-[#1a472a] via-[#234d32] to-[#1a3a24]"
+        >
             {/* Background decorative elements */}
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-purple-500/5 to-emerald-500/5 rounded-full blur-3xl"></div>
             </div>
 
-            <div className="container mx-auto px-6 py-20 relative z-10">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="container mx-auto px-6 pt-20 relative z-10">
+                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                     {/* Left: Content */}
-                    <div className="text-white space-y-8 animate-fade-in">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                            <img src={logoIcon} alt="Veridia Saber" className="w-5 h-5" />
-                            <span className="text-sm font-medium text-emerald-100">Enciclopédia Botânica</span>
-                        </div>
-
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                    <div className="text-white space-y-6 lg:space-y-8 text-center lg:text-left animate-fade-in">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                             <span className="text-white">Veridia Saber:</span>
                             <br />
                             <span className="bg-gradient-to-r from-emerald-300 to-purple-300 bg-clip-text text-transparent">
@@ -203,47 +277,42 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                             </span>
                         </h1>
 
-                        <p className="text-lg md:text-xl text-emerald-100/80 max-w-xl leading-relaxed">
+                        <p className="text-base md:text-lg lg:text-xl text-emerald-100/80 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                             Identifique espécies, organize coleções e gerencie projetos de campo.{' '}
                             <span className="font-semibold text-white">Disponível offline quando você precisar.</span>
                         </p>
 
                         {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                        <div className="flex flex-col sm:flex-row gap-4 pt-2 justify-center lg:justify-start">
                             <button
                                 onClick={onOpenDownloadModal}
-                                className="group flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-xl shadow-emerald-900/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                                className="group flex items-center justify-center gap-3 px-6 py-3 md:px-8 md:py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-xl shadow-emerald-900/30 transition-all duration-300 hover:scale-105"
                             >
-                                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 md:w-6 md:h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M17.523 0c.987.02 1.967.172 2.911.492a9.038 9.038 0 0 1 2.556 1.403l-6.986 8.11 6.986 8.106a9.049 9.049 0 0 1-2.556 1.407 9.13 9.13 0 0 1-2.911.492c-.18 0-.361-.01-.541-.02l-5.975-9.985L17.02.02c.18-.01.361-.02.541-.02zm-5.975 10.005L5.558.02C5.378.01 5.197 0 5.017 0a9.13 9.13 0 0 0-2.911.492A9.038 9.038 0 0 0 .55 1.895l6.986 8.11L.55 18.111a9.049 9.049 0 0 0 2.556 1.407 9.13 9.13 0 0 0 2.911.492c.18 0 .361-.01.541-.02l5.99-9.985z" />
                                 </svg>
                                 <span>Baixar para Android</span>
-                                <Download size={18} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+                                <Download size={16} className="opacity-70 group-hover:opacity-100" />
                             </button>
 
                             <button
                                 disabled
-                                className="flex items-center justify-center gap-3 px-8 py-4 bg-white/10 text-white/60 font-medium rounded-2xl border border-white/20 cursor-not-allowed"
+                                className="flex items-center justify-center gap-3 px-6 py-3 md:px-8 md:py-4 bg-white/10 text-white/60 font-medium rounded-2xl border border-white/20 cursor-not-allowed"
                             >
-                                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 md:w-6 md:h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
                                 </svg>
-                                <span>Versão iOS em breve</span>
+                                <span>iOS em breve</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Right: Phone Mockup */}
-                    <div className="flex justify-center lg:justify-end animate-float">
+                    {/* Right: Phone Mockup - Centered between text and side dots */}
+                    <div className="hidden sm:flex justify-center animate-float mt-8 lg:mt-0">
                         <div className="relative">
-                            {/* Phone frame */}
-                            <div className="relative w-[280px] md:w-[320px] h-[580px] md:h-[640px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl shadow-black/50 border-4 border-gray-800">
-                                {/* Screen */}
-                                <div className="w-full h-full rounded-[2.5rem] overflow-hidden relative">
-                                    {/* Notch */}
-                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-3xl z-10"></div>
-
-                                    {/* Real app screenshot */}
+                            <div className="relative w-[160px] sm:w-[180px] md:w-[200px] lg:w-[240px] max-h-[60vh] aspect-[9/19] bg-gray-900 rounded-[2rem] md:rounded-[3rem] p-2 md:p-3 shadow-2xl shadow-black/50 border-4 border-gray-800">
+                                <div className="w-full h-full rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative">
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 md:w-32 h-5 md:h-6 bg-black rounded-b-2xl md:rounded-b-3xl z-10"></div>
                                     <img
                                         src="/Tela Inicial.png"
                                         alt="Tela inicial do Veridia Saber"
@@ -251,8 +320,6 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                                     />
                                 </div>
                             </div>
-
-                            {/* Decorative glow */}
                             <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/20 to-emerald-500/20 blur-3xl rounded-full -z-10"></div>
                         </div>
                     </div>
@@ -261,7 +328,7 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
 
             {/* Scroll indicator */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-                <span className="text-white/50 text-sm">Saiba mais</span>
+                <span className="text-white/50 text-sm">Role para baixo</span>
                 <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
                     <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-pulse"></div>
                 </div>
@@ -270,83 +337,145 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
     );
 }
 
-// ============ FEATURES SECTION ============
+// ============ FEATURES SECTION (CAROUSEL) ============
 function FeaturesSection() {
+    const [activeIndex, setActiveIndex] = useState(0);
+
     const features = [
         {
             icon: WifiOff,
             title: 'Coleções Offline',
             description: 'Catalogue plantas no seu dispositivo e acesse seus dados mesmo sem internet.',
-            color: 'emerald',
             gradient: 'from-emerald-500 to-teal-600'
         },
         {
             icon: MapPin,
             title: 'Mapas Baixáveis',
             description: 'Baixe locais com mapas e todas as plantas para explorar em áreas sem sinal.',
-            color: 'purple',
             gradient: 'from-purple-500 to-violet-600'
         },
         {
             icon: Cloud,
             title: 'Sincronização Segura',
             description: 'Seus dados salvos no dispositivo e na nuvem automaticamente.',
-            color: 'blue',
             gradient: 'from-blue-500 to-cyan-600'
+        },
+        {
+            icon: Bot,
+            title: 'Assistente IA',
+            description: 'Tire dúvidas e obtenha ajuda na identificação de espécies instantaneamente com nosso Chatbot inteligente.',
+            gradient: 'from-indigo-500 to-purple-600'
+        },
+        {
+            icon: BookOpen,
+            title: 'Rigor Científico',
+            description: 'Base de dados construída com referências bibliográficas e literatura acadêmica confiável.',
+            gradient: 'from-amber-500 to-orange-600'
         }
     ];
 
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget;
+        const scrollLeft = container.scrollLeft;
+        const cardWidth = container.offsetWidth * 0.75; // 75% width per card on mobile
+        const newIndex = Math.round(scrollLeft / cardWidth);
+        setActiveIndex(Math.min(newIndex, features.length - 1));
+    };
+
+    const scrollToIndex = (index: number) => {
+        const container = document.getElementById('features-carousel');
+        if (container) {
+            const cardWidth = container.offsetWidth * 0.75;
+            container.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+        }
+    };
+
     return (
-        <section id="diferenciais" className="py-24 bg-white">
-            <div className="container mx-auto px-6">
+        <section
+            id="features"
+            className="min-h-screen w-full snap-start flex flex-col justify-center items-center bg-white px-4 py-16 md:py-12 overflow-y-auto"
+        >
+            {/* Hide scrollbar styles */}
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+
+            <div className="container mx-auto max-w-6xl">
                 {/* Section header */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-6 md:mb-10">
                     <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
                         Diferenciais
                     </span>
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">
                         Por que escolher o Veridia Saber?
                     </h2>
-                    <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+                    <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-lg">
                         Desenvolvido pensando nas necessidades reais de pesquisadores e entusiastas da botânica.
                     </p>
                 </div>
 
-                {/* Features grid */}
-                <div className="grid md:grid-cols-3 gap-8">
+                {/* Desktop: Grid layout */}
+                <div className="hidden lg:grid lg:grid-cols-5 gap-4">
                     {features.map((feature, index) => (
                         <div
                             key={index}
-                            className="group relative bg-gray-50 rounded-3xl p-8 hover:bg-white hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500 border border-gray-100 hover:border-gray-200 hover:-translate-y-2"
+                            className="group relative bg-gray-50 rounded-xl p-4 hover:bg-white hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 border border-gray-100 hover:border-gray-200"
                         >
-                            {/* Icon */}
-                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-500`}>
-                                <feature.icon size={28} className="text-white" />
+                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-3 shadow-md group-hover:scale-105 transition-transform duration-500`}>
+                                <feature.icon size={20} className="text-white" />
                             </div>
-
-                            {/* Content */}
-                            <h3 className="text-xl font-bold text-gray-900 mb-3">
-                                {feature.title}
-                            </h3>
-                            <p className="text-gray-600 leading-relaxed">
-                                {feature.description}
-                            </p>
-
-                            {/* Decorative corner */}
-                            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-tr-3xl transition-opacity duration-500`}></div>
+                            <h3 className="text-sm font-bold text-gray-900 mb-1">{feature.title}</h3>
+                            <p className="text-gray-600 leading-relaxed text-xs">{feature.description}</p>
                         </div>
                     ))}
+                </div>
+
+                {/* Mobile/Tablet: Carousel */}
+                <div className="lg:hidden">
+                    <div
+                        id="features-carousel"
+                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4"
+                        onScroll={handleScroll}
+                    >
+                        {features.map((feature, index) => (
+                            <div
+                                key={index}
+                                className="flex-shrink-0 w-[75%] sm:w-[45%] snap-center bg-gray-50 rounded-xl p-5 border border-gray-100"
+                            >
+                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-md`}>
+                                    <feature.icon size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-base font-bold text-gray-900 mb-2">{feature.title}</h3>
+                                <p className="text-gray-600 leading-relaxed text-sm">{feature.description}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Dots navigation */}
+                    <div className="flex justify-center gap-2 mt-4">
+                        {features.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => scrollToIndex(index)}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${activeIndex === index
+                                    ? 'bg-purple-600 w-6'
+                                    : 'bg-gray-300 hover:bg-gray-400'
+                                    }`}
+                                aria-label={`Ir para slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>
     );
 }
 
-// ============ ABOUT SECTION ============
+// ============ ABOUT SECTION (ASYMMETRIC LAYOUT) ============
 function AboutSection() {
     const [speciesCount, setSpeciesCount] = useState<number | null>(null);
 
-    // Fetch real species count from Supabase
     useEffect(() => {
         const fetchStats = async () => {
             try {
@@ -364,53 +493,91 @@ function AboutSection() {
         fetchStats();
     }, []);
 
+    const stats = [
+        {
+            value: speciesCount !== null ? speciesCount.toLocaleString('pt-BR') : '...',
+            label: 'Espécies Catalogadas',
+            icon: BookOpen,
+            color: 'text-emerald-600',
+            bgColor: 'bg-emerald-100'
+        },
+        {
+            value: 'Offline',
+            label: 'Coleções Locais',
+            icon: WifiOff,
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-100'
+        },
+        {
+            value: 'Sync',
+            label: 'Automática',
+            icon: Cloud,
+            color: 'text-blue-600',
+            bgColor: 'bg-blue-100'
+        }
+    ];
+
     return (
-        <section id="sobre" className="py-24 bg-gradient-to-b from-emerald-50 to-white relative overflow-hidden">
+        <section
+            id="about"
+            className="min-h-screen w-full snap-start flex flex-col justify-center bg-gradient-to-b from-emerald-50 to-white relative overflow-y-auto px-4 py-10"
+        >
             {/* Background pattern */}
-            <div className="absolute inset-0 opacity-30">
+            <div className="absolute inset-0 opacity-30 pointer-events-none">
                 <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-200 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-20 right-10 w-80 h-80 bg-purple-100 rounded-full blur-3xl"></div>
             </div>
 
-            <div className="container mx-auto px-6 relative z-10">
-                <div className="max-w-4xl mx-auto text-center">
-                    {/* Logo */}
-                    <div className="inline-flex items-center justify-center w-24 h-24 bg-white/90 rounded-3xl mb-8 shadow-xl shadow-emerald-200 p-2">
-                        <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
+            <div className="container mx-auto relative z-10">
+                {/* Two Column Layout */}
+                <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center max-w-5xl mx-auto">
+
+                    {/* Left Column: Text Content */}
+                    <div className="text-left">
+                        {/* Small Label */}
+                        <p className="text-emerald-600 text-xs font-semibold tracking-widest uppercase mb-2">
+                            Nossa Missão
+                        </p>
+
+                        {/* Manifesto */}
+                        <h2 className="text-sm sm:text-base lg:text-xl font-medium text-gray-800 leading-relaxed mb-2 lg:mb-4">
+                            O Veridia Saber é uma ponte. Uma ponte que liga o entusiasta ao cientista, o curioso ao pesquisador e, todos nós, à biodiversidade incrível que nos rodeia.{' '}
+                            <span className="font-bold text-emerald-700">
+                                A tecnologia a serviço do conhecimento e da natureza!
+                            </span>
+                        </h2>
+
+                        {/* Complementary Text */}
+                        <p className="text-xs lg:text-sm text-gray-600 leading-relaxed">
+                            Desenvolvido para auxiliar no estudo e catalogação da biodiversidade brasileira,
+                            o aplicativo permite identificar espécies, registrar ocorrências e
+                            manter coleções organizadas - mesmo em áreas sem conexão.
+                        </p>
                     </div>
 
-                    {/* Content */}
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                        Sobre o Projeto
-                    </h2>
+                    {/* Right Column: Stats Cards */}
+                    <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-3">
+                        {stats.map((stat, index) => (
+                            <div
+                                key={index}
+                                className="bg-white/80 backdrop-blur-sm rounded-lg p-2 lg:p-4 shadow-md border border-gray-100/80 flex flex-col lg:flex-row items-center gap-1 lg:gap-3 text-center lg:text-left"
+                            >
+                                {/* Icon */}
+                                <div className={`w-8 h-8 lg:w-11 lg:h-11 rounded-lg ${stat.bgColor} flex items-center justify-center flex-shrink-0`}>
+                                    <stat.icon size={16} className={stat.color} />
+                                </div>
 
-                    {/* Slogan */}
-                    <blockquote className="text-xl md:text-2xl text-gray-700 leading-relaxed mb-8 italic font-medium">
-                        "O Veridia Saber é uma ponte, uma ponte que liga o entusiasta ao cientista, o curioso ao pesquisador e, todos nós, a biodiversidade incrível que nos rodeia. A tecnologia serve ao conhecimento e a natureza!"
-                    </blockquote>
-
-                    <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                        Desenvolvido para auxiliar no estudo e catalogação da biodiversidade brasileira,
-                        o aplicativo permite identificar espécies, registrar ocorrências georreferenciadas e
-                        manter coleções organizadas de forma profissional — mesmo em áreas sem conexão.
-                    </p>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-8 mt-12">
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-emerald-600 mb-2">
-                                {speciesCount !== null ? speciesCount.toLocaleString('pt-BR') : '...'}
+                                {/* Value & Label */}
+                                <div>
+                                    <div className={`text-xs lg:text-lg font-bold ${stat.color}`}>
+                                        {stat.value}
+                                    </div>
+                                    <div className="text-gray-500 text-[9px] lg:text-xs">
+                                        {stat.label}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-gray-500 text-sm">Espécies Catalogadas</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">Offline</div>
-                            <div className="text-gray-500 text-sm">Coleções e Mapas</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">Sync</div>
-                            <div className="text-gray-500 text-sm">Automática</div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -418,64 +585,167 @@ function AboutSection() {
     );
 }
 
-// ============ FOOTER ============
-function Footer() {
+
+// ============ ABOUT CREATOR SECTION (EDITORIAL) ============
+function AboutCreatorSection() {
     return (
-        <footer className="bg-gray-900 text-white py-12">
-            <div className="container mx-auto px-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1">
-                            <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
+        <section
+            id="creator"
+            className="min-h-screen w-full snap-start flex flex-col bg-stone-50 relative overflow-y-auto"
+        >
+            {/* Decorative quote mark */}
+            <div className="absolute top-20 left-6 lg:left-20 text-[12rem] lg:text-[20rem] font-serif text-emerald-100/50 leading-none pointer-events-none select-none" style={{ fontFamily: 'Georgia, serif' }}>
+                "
+            </div>
+
+            {/* Spacer for fixed navbar */}
+            <div className="h-16 flex-shrink-0"></div>
+
+            {/* Main Content */}
+            <div className="flex-1 container mx-auto px-4 lg:px-8 py-8 relative z-10 flex flex-col justify-center">
+                <div className="grid lg:grid-cols-5 gap-6 lg:gap-12 items-center max-w-6xl mx-auto">
+
+                    {/* Left Column: Photo (40%) */}
+                    <div className="lg:col-span-2 flex flex-col items-center">
+                        {/* Photo with modern rounded corners */}
+                        <div className="w-32 h-40 sm:w-40 sm:h-52 lg:w-56 lg:h-72 rounded-2xl lg:rounded-tl-[3rem] lg:rounded-br-[3rem] shadow-xl shadow-gray-300/50 overflow-hidden mb-3">
+                            <img
+                                src="/jayan-moura.jpeg"
+                                alt="Jayan de Moura"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
-                        <span className="text-xl font-bold">Veridia Saber</span>
+
+                        {/* Caption */}
+                        <p className="text-gray-500 text-xs lg:text-sm font-medium">
+                            Jayan de Moura - <span className="text-emerald-600">Fundador</span>
+                        </p>
                     </div>
 
-                    {/* Links */}
-                    <nav className="flex flex-wrap justify-center gap-6 text-sm">
-                        <Link to="/politica" className="text-gray-400 hover:text-white transition-colors">
-                            Política de Privacidade
-                        </Link>
-                        <Link to="/termos" className="text-gray-400 hover:text-white transition-colors">
-                            Termos de Uso
-                        </Link>
-                        <a
-                            href="https://painel-admin.veridiasaber.com.br"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                        >
-                            Acessar Painel Admin
-                            <ExternalLink size={14} />
-                        </a>
-                    </nav>
+                    {/* Right Column: Text (60%) */}
+                    <div className="lg:col-span-3 text-left">
+                        {/* Small Label */}
+                        <p className="text-emerald-600 text-xs font-semibold tracking-widest uppercase mb-2">
+                            Sobre o Criador
+                        </p>
 
-                    {/* Copyright */}
-                    <div className="text-gray-500 text-sm">
-                        © 2026 Veridia Saber. Todos os direitos reservados.
+                        {/* Title */}
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+                            De Entusiasta para <span className="text-emerald-700">Cientista</span>
+                        </h2>
+
+                        {/* Paragraphs with highlights */}
+                        <div className="space-y-3 lg:space-y-4 text-xs sm:text-sm lg:text-base text-gray-700 leading-relaxed">
+                            <p>
+                                Minha conexão com a botânica começou cedo, ainda na adolescência. Mas algo sempre me incomodava: a dificuldade de acesso à informação. Os sites eram antigos e nada práticos para quem estava em campo. Eu sentia falta de algo moderno, que unisse o rigor científico à portabilidade.
+                            </p>
+
+                            <p>
+                                O Veridia Saber nasceu dessa inquietação. O que começou em 2025 como um simples guia de estudos, evoluiu para um laboratório de bolso com filosofia{' '}
+                                <span className="font-bold text-emerald-700">Offline-First</span>.
+                            </p>
+
+                            <p>
+                                Seja catalogando espécies, usando{' '}
+                                <span className="font-bold text-emerald-700">Chat Bot</span>{' '}
+                                para identificação ou baixando mapas de áreas remotas para segurança em reservas sem sinal, o objetivo é um só: criar a ponte que liga a curiosidade do entusiasta a precisão do{' '}
+                                <span className="font-bold text-emerald-700">Cientista</span>.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </footer>
+
+            {/* Footer */}
+            <footer className="flex-shrink-0 w-full py-3 bg-gray-900/90 backdrop-blur-sm">
+                <div className="container mx-auto px-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+                        {/* Logo */}
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center p-1">
+                                <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
+                            </div>
+                            <span className="text-sm font-bold text-white">Veridia Saber</span>
+                        </div>
+
+                        {/* Links */}
+                        <nav className="flex flex-wrap justify-center gap-3 text-[10px] sm:text-xs">
+                            <Link to="/politica" className="text-gray-300 hover:text-white transition-colors">
+                                Privacidade
+                            </Link>
+                            <Link to="/termos" className="text-gray-300 hover:text-white transition-colors">
+                                Termos
+                            </Link>
+                            <a
+                                href="https://painel-admin.veridiasaber.com.br"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                            >
+                                Admin
+                                <ExternalLink size={10} />
+                            </a>
+                        </nav>
+
+                        {/* Copyright */}
+                        <div className="text-gray-400 text-[10px] sm:text-xs">
+                            2026 Veridia Saber
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </section>
     );
 }
+
 
 // ============ MAIN LANDING PAGE ============
 export default function LandingPage() {
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState('hero');
+
+    // Track active section on scroll
+    useEffect(() => {
+        const container = document.getElementById('scroll-container');
+
+        const handleScroll = () => {
+            const scrollPosition = container?.scrollTop || 0;
+            const windowHeight = window.innerHeight;
+
+            SECTIONS.forEach((section) => {
+                const element = document.getElementById(section.id);
+                if (element) {
+                    const { offsetTop } = element;
+                    if (scrollPosition >= offsetTop - windowHeight / 2 && scrollPosition < offsetTop + windowHeight / 2) {
+                        setActiveSection(section.id);
+                    }
+                }
+            });
+        };
+
+        container?.addEventListener('scroll', handleScroll);
+        return () => container?.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
-        <main className="min-h-screen">
-            <HeroSection onOpenDownloadModal={() => setIsDownloadModalOpen(true)} />
-            <FeaturesSection />
-            <AboutSection />
-            <Footer />
+        <>
+            <Header />
+            <DotsNavigation activeSection={activeSection} />
+
+            <main
+                id="scroll-container"
+                className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth"
+            >
+                <HeroSection onOpenDownloadModal={() => setIsDownloadModalOpen(true)} />
+                <FeaturesSection />
+                <AboutSection />
+                <AboutCreatorSection />
+            </main>
 
             <BetaDownloadModal
                 isOpen={isDownloadModalOpen}
                 onClose={() => setIsDownloadModalOpen(false)}
             />
-        </main>
+        </>
     );
 }

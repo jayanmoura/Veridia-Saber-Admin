@@ -3,14 +3,22 @@ import { AuthProvider } from './contexts/AuthContext';
 import { adminRouter, publicRouter } from './routes';
 
 function App() {
-  // Check if current domain is the main landing page domain
-  const isLandingPage = window.location.hostname === 'veridiasaber.com.br' ||
+  // Detect environment
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isLandingDomain = window.location.hostname === 'veridiasaber.com.br' ||
     window.location.hostname === 'www.veridiasaber.com.br';
 
-  if (isLandingPage) {
+  // Hybrid logic for Dev:
+  // - If on landing domain → show landing page
+  // - If on localhost AND pathname is '/home' → show landing page (for testing)
+  // - Otherwise → show admin panel
+  const showLandingPage = isLandingDomain || (isLocalhost && window.location.pathname === '/home');
+
+  if (showLandingPage) {
     return <RouterProvider router={publicRouter} />;
   }
 
+  // Admin mode (default for localhost)
   return (
     <AuthProvider>
       <RouterProvider router={adminRouter} />
