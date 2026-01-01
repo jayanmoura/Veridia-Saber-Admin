@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import logoIcon from '../assets/icon.png';
+import logoIcon from '../../assets/icon.png';
 import {
     ArrowLeft,
     MapPin,

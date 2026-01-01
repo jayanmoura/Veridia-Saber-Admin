@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { StatCard } from '../components/Dashboard/StatCard';
-import { FamilyModal } from '../components/Modals/FamilyModal';
-import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdfGenerator';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { StatCard } from '../../components/Dashboard/StatCard';
+import { FamilyModal } from '../../components/Modals/FamilyModal';
+import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../../utils/pdfGenerator';
 import {
     TreeDeciduous,
     ImageOff,

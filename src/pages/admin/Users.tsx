@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { StatCard } from '../components/Dashboard/StatCard';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { StatCard } from '../../components/Dashboard/StatCard';
 import {
     Users as UsersIcon,
     Briefcase,

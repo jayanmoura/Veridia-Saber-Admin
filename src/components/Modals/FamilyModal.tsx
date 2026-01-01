@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { X, Upload, Loader2 } from 'lucide-react';
 
@@ -236,7 +237,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
@@ -436,6 +437,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

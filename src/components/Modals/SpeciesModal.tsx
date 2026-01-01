@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { X, Upload, Loader2, Leaf, Image as ImageIcon, Trash2 } from 'lucide-react';
@@ -536,7 +537,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
@@ -914,6 +915,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

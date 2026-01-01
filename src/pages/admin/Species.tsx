@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { StatCard } from '../components/Dashboard/StatCard';
-import { SpeciesModal } from '../components/Modals/SpeciesModal';
-import { generateSpeciesReport, generateSingleSpeciesReport } from '../utils/pdfGenerator';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { StatCard } from '../../components/Dashboard/StatCard';
+import { SpeciesModal } from '../../components/Modals/SpeciesModal';
+import { generateSpeciesReport, generateSingleSpeciesReport } from '../../utils/pdfGenerator';
 import {
     Leaf,
     Image as ImageIcon,

@@ -1,12 +1,16 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import Login from '../pages/Login';
-import Overview from '../pages/Overview';
-import Users from '../pages/Users';
-import Families from '../pages/Families';
-import Species from '../pages/Species';
-import Projects from '../pages/Projects';
-import ProjectDetails from '../pages/ProjectDetails';
-import EducationalContent from '../pages/EducationalContent';
+import Login from '../pages/admin/Login';
+import Overview from '../pages/admin/Overview';
+import Users from '../pages/admin/Users';
+import Families from '../pages/admin/Families';
+import Species from '../pages/admin/Species';
+import Projects from '../pages/admin/Projects';
+import ProjectDetails from '../pages/admin/ProjectDetails';
+import EducationalContent from '../pages/admin/EducationalContent';
+import AuditLogs from '../pages/admin/AuditLogs';
+import LandingPage from '../pages/landingpage/LandingPage';
+import Privacy from '../pages/landingpage/Privacy';
+import Terms from '../pages/landingpage/Terms';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import React from 'react';
@@ -20,8 +24,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
     // Block 'Consulente' (read-only users)
     if (profile?.role === 'Consulente') {
-        // You might want a dedicated 403 page, but for now redirect or show simple deny
-        // Using a simple deny approach:
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
                 <h1 className="text-4xl font-bold text-gray-800">403</h1>
@@ -33,10 +35,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
     return <>{children}</>;
 }
-
-import AuditLogs from '../pages/AuditLogs';
-
-// ... (PrivateRoute remains same)
 
 function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
     const { profile, loading } = useAuth(); // Reuse hook
@@ -57,6 +55,18 @@ function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
 }
 
 export const router = createBrowserRouter([
+    {
+        path: '/landing',
+        element: <LandingPage />,
+    },
+    {
+        path: '/politica',
+        element: <Privacy />,
+    },
+    {
+        path: '/termos',
+        element: <Terms />,
+    },
     {
         path: '/login',
         element: <Login />,

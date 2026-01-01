@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, ImageIcon, FileText, Pencil, CheckCircle } from 'lucide-react';
 
 interface PendingItem {
@@ -18,7 +19,7 @@ interface PendingCuratorshipModalProps {
 export function PendingCuratorshipModal({ isOpen, onClose, items, onFix }: PendingCuratorshipModalProps) {
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Overlay */}
             <div
@@ -119,6 +120,7 @@ export function PendingCuratorshipModal({ isOpen, onClose, items, onFix }: Pendi
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { StatCard } from '../components/Dashboard/StatCard';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { StatCard } from '../../components/Dashboard/StatCard';
 import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { SpeciesModal } from '../components/Modals/SpeciesModal';
-import { FamilyModal } from '../components/Modals/FamilyModal';
-import { PendingCuratorshipModal } from '../components/Modals/PendingCuratorshipModal';
+import { SpeciesModal } from '../../components/Modals/SpeciesModal';
+import { FamilyModal } from '../../components/Modals/FamilyModal';
+import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
+import { BetaTestersModal } from '../../components/Modals/BetaTestersModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -49,6 +50,7 @@ export default function Overview() {
     const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+    const [isBetaTestersModalOpen, setIsBetaTestersModalOpen] = useState(false);
     const [editingWork, setEditingWork] = useState<any>(null);
 
     const handleNewSpecies = () => {
@@ -258,7 +260,16 @@ export default function Overview() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <StatCard title="Total de Famílias" value={stats.families} icon={TreeDeciduous} color="emerald" loading={loading} />
                     <StatCard title="Total de Espécies" value={stats.species} icon={Leaf} color="blue" loading={loading} />
-                    <StatCard title="Projetos Cadastrados" value={stats.projects} icon={MapPin} color="purple" loading={loading} />
+
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsBetaTestersModalOpen(true)}
+                            className="absolute -top-8 right-0 text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 hover:underline transition-all"
+                        >
+                            <Plus size={14} /> Adicionar Beta Tester
+                        </button>
+                        <StatCard title="Projetos Cadastrados" value={stats.projects} icon={MapPin} color="purple" loading={loading} />
+                    </div>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6">
@@ -349,7 +360,13 @@ export default function Overview() {
                         </div>
                     </div>
                 )}
-            </div>
+
+
+                <BetaTestersModal
+                    isOpen={isBetaTestersModalOpen}
+                    onClose={() => setIsBetaTestersModalOpen(false)}
+                />
+            </div >
         );
     }
 
