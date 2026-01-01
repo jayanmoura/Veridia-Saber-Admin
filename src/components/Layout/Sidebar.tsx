@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserRole } from '../../types/auth';
 import logoIcon from '../../assets/icon.png';
+import { InstallPWA } from '../InstallPWA';
 
 // Helper to determine active role permissions
 const hasAccess = (allowedRoles: string[], userRole?: UserRole) => {
@@ -83,8 +84,12 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Footer - Sign Out */}
-            <div className="p-4 border-t border-teal-800/50 bg-teal-950">
+            {/* Footer - PWA Install & Sign Out */}
+            <div className="p-4 border-t border-teal-800/50 bg-teal-950 space-y-2">
+                {/* PWA Install Button */}
+                <div className="flex justify-center">
+                    <InstallPWA />
+                </div>
                 <button
                     onClick={signOut}
                     className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-teal-900/50 rounded-lg transition-colors"

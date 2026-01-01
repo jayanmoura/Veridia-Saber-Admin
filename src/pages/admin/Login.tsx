@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Lock, Mail } from 'lucide-react';
+import { InstallPWA } from '../../components/InstallPWA';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -31,7 +32,11 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 relative">
+            {/* PWA Install Button - Top Right */}
+            <div className="absolute top-4 right-4">
+                <InstallPWA />
+            </div>
             <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">Veridia Saber</h1>
