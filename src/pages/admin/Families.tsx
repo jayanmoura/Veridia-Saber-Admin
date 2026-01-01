@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
@@ -528,7 +529,7 @@ export default function Families() {
             />
 
             {/* Delete Confirmation Modal */}
-            {isDeleteModalOpen && (
+            {isDeleteModalOpen && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     {/* Overlay */}
                     <div
@@ -576,11 +577,12 @@ export default function Families() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Block Delete Modal (FK Violation) */}
-            {showBlockModal && (
+            {showBlockModal && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <div
@@ -627,11 +629,12 @@ export default function Families() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Success Modal */}
-            {showSuccessModal && (
+            {showSuccessModal && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <div
@@ -674,7 +677,8 @@ export default function Families() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

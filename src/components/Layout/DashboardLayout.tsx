@@ -1,9 +1,15 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function DashboardLayout() {
     const { profile } = useAuth();
+
+    // Set page title for Admin Panel
+    useEffect(() => {
+        document.title = 'Veridia Saber | Painel Administrativo';
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 flex">

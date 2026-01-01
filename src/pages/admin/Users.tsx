@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
@@ -552,7 +553,7 @@ export default function Users() {
             </div>
 
             {/* Edit Role Modal */}
-            {isEditModalOpen && editingUser && (
+            {isEditModalOpen && editingUser && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     {/* Overlay */}
                     <div
@@ -684,11 +685,12 @@ export default function Users() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirmation Modal */}
-            {isDeleteModalOpen && userToDelete && (
+            {isDeleteModalOpen && userToDelete && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     {/* Overlay */}
                     <div
@@ -745,11 +747,12 @@ export default function Users() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Invite Member Modal (for Gestor) */}
-            {isInviteModalOpen && (
+            {isInviteModalOpen && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     {/* Overlay */}
                     <div
@@ -831,7 +834,8 @@ export default function Users() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Toast Notification */}

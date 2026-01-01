@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
     BookOpen,
@@ -6,7 +7,9 @@ import {
     Pencil,
     Trash2,
     Save,
-    X
+    X,
+    AlertTriangle,
+    Loader2
 } from 'lucide-react';
 
 interface ContentItem {
@@ -33,6 +36,11 @@ export default function EducationalContent() {
         titulo: '',
         conteudo: ''
     });
+
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<ContentItem | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     useEffect(() => {
         fetchContent();
@@ -96,8 +104,7 @@ export default function EducationalContent() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Tem certeza que deseja excluir este conteúdo?')) return;
-
+        setDeleteLoading(true);
         try {
             const { error } = await supabase
                 .from('conteudo_orgaos')
@@ -105,11 +112,25 @@ export default function EducationalContent() {
                 .eq('id', id);
 
             if (error) throw error;
+            setIsDeleteModalOpen(false);
+            setItemToDelete(null);
             fetchContent();
         } catch (err: any) {
             console.error('Error deleting:', err);
             alert('Erro ao excluir: ' + err.message);
+        } finally {
+            setDeleteLoading(false);
         }
+    };
+
+    const openDeleteModal = (item: ContentItem) => {
+        setItemToDelete(item);
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setItemToDelete(null);
     };
 
     const openNewModal = () => {
@@ -224,7 +245,7 @@ export default function EducationalContent() {
                                                     <Pencil size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(item.id)}
+                                                    onClick={() => openDeleteModal(item)}
                                                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Excluir"
                                                 >
@@ -241,8 +262,8 @@ export default function EducationalContent() {
             </div>
 
             {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            {isModalOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-bold text-gray-900">
@@ -318,7 +339,80 @@ export default function EducationalContent() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && itemToDelete && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={closeDeleteModal}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
+                        {/* Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="text-red-600" size={32} />
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                            Excluir Conteúdo?
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 text-center mb-4">
+                            Você tem certeza que deseja excluir o conteúdo{' '}
+                            <strong className="text-gray-900">"{itemToDelete.titulo}"</strong>?
+                        </p>
+
+                        {/* Warning */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="text-amber-500 flex-shrink-0 mt-0.5" size={18} />
+                                <div className="text-sm text-amber-800">
+                                    <strong className="font-semibold">Atenção:</strong> Este conteúdo é exibido na seção "Aprenda Mais" do aplicativo.
+                                    Ao excluí-lo, os usuários não terão mais acesso a esta informação educativa.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeDeleteModal}
+                                disabled={deleteLoading}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => handleDelete(itemToDelete.id)}
+                                disabled={deleteLoading}
+                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {deleteLoading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        Excluindo...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={18} />
+                                        Sim, Excluir
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );

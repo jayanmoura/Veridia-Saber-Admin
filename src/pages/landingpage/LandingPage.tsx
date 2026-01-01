@@ -727,6 +727,11 @@ export default function LandingPage() {
         return () => container?.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Set page title for Landing Page
+    useEffect(() => {
+        document.title = 'Veridia Saber';
+    }, []);
+
     return (
         <>
             <Header />

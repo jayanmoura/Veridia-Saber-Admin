@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -998,7 +999,7 @@ export default function ProjectDetailsPage() {
             />
 
             {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
+            {showDeleteModal && createPortal(
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     {/* Backdrop */}
                     <div
@@ -1045,11 +1046,12 @@ export default function ProjectDetailsPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Success Modal */}
-            {showSuccessModal && (
+            {showSuccessModal && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <div
@@ -1092,7 +1094,8 @@ export default function ProjectDetailsPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
