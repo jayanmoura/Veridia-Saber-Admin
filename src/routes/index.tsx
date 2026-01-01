@@ -54,9 +54,9 @@ function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
     );
 }
 
-export const router = createBrowserRouter([
+export const publicRouter = createBrowserRouter([
     {
-        path: '/landing',
+        path: '/',
         element: <LandingPage />,
     },
     {
@@ -67,6 +67,13 @@ export const router = createBrowserRouter([
         path: '/termos',
         element: <Terms />,
     },
+    {
+        path: '*',
+        element: <Navigate to="/" replace />
+    }
+]);
+
+export const adminRouter = createBrowserRouter([
     {
         path: '/login',
         element: <Login />,
@@ -117,5 +124,9 @@ export const router = createBrowserRouter([
             },
         ],
     },
+    {
+        path: '*',
+        element: <Navigate to="/" replace />
+    }
 ]);
 
