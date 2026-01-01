@@ -5,12 +5,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,      // Porta para quando você roda 'npm run dev'
-    host: true
+    port: 3000,
+    host: true,
+    // ADICIONE AQUI DENTRO DO SERVER 👇
+    allowedHosts: true
   },
   preview: {
-    port: 3000,      // <--- IMPORTANTE: Porta para produção (preview)
+    port: 3000,
     host: true,
-    allowedHosts: true // Libera acesso externo se necessário
+    allowedHosts: true
   }
 })

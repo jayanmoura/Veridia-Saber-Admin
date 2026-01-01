@@ -6,7 +6,9 @@ function App() {
   // Detect environment
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isLandingDomain = window.location.hostname === 'veridiasaber.com.br' ||
-    window.location.hostname === 'www.veridiasaber.com.br';
+    window.location.hostname === 'www.veridiasaber.com.br' ||
+    window.location.hostname === 'www.veridiasaber.com.br' ||
+    window.location.hostname.includes('ngrok-free.app');
 
   // Hybrid logic for Dev:
   // - If on landing domain → show landing page

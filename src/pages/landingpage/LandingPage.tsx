@@ -326,11 +326,11 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                 </div>
             </div>
 
-            {/* Scroll indicator */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-                <span className="text-white/50 text-sm">Role para baixo</span>
-                <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
-                    <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-pulse"></div>
+            {/* Scroll indicator - Hidden on very small screens to avoid overlap */}
+            <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce hidden sm:flex">
+                <span className="text-white/50 text-xs sm:text-sm">Role para baixo</span>
+                <div className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-white/30 rounded-full flex justify-center pt-1.5 sm:pt-2">
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white/50 rounded-full animate-pulse"></div>
                 </div>
             </div>
         </section>
@@ -555,24 +555,24 @@ function AboutSection() {
                         </p>
                     </div>
 
-                    {/* Right Column: Stats Cards */}
-                    <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-3">
+                    {/* Right Column: Stats Cards - Stack vertically on mobile for readability */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
                         {stats.map((stat, index) => (
                             <div
                                 key={index}
-                                className="bg-white/80 backdrop-blur-sm rounded-lg p-2 lg:p-4 shadow-md border border-gray-100/80 flex flex-col lg:flex-row items-center gap-1 lg:gap-3 text-center lg:text-left"
+                                className="bg-white/80 backdrop-blur-sm rounded-lg p-3 lg:p-4 shadow-md border border-gray-100/80 flex flex-row items-center gap-3 text-left"
                             >
                                 {/* Icon */}
-                                <div className={`w-8 h-8 lg:w-11 lg:h-11 rounded-lg ${stat.bgColor} flex items-center justify-center flex-shrink-0`}>
-                                    <stat.icon size={16} className={stat.color} />
+                                <div className={`w-10 h-10 lg:w-11 lg:h-11 rounded-lg ${stat.bgColor} flex items-center justify-center flex-shrink-0`}>
+                                    <stat.icon size={20} className={stat.color} />
                                 </div>
 
                                 {/* Value & Label */}
                                 <div>
-                                    <div className={`text-xs lg:text-lg font-bold ${stat.color}`}>
+                                    <div className={`text-sm lg:text-lg font-bold ${stat.color}`}>
                                         {stat.value}
                                     </div>
-                                    <div className="text-gray-500 text-[9px] lg:text-xs">
+                                    <div className="text-gray-500 text-xs lg:text-xs">
                                         {stat.label}
                                     </div>
                                 </div>
@@ -593,22 +593,22 @@ function AboutCreatorSection() {
             id="creator"
             className="min-h-screen w-full snap-start flex flex-col bg-stone-50 relative overflow-y-auto"
         >
-            {/* Decorative quote mark */}
-            <div className="absolute top-20 left-6 lg:left-20 text-[12rem] lg:text-[20rem] font-serif text-emerald-100/50 leading-none pointer-events-none select-none" style={{ fontFamily: 'Georgia, serif' }}>
+            {/* Decorative quote mark - smaller on mobile */}
+            <div className="absolute top-16 left-4 lg:left-20 text-[8rem] sm:text-[12rem] lg:text-[20rem] font-serif text-emerald-100/40 leading-none pointer-events-none select-none" style={{ fontFamily: 'Georgia, serif' }}>
                 "
             </div>
 
-            {/* Spacer for fixed navbar */}
-            <div className="h-16 flex-shrink-0"></div>
+            {/* Spacer for fixed navbar - smaller on mobile */}
+            <div className="h-14 sm:h-16 flex-shrink-0"></div>
 
-            {/* Main Content */}
-            <div className="flex-1 container mx-auto px-4 lg:px-8 py-8 relative z-10 flex flex-col justify-center">
+            {/* Main Content - reduced padding on mobile */}
+            <div className="flex-1 container mx-auto px-4 lg:px-8 py-4 sm:py-8 relative z-10 flex flex-col justify-center">
                 <div className="grid lg:grid-cols-5 gap-6 lg:gap-12 items-center max-w-6xl mx-auto">
 
-                    {/* Left Column: Photo (40%) */}
+                    {/* Left Column: Photo (40%) - smaller on mobile */}
                     <div className="lg:col-span-2 flex flex-col items-center">
                         {/* Photo with modern rounded corners */}
-                        <div className="w-32 h-40 sm:w-40 sm:h-52 lg:w-56 lg:h-72 rounded-2xl lg:rounded-tl-[3rem] lg:rounded-br-[3rem] shadow-xl shadow-gray-300/50 overflow-hidden mb-3">
+                        <div className="w-24 h-32 sm:w-40 sm:h-52 lg:w-56 lg:h-72 rounded-xl sm:rounded-2xl lg:rounded-tl-[3rem] lg:rounded-br-[3rem] shadow-lg shadow-gray-300/50 overflow-hidden mb-2 sm:mb-3">
                             <img
                                 src="/jayan-moura.jpeg"
                                 alt="Jayan de Moura"
@@ -617,7 +617,7 @@ function AboutCreatorSection() {
                         </div>
 
                         {/* Caption */}
-                        <p className="text-gray-500 text-xs lg:text-sm font-medium">
+                        <p className="text-gray-500 text-[10px] sm:text-xs lg:text-sm font-medium">
                             Jayan de Moura - <span className="text-emerald-600">Fundador</span>
                         </p>
                     </div>
@@ -625,19 +625,19 @@ function AboutCreatorSection() {
                     {/* Right Column: Text (60%) */}
                     <div className="lg:col-span-3 text-left">
                         {/* Small Label */}
-                        <p className="text-emerald-600 text-xs font-semibold tracking-widest uppercase mb-2">
+                        <p className="text-emerald-600 text-[10px] sm:text-xs font-semibold tracking-widest uppercase mb-1 sm:mb-2">
                             Sobre o Criador
                         </p>
 
-                        {/* Title */}
-                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+                        {/* Title - smaller on mobile */}
+                        <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4 lg:mb-6" style={{ fontFamily: 'Georgia, serif' }}>
                             De Entusiasta para <span className="text-emerald-700">Cientista</span>
                         </h2>
 
-                        {/* Paragraphs with highlights */}
-                        <div className="space-y-3 lg:space-y-4 text-xs sm:text-sm lg:text-base text-gray-700 leading-relaxed">
+                        {/* Paragraphs with highlights - compact on mobile */}
+                        <div className="space-y-2 sm:space-y-3 lg:space-y-4 text-[11px] sm:text-sm lg:text-base text-gray-700 leading-relaxed">
                             <p>
-                                Minha conexão com a botânica começou cedo, ainda na adolescência. Mas algo sempre me incomodava: a dificuldade de acesso à informação. Os sites eram antigos e nada práticos para quem estava em campo. Eu sentia falta de algo moderno, que unisse o rigor científico à portabilidade.
+                                Minha conexão com a botânica começou cedo, ainda na adolescência. A dificuldade de acesso à informação sempre me incomodou - sites antigos e nada práticos para quem estava em campo.
                             </p>
 
                             <p>
@@ -648,7 +648,7 @@ function AboutCreatorSection() {
                             <p>
                                 Seja catalogando espécies, usando{' '}
                                 <span className="font-bold text-emerald-700">Chat Bot</span>{' '}
-                                para identificação ou baixando mapas de áreas remotas para segurança em reservas sem sinal, o objetivo é um só: criar a ponte que liga a curiosidade do entusiasta a precisão do{' '}
+                                para identificação ou baixando mapas de áreas remotas, o objetivo é criar a ponte que liga a curiosidade do entusiasta à precisão do{' '}
                                 <span className="font-bold text-emerald-700">Cientista</span>.
                             </p>
                         </div>
