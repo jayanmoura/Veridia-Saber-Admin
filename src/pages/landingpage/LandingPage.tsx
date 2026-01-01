@@ -256,7 +256,7 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
     return (
         <section
             id="hero"
-            className="h-screen w-full snap-start flex items-center relative overflow-hidden bg-gradient-to-br from-[#1a472a] via-[#234d32] to-[#1a3a24]"
+            className="min-h-screen w-full snap-start flex items-center relative overflow-hidden bg-gradient-to-br from-[#1a472a] via-[#234d32] to-[#1a3a24]"
         >
             {/* Background decorative elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -265,11 +265,11 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-purple-500/5 to-emerald-500/5 rounded-full blur-3xl"></div>
             </div>
 
-            <div className="container mx-auto px-6 pt-20 relative z-10">
-                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-6 pt-16 sm:pt-20 pb-20 relative z-10">
+                <div className="grid lg:grid-cols-2 gap-6 md:gap-10 lg:gap-12 items-center">
                     {/* Left: Content */}
-                    <div className="text-white space-y-6 lg:space-y-8 text-center lg:text-left animate-fade-in">
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                    <div className="text-white space-y-4 md:space-y-6 lg:space-y-8 text-center lg:text-left animate-fade-in">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
                             <span className="text-white">Veridia Saber:</span>
                             <br />
                             <span className="bg-gradient-to-r from-emerald-300 to-purple-300 bg-clip-text text-transparent">
@@ -277,7 +277,7 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                             </span>
                         </h1>
 
-                        <p className="text-base md:text-lg lg:text-xl text-emerald-100/80 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-emerald-100/80 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                             Identifique espécies, organize coleções e gerencie projetos de campo.{' '}
                             <span className="font-semibold text-white">Disponível offline quando você precisar.</span>
                         </p>
@@ -289,7 +289,7 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                                 className="group flex items-center justify-center gap-3 px-6 py-3 md:px-8 md:py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-xl shadow-emerald-900/30 transition-all duration-300 hover:scale-105"
                             >
                                 <svg viewBox="0 0 24 24" className="w-5 h-5 md:w-6 md:h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M17.523 0c.987.02 1.967.172 2.911.492a9.038 9.038 0 0 1 2.556 1.403l-6.986 8.11 6.986 8.106a9.049 9.049 0 0 1-2.556 1.407 9.13 9.13 0 0 1-2.911.492c-.18 0-.361-.01-.541-.02l-5.975-9.985L17.02.02c.18-.01.361-.02.541-.02zm-5.975 10.005L5.558.02C5.378.01 5.197 0 5.017 0a9.13 9.13 0 0 0-2.911.492A9.038 9.038 0 0 0 .55 1.895l6.986 8.11L.55 18.111a9.049 9.049 0 0 0 2.556 1.407 9.13 9.13 0 0 0 2.911.492c.18 0 .361-.01.541-.02l5.99-9.985z" />
+                                    <path d="M17.6 11.4c0-.6-.5-1-1-1s-1 .5-1 1 .5 1 1 1 1-.4 1-1m-10 0c0-.6-.5-1-1-1s-1 .5-1 1 .5 1 1 1 1-.4 1-1m10.1-3.3l1.7-3c.2-.3.1-.7-.2-.8-.3-.2-.7-.1-.8.2l-1.8 3.1c-1.5-.7-3.2-1.1-5-1.1s-3.5.4-5 1.1L4.8 4.5c-.2-.3-.5-.3-.8-.2-.3.2-.4.5-.2.8l1.7 3C2.5 10 .5 13.3.5 17h22.5c0-3.7-2-7-5.3-8.9M6 14.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5m12 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5" />
                                 </svg>
                                 <span>Baixar para Android</span>
                                 <Download size={16} className="opacity-70 group-hover:opacity-100" />
@@ -307,12 +307,12 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                         </div>
                     </div>
 
-                    {/* Right: Phone Mockup - Centered between text and side dots */}
-                    <div className="hidden sm:flex justify-center animate-float mt-8 lg:mt-0">
+                    {/* Right: Phone Mockup - Scaled down for tablets */}
+                    <div className="hidden sm:flex justify-center animate-float mt-4 md:mt-6 lg:mt-0">
                         <div className="relative">
-                            <div className="relative w-[160px] sm:w-[180px] md:w-[200px] lg:w-[240px] max-h-[60vh] aspect-[9/19] bg-gray-900 rounded-[2rem] md:rounded-[3rem] p-2 md:p-3 shadow-2xl shadow-black/50 border-4 border-gray-800">
-                                <div className="w-full h-full rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative">
-                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 md:w-32 h-5 md:h-6 bg-black rounded-b-2xl md:rounded-b-3xl z-10"></div>
+                            <div className="relative w-[140px] sm:w-[150px] md:w-[170px] lg:w-[220px] xl:w-[240px] max-h-[55vh] md:max-h-[50vh] lg:max-h-[60vh] aspect-[9/19] bg-gray-900 rounded-[1.5rem] md:rounded-[2rem] lg:rounded-[3rem] p-1.5 md:p-2 lg:p-3 shadow-2xl shadow-black/50 border-[3px] md:border-4 border-gray-800">
+                                <div className="w-full h-full rounded-[1rem] md:rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden relative">
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 sm:w-20 md:w-24 lg:w-32 h-4 md:h-5 lg:h-6 bg-black rounded-b-xl md:rounded-b-2xl lg:rounded-b-3xl z-10"></div>
                                     <img
                                         src="/Tela Inicial.png"
                                         alt="Tela inicial do Veridia Saber"
