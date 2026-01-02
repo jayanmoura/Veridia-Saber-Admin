@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModal } from '../../components/Modals/SpeciesModal';
 import { generateSpeciesReport, generateSingleSpeciesReport } from '../../utils/pdfGenerator';
+import { getRoleLevel, hasMinLevel } from '../../types/auth';
 import {
     Leaf,
     Image as ImageIcon,
@@ -161,8 +162,9 @@ export default function SpeciesPage() {
     const [exportLoading, setExportLoading] = useState(false);
     const [singleReportLoading, setSingleReportLoading] = useState<string | null>(null);
 
-    // Check user role
-    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
+    // TAREFA 2: Check user role using levels
+    const myLevel = getRoleLevel(profile?.role);
+    const isGlobalAdmin = myLevel <= 3; // Níveis 1, 2, 3 são globais
 
     // Handle species export based on user role
     const handleExportSpecies = async () => {
@@ -300,16 +302,12 @@ export default function SpeciesPage() {
         }
     };
 
-    // Access control: Curadores, Coordenadores, Gestores e Taxonomistas
-    const hasAccess = profile?.role === 'Curador Mestre' ||
-        profile?.role === 'Coordenador Científico' ||
-        profile?.role === 'Gestor de Acervo' ||
-        profile?.role?.includes('Taxonomista');
+    // TAREFA 2: Access control using levels
+    // Níveis 1-5 têm acesso (Consulente nível 6 não tem)
+    const hasAccess = hasMinLevel(profile?.role, 5);
 
-    // Report Access: Only Curador, Coordenador, Gestor
-    const canGenerateReports = profile?.role === 'Curador Mestre' ||
-        profile?.role === 'Coordenador Científico' ||
-        profile?.role === 'Gestor de Acervo';
+    // Report Access: Only levels 1, 2, 4 (Curador, Coordenador, Gestor)
+    const canGenerateReports = myLevel === 1 || myLevel === 2 || myLevel === 4;
     // Assuming catalogers might access this too, but complying with request context "Admin Panel". Only explicit "Access Denied" if strict.
     // The prompt implies strict "Curador Mestre" logic from Families wasn't explicitly repeated but "Atue como Senior... Crie a página".
     // I'll stick to Global/Local admin logic or similar. Let's replicate Families check for now to be safe, or allow all admins.

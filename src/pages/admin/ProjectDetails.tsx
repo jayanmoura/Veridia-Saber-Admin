@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { ROLES_CONFIG, type UserRole } from '../../types/auth';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logoIcon from '../../assets/icon.png';
@@ -180,14 +181,14 @@ const isInstituicao = (tipo: string | null): boolean => {
     return normalized === 'instituicao' || normalized === 'intituicao';
 };
 
-const getRoleBadgeColor = (role: string | null): string => {
-    switch (role) {
-        case 'Curador Mestre': return 'bg-purple-100 text-purple-700';
-        case 'Coordenador Científico': return 'bg-blue-100 text-blue-700';
-        case 'Gestor de Acervo': return 'bg-emerald-100 text-emerald-700';
-        case 'Taxonomista': return 'bg-amber-100 text-amber-700';
-        default: return 'bg-gray-100 text-gray-700';
-    }
+// TAREFA 4: Badge styling using ROLES_CONFIG
+const getRoleBadgeStyle = (role: string | null): React.CSSProperties => {
+    if (!role) return { backgroundColor: '#F5F5F5', color: '#616161' };
+    const config = ROLES_CONFIG[role as UserRole];
+    return {
+        backgroundColor: config?.bgColor ?? '#F5F5F5',
+        color: config?.color ?? '#616161',
+    };
 };
 
 // ============ COMPONENT ============
@@ -860,7 +861,10 @@ export default function ProjectDetailsPage() {
                                                                 {user.email}
                                                             </p>
                                                         </div>
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getRoleBadgeColor(user.role)}`}>
+                                                        <span
+                                                            className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                                                            style={getRoleBadgeStyle(user.role)}
+                                                        >
                                                             <Shield size={12} />
                                                             {user.role || 'Sem cargo'}
                                                         </span>

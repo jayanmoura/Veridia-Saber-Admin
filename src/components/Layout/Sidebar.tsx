@@ -1,55 +1,51 @@
 import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import type { UserRole } from '../../types/auth';
+import { hasMinLevel } from '../../types/auth';
 import logoIcon from '../../assets/icon.png';
 import { InstallPWA } from '../InstallPWA';
 
-// Helper to determine active role permissions
-const hasAccess = (allowedRoles: string[], userRole?: UserRole) => {
-    if (!userRole) return false;
-    // Direct string match now that strict types are used
-    return allowedRoles.includes(userRole);
-};
+// TAREFA 2: Restrição de Páginas por Nível
+// Níveis: 1=Curador, 2=Coordenador, 3=TaxSênior, 4=Gestor, 5=TaxCampo, 6=Consulente
+const MENU_ITEMS = [
+    {
+        label: 'Visão Geral',
+        path: '/',
+        icon: LayoutDashboard,
+        minLevel: 5, // Curador(1), Coord(2), TaxSênior(3), Gestor(4), TaxCampo(5)
+    },
+    {
+        label: 'Famílias',
+        path: '/families',
+        icon: TreeDeciduous,
+        minLevel: 3, // Curador(1), Coord(2), TaxSênior(3)
+    },
+    {
+        label: 'Espécies',
+        path: '/species',
+        icon: Leaf,
+        minLevel: 5, // Curador(1), Coord(2), TaxSênior(3), Gestor(4), TaxCampo(5)
+    },
+    {
+        label: 'Projetos',
+        path: '/projects',
+        icon: MapPin,
+        minLevel: 2, // Curador(1), Coord(2)
+    },
+    {
+        label: 'Usuários',
+        path: '/users',
+        icon: Users,
+        minLevel: 4, // Curador(1), Coord(2), Gestor(4)
+    },
+];
 
 export function Sidebar() {
     const { signOut, profile } = useAuth();
 
-    const MENU_ITEMS = [
-        {
-            label: 'Visão Geral',
-            path: '/',
-            icon: LayoutDashboard,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico', 'Gestor de Acervo', 'Taxonomista Sênior', 'Taxonomista de Campo']
-        },
-        {
-            label: 'Famílias',
-            path: '/families',
-            icon: TreeDeciduous,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior']
-        },
-        {
-            label: 'Espécies',
-            path: '/species',
-            icon: Leaf,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico', 'Gestor de Acervo', 'Taxonomista Sênior', 'Taxonomista de Campo']
-        },
-        {
-            label: 'Projetos',
-            path: '/projects',
-            icon: MapPin,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico']
-        },
-        {
-            label: 'Usuários',
-            path: '/users',
-            icon: Users,
-            allowedRoles: ['Curador Mestre', 'Coordenador Científico', 'Gestor de Acervo']
-        },
-    ];
-
+    // Filtrar itens por nível mínimo usando a nova lógica
     const filteredItems = MENU_ITEMS.filter(item =>
-        hasAccess(item.allowedRoles, profile?.role)
+        hasMinLevel(profile?.role, item.minLevel)
     );
 
     return (

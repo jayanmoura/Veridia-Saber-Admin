@@ -4,6 +4,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import {
+    canManage,
+    getRoleLevel,
+    hasMinLevel,
+    ROLES_CONFIG,
+    ROLES_LIST,
+    type UserRole,
+} from '../../types/auth';
+import {
     Users as UsersIcon,
     Briefcase,
     UserCheck,
@@ -16,17 +24,18 @@ import {
     Loader2,
     Plus,
     Mail,
-    CheckCircle
+    CheckCircle,
+    Lock
 } from 'lucide-react';
 
 interface Profile {
     id: string;
     full_name: string;
     email: string;
-    role: string | null;
+    role: UserRole | null;
     avatar_url: string | null;
     local_id: string | null;
-    locais?: { nome: string }; // Relation
+    locais?: { nome: string };
 }
 
 interface Project {
@@ -40,16 +49,14 @@ interface UserStats {
     taxonomists: number;
 }
 
-// Role hierarchy constants
-const ALL_ROLES = [
-    { value: 'Curador Mestre', label: 'Curador Mestre' },
-    { value: 'Coordenador Científico', label: 'Coordenador Científico' },
-    { value: 'Gestor de Acervo', label: 'Gestor de Acervo' },
-    { value: 'Taxonomista Sênior', label: 'Taxonomista Sênior' },
-    { value: 'Taxonomista de Campo', label: 'Taxonomista de Campo' },
-    { value: 'Consulente', label: 'Consulente' },
-];
+// Lista de cargos GLOBAIS (não precisam de local_id)
+const GLOBAL_ROLES: UserRole[] = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
 
+// Helper para verificar se um cargo é global
+const isGlobalRole = (role: UserRole | ''): boolean => {
+    if (!role) return false;
+    return GLOBAL_ROLES.includes(role as UserRole);
+};
 
 export default function Users() {
     const { profile } = useAuth();
@@ -66,7 +73,7 @@ export default function Users() {
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<Profile | null>(null);
-    const [editRole, setEditRole] = useState('');
+    const [editRole, setEditRole] = useState<UserRole | ''>('');
     const [editProjectId, setEditProjectId] = useState<string | null>(null);
     const [editLoading, setEditLoading] = useState(false);
 
@@ -89,60 +96,42 @@ export default function Users() {
         setTimeout(() => setToast(null), 4000);
     };
 
-    // Permission checks based on logged-in user's role
+    // ============================================
+    // TAREFA 2 & 3: RBAC BASEADO EM NÍVEIS
+    // ============================================
     const myRole = profile?.role;
     const myLocalId = profile?.local_id;
-    const isCuradorMestre = myRole === 'Curador Mestre';
-    const isCoordenadorCientifico = myRole === 'Coordenador Científico';
-    const isGestorAcervo = myRole === 'Gestor de Acervo';
+    const myLevel = getRoleLevel(myRole);
 
-    // Access control: Only Curador, Coordenador, Gestor can access this page
-    const hasAccess = isCuradorMestre || isCoordenadorCientifico || isGestorAcervo;
+    // Acesso à página: níveis 1, 2, 4 (Curador, Coordenador, Gestor)
+    // Taxonomista Sênior (3) e Taxonomista de Campo (5) NÃO têm acesso
+    const hasAccess = hasMinLevel(myRole, 4) && myLevel !== 3 && myLevel !== 5;
 
-    // Check if a role is disabled based on hierarchy
-    const isRoleDisabled = (roleValue: string): boolean => {
-        // Curador Mestre can select any role
-        if (isCuradorMestre) return false;
-
-        // Coordenador cannot select Curador or Coordenador
-        if (isCoordenadorCientifico) {
-            return roleValue === 'Curador Mestre' || roleValue === 'Coordenador Científico';
-        }
-
-        // Gestor cannot select Curador, Coordenador, Gestor, or Taxonomista Sênior
-        if (isGestorAcervo) {
-            return roleValue === 'Curador Mestre' ||
-                roleValue === 'Coordenador Científico' ||
-                roleValue === 'Gestor de Acervo' ||
-                roleValue === 'Taxonomista Sênior';
-        }
-
-        return true; // Default: disable all
+    // TAREFA 3: Verifica se pode gerenciar um usuário alvo
+    // Regra: Nível Logado < Nível Alvo (e não é si mesmo)
+    const canManageUser = (targetUser: Profile): boolean => {
+        if (targetUser.id === profile?.id) return false; // Não pode gerenciar a si mesmo
+        return canManage(myRole, targetUser.role);
     };
 
-    // Can the logged-in user edit/demote a specific user based on hierarchy?
-    const canDeleteUser = (targetUser: Profile): boolean => {
-        const targetRole = targetUser.role;
-
-        // Curador Mestre can demote anyone (except themselves)
-        if (isCuradorMestre) {
-            return targetUser.id !== profile?.id;
-        }
-
-        // Coordenador can demote Gestor and Taxonomista (not Curador or other Coordenadores)
-        if (isCoordenadorCientifico) {
-            return targetRole === 'Gestor de Acervo' || (targetRole?.includes('Taxonomista') ?? false) || targetRole === 'Consulente';
-        }
-
-        // Gestor can demote Taxonomista and Consulente, but NOT other Gestores
-        if (isGestorAcervo) {
-            // Cannot edit/demote other Gestores (peers)
-            if (targetRole === 'Gestor de Acervo') return false;
-            return (targetRole?.includes('Taxonomista') ?? false) || targetRole === 'Consulente';
-        }
-
-        return false;
+    // TAREFA 3: Verifica se um cargo pode ser selecionado
+    // Regra: Só pode selecionar cargos com nível MAIOR que o seu
+    const isRoleDisabled = (roleValue: UserRole): boolean => {
+        const targetLevel = getRoleLevel(roleValue);
+        // Só pode atribuir cargos de nível MAIOR (número maior = menos poder)
+        return targetLevel <= myLevel;
     };
+
+    // TAREFA 4: Cores de badge baseadas em ROLES_CONFIG
+    const getRoleBadgeStyle = (role: UserRole | null) => {
+        if (!role) return { backgroundColor: '#F5F5F5', color: '#616161' };
+        const config = ROLES_CONFIG[role];
+        return {
+            backgroundColor: config?.bgColor ?? '#F5F5F5',
+            color: config?.color ?? '#616161',
+        };
+    };
+
     useEffect(() => {
         if (hasAccess) {
             fetchProfiles();
@@ -158,8 +147,8 @@ export default function Users() {
                 .select('*, locais(nome)')
                 .order('full_name');
 
-            // Gestor de Acervo only sees users from their local
-            if (isGestorAcervo && myLocalId) {
+            // TAREFA 2: Gestor (nível 4) só vê usuários do seu local_id
+            if (myLevel === 4 && myLocalId) {
                 query = query.eq('local_id', myLocalId);
             }
 
@@ -193,13 +182,8 @@ export default function Users() {
 
     const calculateStats = (data: Profile[]) => {
         const total = data.length;
-
-        // Exact match for "Gestor de Acervo" (assuming exact string from prompt context, usually "Gestor")
-        const managers = data.filter(u => u.role === 'Gestor de Acervo' || u.role?.includes('Gestor')).length;
-
-        // Contains "Taxonomista"
+        const managers = data.filter(u => u.role === 'Gestor de Acervo').length;
         const taxonomists = data.filter(u => u.role?.includes('Taxonomista')).length;
-
         setStats({ total, managers, taxonomists });
     };
 
@@ -211,22 +195,12 @@ export default function Users() {
         if (!matchesSearch) return false;
 
         if (roleFilter === 'all') return true;
-        if (roleFilter === 'managers') return user.role === 'Gestor de Acervo' || user.role?.includes('Gestor');
+        if (roleFilter === 'managers') return user.role === 'Gestor de Acervo';
         if (roleFilter === 'taxonomists') return user.role?.includes('Taxonomista');
         if (roleFilter === 'consultants') return user.role === 'Consulente';
 
         return true;
     });
-
-    const getRoleBadgeColor = (role: string | null) => {
-        if (!role) return 'bg-gray-100 text-gray-800';
-        if (role.toLowerCase().includes('admin') || role === 'Curador Mestre') return 'bg-purple-100 text-purple-800'; // Curadores
-        if (role === 'Coordenador Científico') return 'bg-violet-100 text-violet-800'; // Coordenadores
-        if (role.includes('Gestor')) return 'bg-blue-100 text-blue-800'; // Gestores
-        if (role.includes('Taxonomista')) return 'bg-emerald-100 text-emerald-800'; // Taxonomistas
-        if (role === 'Consulente') return 'bg-orange-100 text-orange-800'; // Consulentes
-        return 'bg-gray-100 text-gray-800';
-    };
 
     // --- Edit Modal Functions ---
     const openEditModal = (user: Profile) => {
@@ -243,41 +217,25 @@ export default function Users() {
         setEditProjectId(null);
     };
 
+    // TAREFA 3: Verifica se o modal está em modo somente leitura
+    const isReadOnly = editingUser ? !canManageUser(editingUser) : false;
+
     const handleEditSave = async () => {
-        if (!editingUser) return;
+        if (!editingUser || !editRole || isReadOnly) return;
 
-        // Validation Rules:
-        // 1. Coordenador Científico (User Role) -> ALWAYS assign a local.
-        // 2. Taxonomista de Campo (Target Role) -> ALWAYS assign a local (Mandatory).
-        const isFieldTaxonomist = editRole === 'Taxonomista de Campo';
-
-        if ((isCoordenadorCientifico || isFieldTaxonomist) && !editProjectId) {
-            alert('É obrigatório selecionar um local/projeto para este cargo/perfil.');
+        // Validação: Taxonomista de Campo precisa de local
+        if (editRole === 'Taxonomista de Campo' && !editProjectId) {
+            showToast('É obrigatório selecionar um local/projeto para Taxonomista de Campo.', 'error');
             return;
         }
 
         setEditLoading(true);
         try {
-            const updateData: { role: string; local_id?: string | null } = { role: editRole };
-
-            // Logic for local_id assignment
-            if (isCuradorMestre) {
-                // Global roles or Taxonomista Sênior (GLOBAL) -> local_id = null
-                // Field Taxonomist -> ALWAYS local_id
-                if (editRole === 'Taxonomista de Campo') {
-                    updateData.local_id = editProjectId;
-                } else if (editRole === 'Curador Mestre' || editRole === 'Coordenador Científico' || editRole === 'Taxonomista Sênior') {
-                    // Global roles
-                    updateData.local_id = editProjectId || null; // Allow setting if they want, but usually null
-                    if (!editProjectId) updateData.local_id = null;
-                } else {
-                    // Gestor, Consulente, etc -> Use what is selected
-                    updateData.local_id = editProjectId || null;
-                }
-            } else {
-                // Coordenador and Gestor always assign the selected local based on their scope/selection
-                updateData.local_id = editProjectId;
-            }
+            const updateData: { role: UserRole; local_id: string | null } = {
+                role: editRole,
+                // TAREFA 3: Cargos globais SEMPRE têm local_id = null
+                local_id: isGlobalRole(editRole) ? null : (editProjectId || null)
+            };
 
             const { error } = await supabase
                 .from('profiles')
@@ -287,7 +245,7 @@ export default function Users() {
             if (error) throw error;
 
             closeEditModal();
-            fetchProfiles(); // Refresh list
+            fetchProfiles();
             showToast('Cargo atualizado com sucesso!');
         } catch (error: any) {
             console.error('Edit error:', error);
@@ -315,7 +273,7 @@ export default function Users() {
         closeDeleteModal();
 
         try {
-            // Instead of deleting, demote user to Consulente
+            // Rebaixa para Consulente ao invés de deletar
             const { error } = await supabase
                 .from('profiles')
                 .update({ role: 'Consulente', local_id: null })
@@ -323,10 +281,9 @@ export default function Users() {
 
             if (error) throw error;
 
-            // Update local state
             setProfiles(prev => prev.map(p =>
                 p.id === userToDelete.id
-                    ? { ...p, role: 'Consulente', local_id: null, locais: undefined }
+                    ? { ...p, role: 'Consulente' as UserRole, local_id: null, locais: undefined }
                     : p
             ));
             showToast('Usuário rebaixado para Consulente com sucesso!');
@@ -338,7 +295,7 @@ export default function Users() {
         }
     };
 
-    // Access denied for taxonomista/consulente
+    // Acesso negado
     if (!hasAccess) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8">
@@ -362,16 +319,16 @@ export default function Users() {
                     <p className="text-gray-500">Controle de acesso e equipe.</p>
                 </div>
 
-                {/* Stats Cards - Gestor only sees 2 cards, others see 3 */}
-                <div className={`grid grid-cols-1 gap-6 ${isGestorAcervo ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                {/* Stats Cards */}
+                <div className={`grid grid-cols-1 gap-6 ${myLevel === 4 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     <StatCard
-                        title={isGestorAcervo ? 'Membros do Projeto' : 'Total de Membros'}
+                        title={myLevel === 4 ? 'Membros do Projeto' : 'Total de Membros'}
                         value={stats.total}
                         icon={UsersIcon}
                         color="blue"
                         loading={loading}
                     />
-                    {!isGestorAcervo && (
+                    {myLevel !== 4 && (
                         <StatCard
                             title="Gestores de Acervo"
                             value={stats.managers}
@@ -391,9 +348,9 @@ export default function Users() {
 
                 {/* Toolbar */}
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    {/* Quick Filters - Gestor has fewer tabs */}
+                    {/* Quick Filters */}
                     <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                        {(isGestorAcervo ? [
+                        {(myLevel === 4 ? [
                             { id: 'all', label: 'Todos' },
                             { id: 'taxonomists', label: 'Taxonomistas' }
                         ] : [
@@ -417,7 +374,6 @@ export default function Users() {
 
                     {/* Right side: Search + Add button for Gestor */}
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        {/* Search */}
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
@@ -429,8 +385,8 @@ export default function Users() {
                             />
                         </div>
 
-                        {/* Add member button - visible to Gestor */}
-                        {isGestorAcervo && (
+                        {/* Add member button - visible to Gestor (level 4) */}
+                        {myLevel === 4 && (
                             <button
                                 onClick={() => setIsInviteModalOpen(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap"
@@ -485,17 +441,21 @@ export default function Users() {
                                                 {user.email}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${getRoleBadgeColor(user.role)}`}>
+                                                {/* TAREFA 4: Badge com cores do ROLES_CONFIG */}
+                                                <span
+                                                    className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent"
+                                                    style={getRoleBadgeStyle(user.role)}
+                                                >
                                                     {user.role || 'Sem Cargo'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 text-sm">
-                                                {/* Logic: Global Chiefs -> Veridia Saber. Managers -> Project/Warning. Others -> - */}
-                                                {(user.role === 'Curador Mestre' || user.role === 'Coordenador Científico') ? (
+                                                {/* Global roles show "Veridia Saber", others show project */}
+                                                {getRoleLevel(user.role) <= 3 ? (
                                                     <span className="font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded text-xs border border-gray-200">
                                                         Veridia Saber
                                                     </span>
-                                                ) : user.role === 'Gestor de Acervo' ? (
+                                                ) : user.role === 'Gestor de Acervo' || user.role === 'Taxonomista de Campo' ? (
                                                     user.locais?.nome ? (
                                                         <div className="flex items-center gap-1.5 text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded w-fit">
                                                             <Briefcase size={14} />
@@ -513,27 +473,29 @@ export default function Users() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    {/* Edit button - respects hierarchy */}
-                                                    {canDeleteUser(user) && (
-                                                        <button
-                                                            onClick={() => openEditModal(user)}
-                                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                                            title="Editar Cargo"
-                                                        >
-                                                            <Pencil size={18} />
-                                                        </button>
-                                                    )}
-
-                                                    {/* Demote button - respects hierarchy */}
-                                                    {canDeleteUser(user) && (
-                                                        <button
-                                                            onClick={() => openDeleteModal(user)}
-                                                            disabled={deleteLoading}
-                                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                                            title="Rebaixar para Consulente"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
+                                                    {/* TAREFA 2 & 3: Só mostra botões se canManageUser */}
+                                                    {canManageUser(user) ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openEditModal(user)}
+                                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                                title="Editar Cargo"
+                                                            >
+                                                                <Pencil size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openDeleteModal(user)}
+                                                                disabled={deleteLoading}
+                                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                                title="Rebaixar para Consulente"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <span className="p-2 text-gray-300" title="Sem permissão">
+                                                            <Lock size={16} />
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
@@ -555,15 +517,12 @@ export default function Users() {
             {/* Edit Role Modal */}
             {isEditModalOpen && editingUser && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
-                    {/* Overlay */}
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={closeEditModal}
                     />
 
-                    {/* Modal */}
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
-                        {/* Close button */}
                         <button
                             onClick={closeEditModal}
                             className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
@@ -585,10 +544,20 @@ export default function Users() {
                                 </div>
                             )}
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Editar Cargo</h3>
+                                <h3 className="text-lg font-bold text-gray-900">
+                                    {isReadOnly ? 'Visualizar Cargo' : 'Editar Cargo'}
+                                </h3>
                                 <p className="text-sm text-gray-500">{editingUser.full_name}</p>
                             </div>
                         </div>
+
+                        {/* TAREFA 3: Aviso de somente leitura */}
+                        {isReadOnly && (
+                            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700 text-sm">
+                                <Lock size={16} />
+                                <span>Você não tem permissão para editar este usuário.</span>
+                            </div>
+                        )}
 
                         {/* Form */}
                         <div className="space-y-4">
@@ -599,11 +568,12 @@ export default function Users() {
                                 </label>
                                 <select
                                     value={editRole}
-                                    onChange={(e) => setEditRole(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                    onChange={(e) => setEditRole(e.target.value as UserRole)}
+                                    disabled={isReadOnly}
+                                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <option value="">Selecione um cargo</option>
-                                    {ALL_ROLES.map((role) => {
+                                    {ROLES_LIST.map((role) => {
                                         const disabled = isRoleDisabled(role.value);
                                         return (
                                             <option
@@ -612,49 +582,44 @@ export default function Users() {
                                                 disabled={disabled}
                                                 className={disabled ? 'text-gray-400' : ''}
                                             >
-                                                {role.label}{disabled ? ' 🔒' : ''}
+                                                {role.label} (Nível {role.level}){disabled ? ' 🔒' : ''}
                                             </option>
                                         );
                                     })}
                                 </select>
                             </div>
 
-                            {/* Project/Local Select - Rules:
-                                - Visible for: Curador, Coordenador, Gestor (always).
-                                - Note: Gestor is implied by the component logic (can't see global edits anyway).
-                                - Form Logic handles if it's rendered or not depending on context, but here we define Visibility.
-                                - Field Taxonomist: Mandatory (*)
-                                - Senior Taxonomist: Optional
-                                - Global Roles: Optional
-                             */}
-                            {(isCuradorMestre || isCoordenadorCientifico || isGestorAcervo) && (
+                            {/* Project/Local Select */}
+                            {hasMinLevel(myRole, 4) && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Local / Projeto
-                                        {(isCoordenadorCientifico || editRole === 'Taxonomista de Campo') && <span className="text-red-500">*</span>}
+                                        {editRole === 'Taxonomista de Campo' && <span className="text-red-500">*</span>}
+                                        {editRole === 'Gestor de Acervo' && <span className="text-red-500">*</span>}
                                     </label>
                                     <select
-                                        value={editProjectId || ''}
+                                        value={isGlobalRole(editRole) ? '' : (editProjectId || '')}
                                         onChange={(e) => setEditProjectId(e.target.value || null)}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                        disabled={isReadOnly || isGlobalRole(editRole)}
+                                        className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white ${(isReadOnly || isGlobalRole(editRole)) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
                                     >
                                         <option value="">
-                                            {editRole === 'Taxonomista Sênior' || editRole === 'Curador Mestre' ? 'Global (Sem Projeto)' : 'Selecione um local'}
+                                            {isGlobalRole(editRole) ? '🌐 Global (Veridia Saber)' : 'Selecione um local'}
                                         </option>
-                                        {projects.map((project) => (
+                                        {!isGlobalRole(editRole) && projects.map((project) => (
                                             <option key={project.id} value={project.id}>
                                                 {project.nome}
                                             </option>
                                         ))}
                                     </select>
-                                    {(isCoordenadorCientifico || editRole === 'Taxonomista de Campo') && (
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Obrigatório para este nível de cargo.
+                                    {isGlobalRole(editRole) && (
+                                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                                            <span>✓</span> Cargos globais atuam em toda a plataforma Veridia Saber.
                                         </p>
                                     )}
-                                    {(editRole === 'Taxonomista Sênior') && (
+                                    {(editRole === 'Taxonomista de Campo' || editRole === 'Gestor de Acervo') && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Opcional. Taxonomistas Sêniores podem atuar globalmente.
+                                            Obrigatório selecionar um local de atuação.
                                         </p>
                                     )}
                                 </div>
@@ -667,22 +632,25 @@ export default function Users() {
                                 onClick={closeEditModal}
                                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                             >
-                                Cancelar
+                                {isReadOnly ? 'Fechar' : 'Cancelar'}
                             </button>
-                            <button
-                                onClick={handleEditSave}
-                                disabled={editLoading || !editRole}
-                                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {editLoading ? (
-                                    <>
-                                        <Loader2 size={18} className="animate-spin" />
-                                        Salvando...
-                                    </>
-                                ) : (
-                                    'Salvar Alterações'
-                                )}
-                            </button>
+                            {/* TAREFA 3: Botão desabilitado se isReadOnly */}
+                            {!isReadOnly && (
+                                <button
+                                    onClick={handleEditSave}
+                                    disabled={editLoading || !editRole}
+                                    className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {editLoading ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Salvando...
+                                        </>
+                                    ) : (
+                                        'Salvar Alterações'
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>,
@@ -692,27 +660,22 @@ export default function Users() {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && userToDelete && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
-                    {/* Overlay */}
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={closeDeleteModal}
                     />
 
-                    {/* Modal */}
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
-                        {/* Icon */}
                         <div className="flex justify-center mb-4">
                             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
                                 <AlertTriangle className="text-red-600" size={32} />
                             </div>
                         </div>
 
-                        {/* Title */}
                         <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
                             Rebaixar Usuário?
                         </h3>
 
-                        {/* Description */}
                         <p className="text-gray-600 text-center mb-6">
                             Você tem certeza que deseja rebaixar{' '}
                             <strong className="text-gray-900">{userToDelete.full_name}</strong>{' '}
@@ -723,7 +686,6 @@ export default function Users() {
                             </span>
                         </p>
 
-                        {/* Buttons */}
                         <div className="flex gap-3">
                             <button
                                 onClick={closeDeleteModal}
@@ -754,15 +716,12 @@ export default function Users() {
             {/* Invite Member Modal (for Gestor) */}
             {isInviteModalOpen && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
-                    {/* Overlay */}
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={() => setIsInviteModalOpen(false)}
                     />
 
-                    {/* Modal */}
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
-                        {/* Close button */}
                         <button
                             onClick={() => setIsInviteModalOpen(false)}
                             className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
@@ -770,7 +729,6 @@ export default function Users() {
                             <X size={20} />
                         </button>
 
-                        {/* Header */}
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
                                 <Mail size={24} />
@@ -781,7 +739,6 @@ export default function Users() {
                             </div>
                         </div>
 
-                        {/* Form */}
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -800,7 +757,6 @@ export default function Users() {
                             </div>
                         </div>
 
-                        {/* Buttons */}
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => setIsInviteModalOpen(false)}
@@ -810,8 +766,6 @@ export default function Users() {
                             </button>
                             <button
                                 onClick={() => {
-                                    // TODO: Implement invite logic
-                                    console.log('Invite member:', inviteEmail);
                                     setInviteLoading(true);
                                     setTimeout(() => {
                                         setInviteLoading(false);
