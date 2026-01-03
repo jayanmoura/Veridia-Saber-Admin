@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
@@ -273,42 +274,59 @@ export default function Overview() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Gestão Detalhada - Visível para GlobalAdmins, cards individuais restritos */}
                     <div className="w-full lg:w-[70%] bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[300px]">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <Activity size={20} className="text-emerald-600" />
                             Gestão Detalhada
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <NavLink
-                                to="/conteudo-didatico"
-                                className="flex flex-col items-center justify-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-all group"
-                            >
-                                <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                    <BookOpen className="text-emerald-600" size={24} />
-                                </div>
-                                <h4 className="font-semibold text-gray-800">Conteúdo do App</h4>
-                                <p className="text-xs text-center text-gray-500 mt-1">Gerenciar textos educativos</p>
-                            </NavLink>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Card Conteúdo do App - APENAS Curador Mestre */}
+                            {profile?.role === 'Curador Mestre' && (
+                                <NavLink
+                                    to="/conteudo-didatico"
+                                    className="flex flex-col items-center justify-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-all group"
+                                >
+                                    <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                        <BookOpen className="text-emerald-600" size={24} />
+                                    </div>
+                                    <h4 className="font-semibold text-gray-800">Conteúdo do App</h4>
+                                    <p className="text-xs text-center text-gray-500 mt-1">Gerenciar textos educativos</p>
+                                </NavLink>
+                            )}
 
-                            <div
-                                onClick={handleAuditClick}
-                                className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-all group cursor-pointer"
-                            >
-                                <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                    <Shield className="text-indigo-600" size={24} />
+                            {/* Card Logs de Auditoria - APENAS Curador Mestre */}
+                            {profile?.role === 'Curador Mestre' && (
+                                <div
+                                    onClick={handleAuditClick}
+                                    className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-all group cursor-pointer"
+                                >
+                                    <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                        <Shield className="text-indigo-600" size={24} />
+                                    </div>
+                                    <h4 className="font-semibold text-gray-800">Logs de Auditoria</h4>
+                                    <p className="text-xs text-center text-gray-500 mt-1">Monitorar segurança e acessos</p>
                                 </div>
-                                <h4 className="font-semibold text-gray-800">Logs de Auditoria</h4>
-                                <p className="text-xs text-center text-gray-500 mt-1">Monitorar segurança e acessos</p>
-                            </div>
+                            )}
+
+                            {/* Placeholder para Coordenador Científico */}
+                            {profile?.role === 'Coordenador Científico' && (
+                                <div className="col-span-full flex flex-col items-center justify-center p-8 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
+                                    <Activity size={32} className="text-gray-300 mb-3" />
+                                    <p className="text-gray-400 text-sm font-medium">Novas ferramentas de gestão em breve para Coordenadores.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    {/* ... (Atividades recentes same as before) */}
+                    {/* Atividades recentes */}
                     <div className="w-full lg:w-[30%] bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[300px]">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
                             Atividades Recentes
-                            <button onClick={handleAuditClick} className="text-xs text-emerald-600 hover:underline font-normal">
-                                Ver tudo
-                            </button>
+                            {profile?.role === 'Curador Mestre' && (
+                                <button onClick={handleAuditClick} className="text-xs text-emerald-600 hover:underline font-normal">
+                                    Ver tudo
+                                </button>
+                            )}
                         </h3>
                         {recentLogs.length === 0 ? (
                             <p className="text-xs text-gray-400 text-center py-4">Nenhuma atividade recente.</p>
@@ -338,9 +356,9 @@ export default function Overview() {
                     </div>
                 </div>
 
-                {/* Access Denied Modal */}
-                {showAccessDeniedModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                {/* Access Denied Modal - com createPortal para garantir z-index máximo */}
+                {showAccessDeniedModal && createPortal(
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                         <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-4">
@@ -358,7 +376,8 @@ export default function Overview() {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
 
