@@ -120,16 +120,64 @@ export default function SpeciesPage() {
         if (!speciesToDelete) return;
 
         const speciesName = speciesToDelete.nome_cientifico;
+        const userLocalId = profile?.local_id;
+        const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
+
         setDeleteLoading(true);
         closeDeleteModal();
 
         try {
-            const { error } = await supabase
-                .from('especie')
-                .delete()
-                .eq('id', speciesToDelete.id);
+            if (!isGlobalAdmin && userLocalId) {
+                // GESTOR DE ACERVO: Only unlink from project, don't delete global species
 
-            if (error) throw error;
+                // 1. Fetch local images to delete from Storage
+                const { data: imagesToDelete } = await supabase
+                    .from('imagens')
+                    .select('url_imagem')
+                    .eq('especie_id', speciesToDelete.id)
+                    .eq('local_id', userLocalId);
+
+                // 2. Delete image files from Storage (Bucket 'arquivos-gerais')
+                if (imagesToDelete && imagesToDelete.length > 0) {
+                    const paths = imagesToDelete
+                        .map(img => {
+                            const url = img.url_imagem;
+                            // Extract relative path from public URL
+                            const pathMatch = url.split('/arquivos-gerais/')[1];
+                            return pathMatch || null;
+                        })
+                        .filter((p): p is string => p !== null);
+
+                    if (paths.length > 0) {
+                        await supabase.storage.from('arquivos-gerais').remove(paths);
+                    }
+                }
+
+                // 3. Delete image records from database (only this project's images)
+                await supabase
+                    .from('imagens')
+                    .delete()
+                    .eq('especie_id', speciesToDelete.id)
+                    .eq('local_id', userLocalId);
+
+                // 4. Unlink species from project (delete from especie_local)
+                const { error } = await supabase
+                    .from('especie_local')
+                    .delete()
+                    .eq('especie_id', speciesToDelete.id)
+                    .eq('local_id', userLocalId);
+
+                if (error) throw error;
+
+            } else {
+                // GLOBAL ADMIN: Delete species globally (cascade should handle related records)
+                const { error } = await supabase
+                    .from('especie')
+                    .delete()
+                    .eq('id', speciesToDelete.id);
+
+                if (error) throw error;
+            }
 
             // Update local state ONLY on success
             setSpecies(prev => prev.filter(s => s.id !== speciesToDelete.id));
@@ -154,7 +202,7 @@ export default function SpeciesPage() {
                 alert(error.message || 'Erro ao excluir espécie.');
             }
 
-            // Re-fetch to ensure UI sync if something went wrong but we already optimistic-updated (though we disabled optimistic update, re-fetch is safe)
+            // Re-fetch to ensure UI sync if something went wrong
             fetchSpecies();
         } finally {
             setDeleteLoading(false);
@@ -349,29 +397,48 @@ export default function SpeciesPage() {
             const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
             const userLocalId = profile?.local_id;
 
-            // Fetch species with images (include local_id for filtering)
-            const query = supabase
-                .from('especie')
-                .select(`
-                    *,
-                    familia (familia_nome),
-                    imagens (url_imagem, local_id),
-                    creator:profiles(full_name, email)
-                `, { count: 'exact' })
-                .order('nome_cientifico')
-                .range(from, to);
+            let query;
 
-            let finalQuery = query;
+            // DATA ISOLATION: Use different query strategies based on user role
+            if (!isGlobalAdmin && userLocalId) {
+                // Gestor de Acervo / Taxonomista de Campo: Use !inner join to filter by especie_local
+                query = supabase
+                    .from('especie')
+                    .select(`
+                        *,
+                        familia (familia_nome),
+                        imagens (url_imagem, local_id),
+                        creator:profiles(full_name, email),
+                        especie_local!inner (local_id, descricao_ocorrencia)
+                    `, { count: 'exact' })
+                    .eq('especie_local.local_id', userLocalId)
+                    .order('nome_cientifico')
+                    .range(from, to);
+            } else {
+                // Global Admins: See all species (global catalog)
+                query = supabase
+                    .from('especie')
+                    .select(`
+                        *,
+                        familia (familia_nome),
+                        imagens (url_imagem, local_id),
+                        creator:profiles(full_name, email),
+                        especie_local (local_id, descricao_ocorrencia)
+                    `, { count: 'exact' })
+                    .is('local_id', null) // Only global species (not duplicates)
+                    .order('nome_cientifico')
+                    .range(from, to);
+            }
 
             if (search) {
-                finalQuery = finalQuery.ilike('nome_cientifico', `%${search}%`);
+                query = query.ilike('nome_cientifico', `%${search}%`);
             }
 
             if (selectedFamily) {
-                finalQuery = finalQuery.eq('familia_id', selectedFamily);
+                query = query.eq('familia_id', selectedFamily);
             }
 
-            const { data, error, count } = await finalQuery;
+            const { data, error, count } = await query;
 
             if (error) throw error;
 

@@ -70,10 +70,30 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     });
 
     // Local data state (project-specific notes in especie_local)
-    const [localData, setLocalData] = useState<{ descricao_ocorrencia: string; detalhes_localizacao: string }>({
+    const [localData, setLocalData] = useState<{
+        descricao_ocorrencia: string;
+        detalhes_localizacao: string;
+        latitude: string;
+        longitude: string;
+    }>({
         descricao_ocorrencia: '',
-        detalhes_localizacao: ''
+        detalhes_localizacao: '',
+        latitude: '',
+        longitude: ''
     });
+
+    // Geolocation loading state
+    const [geoLoading, setGeoLoading] = useState(false);
+
+    // Autocomplete state for global species search
+    const [suggestions, setSuggestions] = useState<Species[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedGlobalSpecies, setSelectedGlobalSpecies] = useState<Species | null>(null);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Derived: Is this a global species being linked to a project?
+    const isGlobalSpecies = !!selectedGlobalSpecies;
 
     // Flag to check if we're editing an existing species (global fields become read-only for non-admins)
     const isEditingExisting = !!initialData?.id;
@@ -91,8 +111,88 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     // Local user = anyone who is not a global admin (can't edit global data on existing species)
     const isLocalUser = !isGlobalAdmin;
 
-    // Determine if fields should be locked (editing existing species as non-admin)
-    const shouldLockGlobalFields = isEditingExisting && isLocalUser;
+    // Determine if fields should be locked (editing existing species as non-admin OR selecting a global species)
+    const shouldLockGlobalFields = (isEditingExisting && isLocalUser) || isGlobalSpecies;
+
+    // Search for existing species (autocomplete)
+    const searchSpecies = async (query: string) => {
+        if (query.length < 2) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const { data, error } = await supabase
+                .from('especie')
+                .select('id, nome_cientifico, nome_popular, familia_id, descricao_especie, cuidados_luz, cuidados_agua, cuidados_temperatura, cuidados_substrato, cuidados_nutrientes, familia:familia_id(familia_nome)')
+                .is('local_id', null) // Only global species
+                .ilike('nome_cientifico', `%${query}%`)
+                .limit(5);
+
+            if (error) throw error;
+            setSuggestions(data || []);
+            setShowSuggestions((data || []).length > 0);
+        } catch (err) {
+            console.error('Erro ao buscar espécies:', err);
+            setSuggestions([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Handle input change with debounce
+    const handleNameChange = (value: string) => {
+        setFormData(prev => ({ ...prev, nome_cientifico: value }));
+
+        // Clear previous timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        // Debounce search
+        searchTimeoutRef.current = setTimeout(() => {
+            searchSpecies(value);
+        }, 300);
+    };
+
+    // Handle selection of a global species
+    const handleSelectGlobalSpecies = (species: any) => {
+        setSelectedGlobalSpecies(species);
+        setFormData(prev => ({
+            ...prev,
+            id: species.id,
+            nome_cientifico: species.nome_cientifico,
+            nome_popular: species.nome_popular || '',
+            familia_id: species.familia_id,
+            descricao_especie: species.descricao_especie || '',
+            cuidados_luz: species.cuidados_luz || '',
+            cuidados_agua: species.cuidados_agua || '',
+            cuidados_temperatura: species.cuidados_temperatura || '',
+            cuidados_substrato: species.cuidados_substrato || '',
+            cuidados_nutrientes: species.cuidados_nutrientes || '',
+        }));
+        setSuggestions([]);
+        setShowSuggestions(false);
+    };
+
+    // Clear global species selection
+    const handleClearSelection = () => {
+        setSelectedGlobalSpecies(null);
+        setFormData({
+            nome_cientifico: '',
+            nome_popular: '',
+            familia_id: '',
+            descricao_especie: '',
+            cuidados_luz: '',
+            cuidados_agua: '',
+            cuidados_temperatura: '',
+            cuidados_substrato: '',
+            cuidados_nutrientes: '',
+            local_id: isLocalUser ? String(profile?.local_id || '') : '',
+        });
+    };
 
 
 
@@ -152,7 +252,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                     cuidados_nutrientes: '',
                     local_id: isLocalUser ? String(profile?.local_id || '') : '',
                 });
-                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '' });
+                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '' });
                 setExistingImages([]);
             }
             setImageFiles([]);
@@ -217,34 +317,36 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     // Load project-specific local data from especie_local
     const loadLocalData = async (speciesId: string, localId: string | null) => {
         if (!localId) {
-            setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '' });
+            setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '' });
             return;
         }
 
         try {
             const { data, error } = await supabase
                 .from('especie_local')
-                .select('descricao_ocorrencia, detalhes_localizacao')
+                .select('descricao_ocorrencia, detalhes_localizacao, latitude, longitude')
                 .eq('especie_id', speciesId)
                 .eq('local_id', localId)
                 .maybeSingle();
 
             if (error) {
                 // Table may not exist yet - ignore silently
-                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '' });
+                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '' });
                 return;
             }
 
             if (data) {
                 setLocalData({
                     descricao_ocorrencia: data.descricao_ocorrencia || '',
-                    detalhes_localizacao: data.detalhes_localizacao || ''
+                    detalhes_localizacao: data.detalhes_localizacao || '',
+                    latitude: data.latitude ? String(data.latitude) : '',
+                    longitude: data.longitude ? String(data.longitude) : ''
                 });
             } else {
-                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '' });
+                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '' });
             }
         } catch (err) {
-            setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '' });
+            setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '' });
         }
     };
 
@@ -383,11 +485,16 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         setLoading(true);
 
         try {
-            let speciesId = initialData?.id;
+            let speciesId = initialData?.id || (isGlobalSpecies ? selectedGlobalSpecies?.id : undefined);
             const effectiveLocalId = formData.local_id || (isLocalUser ? String(profile?.local_id || '') : null);
 
-            if (isEditingExisting && speciesId) {
-                // EDITING EXISTING SPECIES
+            // CASE 1: LINKING GLOBAL SPECIES TO LOCAL PROJECT
+            if (isGlobalSpecies && selectedGlobalSpecies?.id) {
+                speciesId = selectedGlobalSpecies.id;
+                // Don't create new species, just link to especie_local below
+            }
+            // CASE 2: EDITING EXISTING SPECIES
+            else if (isEditingExisting && speciesId) {
                 // Global fields are read-only for local users, so we don't update especie table
                 // Only global admins can update global data
 
@@ -415,10 +522,11 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 }
                 // For local users, the global data remains unchanged
 
-            } else {
-                // CREATING NEW SPECIES
+            }
+            // CASE 3: CREATING NEW SPECIES (not linking global, not editing)
+            else if (!isGlobalSpecies) {
                 // All global data goes to especie table
-                const dataToSave = {
+                const dataToSaveNew = {
                     nome_cientifico: formData.nome_cientifico.trim(),
                     nome_popular: formData.nome_popular?.trim() || null,
                     familia_id: formData.familia_id,
@@ -435,7 +543,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
 
                 const { data, error } = await supabase
                     .from('especie')
-                    .insert(dataToSave)
+                    .insert(dataToSaveNew)
                     .select('id')
                     .single();
 
@@ -477,6 +585,8 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                             local_id: effectiveLocalId,
                             descricao_ocorrencia: localData.descricao_ocorrencia?.trim() || null,
                             detalhes_localizacao: localData.detalhes_localizacao?.trim() || null,
+                            latitude: localData.latitude ? parseFloat(localData.latitude) : null,
+                            longitude: localData.longitude ? parseFloat(localData.longitude) : null,
                             institution_id: targetInstitutionId
                         }, {
                             onConflict: 'especie_id,local_id'
@@ -626,19 +736,78 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                             )}
                                         </div>
                                     )}
-                                    <div>
+                                    <div className="relative">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Nome Científico <span className="text-red-500">*</span>
+                                            {isGlobalSpecies && (
+                                                <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full ml-2">
+                                                    🔗 Espécie do catálogo global
+                                                </span>
+                                            )}
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={formData.nome_cientifico}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, nome_cientifico: e.target.value }))}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: Justicia brandegeeana"
-                                            required
-                                            readOnly={shouldLockGlobalFields}
-                                        />
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={formData.nome_cientifico}
+                                                onChange={(e) => !shouldLockGlobalFields && handleNameChange(e.target.value)}
+                                                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                                className={`flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder={isProjectUser ? "Digite para buscar ou criar nova..." : "Ex: Justicia brandegeeana"}
+                                                required
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                            {isGlobalSpecies && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearSelection}
+                                                    className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                                                    title="Limpar seleção"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Autocomplete Dropdown */}
+                                        {showSuggestions && !isEditingExisting && isProjectUser && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                {isSearching ? (
+                                                    <div className="p-3 text-center text-gray-500 flex items-center justify-center gap-2">
+                                                        <Loader2 size={16} className="animate-spin" />
+                                                        Buscando...
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="px-3 py-2 bg-gray-50 border-b text-xs text-gray-500 font-medium">
+                                                            Espécies encontradas no catálogo global:
+                                                        </div>
+                                                        {suggestions.map((species) => (
+                                                            <button
+                                                                key={species.id}
+                                                                type="button"
+                                                                onClick={() => handleSelectGlobalSpecies(species)}
+                                                                className="w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium text-gray-900 italic">
+                                                                    {species.nome_cientifico}
+                                                                </div>
+                                                                {species.nome_popular && (
+                                                                    <div className="text-sm text-gray-500">
+                                                                        {species.nome_popular}
+                                                                    </div>
+                                                                )}
+                                                                {(species as any).familia?.familia_nome && (
+                                                                    <div className="text-xs text-emerald-600 mt-1">
+                                                                        Família: {(species as any).familia.familia_nome}
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -677,12 +846,12 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                             {/* Section 2.5: Project-specific Notes (Local) - Only for Gestor de Acervo / Taxonomista */}
                             {isProjectUser && (
                                 <section className="space-y-4">
-                                    {/* Descrição Local */}
+                                    {/* Descrição da Ocorrência */}
                                     <div>
                                         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                            📍 Descrição Local
+                                            � Descrição da Ocorrência
                                             <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                Editável
+                                                Exibida no App
                                             </span>
                                         </h3>
                                         <textarea
@@ -690,102 +859,176 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                             onChange={(e) => setLocalData(prev => ({ ...prev, descricao_ocorrencia: e.target.value }))}
                                             rows={3}
                                             className="w-full px-4 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-emerald-50/30"
-                                            placeholder="Anotações sobre a ocorrência da espécie neste projeto (visível para a equipe)."
+                                            placeholder="Texto descritivo sobre como a espécie ocorre neste local específico. Esta informação será exibida no aplicativo."
                                         />
                                     </div>
 
                                     {/* Notas de Campo */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            📝 Notas de Campo
+                                            📝 Notas de Campo / Observações Específicas
                                         </label>
                                         <textarea
                                             value={localData.detalhes_localizacao}
                                             onChange={(e) => setLocalData(prev => ({ ...prev, detalhes_localizacao: e.target.value }))}
                                             rows={3}
                                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
-                                            placeholder="Detalhes técnicos de campo, coordenadas específicas ou observações de coleta..."
+                                            placeholder="Observações técnicas ou específicas sobre o indivíduo/grupo coletado neste local."
                                         />
+                                    </div>
+
+                                    {/* Geolocalização */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                                                📍 Geolocalização
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!navigator.geolocation) {
+                                                        alert('Geolocalização não suportada pelo navegador.');
+                                                        return;
+                                                    }
+                                                    setGeoLoading(true);
+                                                    navigator.geolocation.getCurrentPosition(
+                                                        (position) => {
+                                                            setLocalData(prev => ({
+                                                                ...prev,
+                                                                latitude: position.coords.latitude.toFixed(6),
+                                                                longitude: position.coords.longitude.toFixed(6)
+                                                            }));
+                                                            setGeoLoading(false);
+                                                        },
+                                                        (error) => {
+                                                            alert('Erro ao obter localização: ' + error.message);
+                                                            setGeoLoading(false);
+                                                        },
+                                                        { enableHighAccuracy: true, timeout: 10000 }
+                                                    );
+                                                }}
+                                                disabled={geoLoading}
+                                                className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                            >
+                                                {geoLoading ? (
+                                                    <>
+                                                        <Loader2 size={12} className="animate-spin" />
+                                                        Obtendo...
+                                                    </>
+                                                ) : (
+                                                    <>📍 Obter Localização Atual</>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">
+                                                    Latitude
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={localData.latitude}
+                                                    onChange={(e) => setLocalData(prev => ({ ...prev, latitude: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
+                                                    placeholder="-23.550520"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">
+                                                    Longitude
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={localData.longitude}
+                                                    onChange={(e) => setLocalData(prev => ({ ...prev, longitude: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
+                                                    placeholder="-46.633308"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
                             )}
 
-                            {/* Section 3: Cultivation Guide */}
-                            <section>
-                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                    Guia de Cultivo
-                                    {shouldLockGlobalFields && (
-                                        <span className="text-xs font-normal text-gray-500">(Enciclopédia Veridia)</span>
-                                    )}
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            ☀️ Luminosidade
-                                        </label>
-                                        <textarea
-                                            value={formData.cuidados_luz || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, cuidados_luz: e.target.value }))}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: Meia-sombra a sol pleno. Evitar luz direta intensa nas horas mais quentes do dia."
-                                            readOnly={shouldLockGlobalFields}
-                                        />
+
+                            {/* Section 3: Cultivation Guide - Hidden for Project Users */}
+                            {!isProjectUser && (
+                                <section>
+                                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        Guia de Cultivo
+                                        {shouldLockGlobalFields && (
+                                            <span className="text-xs font-normal text-gray-500">(Enciclopédia Veridia)</span>
+                                        )}
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                ☀️ Luminosidade
+                                            </label>
+                                            <textarea
+                                                value={formData.cuidados_luz || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, cuidados_luz: e.target.value }))}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="Ex: Meia-sombra a sol pleno. Evitar luz direta intensa nas horas mais quentes do dia."
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                💧 Rega
+                                            </label>
+                                            <textarea
+                                                value={formData.cuidados_agua || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, cuidados_agua: e.target.value }))}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="Ex: Moderada. Manter o solo úmido mas não encharcado. Reduzir no inverno."
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                🌡️ Temperatura
+                                            </label>
+                                            <textarea
+                                                value={formData.cuidados_temperatura || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, cuidados_temperatura: e.target.value }))}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="Ex: 18°C a 28°C. Sensível a geadas. Proteger em invernos rigorosos."
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                🌱 Substrato
+                                            </label>
+                                            <textarea
+                                                value={formData.cuidados_substrato || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, cuidados_substrato: e.target.value }))}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="Ex: Rico em matéria orgânica, bem drenado."
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                🧪 Nutrientes
+                                            </label>
+                                            <textarea
+                                                value={formData.cuidados_nutrientes || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, cuidados_nutrientes: e.target.value }))}
+                                                rows={3}
+                                                className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="Ex: Adubar na primavera e verão com NPK balanceado."
+                                                readOnly={shouldLockGlobalFields}
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            💧 Rega
-                                        </label>
-                                        <textarea
-                                            value={formData.cuidados_agua || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, cuidados_agua: e.target.value }))}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: Moderada. Manter o solo úmido mas não encharcado. Reduzir no inverno."
-                                            readOnly={shouldLockGlobalFields}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            🌡️ Temperatura
-                                        </label>
-                                        <textarea
-                                            value={formData.cuidados_temperatura || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, cuidados_temperatura: e.target.value }))}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: 18°C a 28°C. Sensível a geadas. Proteger em invernos rigorosos."
-                                            readOnly={shouldLockGlobalFields}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            🌱 Substrato
-                                        </label>
-                                        <textarea
-                                            value={formData.cuidados_substrato || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, cuidados_substrato: e.target.value }))}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: Rico em matéria orgânica, bem drenado."
-                                            readOnly={shouldLockGlobalFields}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            🧪 Nutrientes
-                                        </label>
-                                        <textarea
-                                            value={formData.cuidados_nutrientes || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, cuidados_nutrientes: e.target.value }))}
-                                            rows={3}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            placeholder="Ex: Adubar na primavera e verão com NPK balanceado."
-                                            readOnly={shouldLockGlobalFields}
-                                        />
-                                    </div>
-                                </div>
-                            </section>
+                                </section>
+                            )}
 
                             {/* Section 4: Images */}
                             <section>
@@ -943,7 +1186,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                 <span>Salvando...</span>
                             </>
                         ) : (
-                            <span>{initialData ? 'Salvar Alterações' : 'Criar Espécie'}</span>
+                            <span>{isGlobalSpecies ? '🔗 Vincular ao Projeto' : initialData ? 'Salvar Alterações' : 'Criar Espécie'}</span>
                         )}
                     </button>
                 </div>

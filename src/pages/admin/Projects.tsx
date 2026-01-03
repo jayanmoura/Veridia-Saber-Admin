@@ -81,15 +81,10 @@ export default function Projects() {
     // Toast State
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    // Form Options
+    // Form Options - Values MUST match mobile app filters exactly
     const TIPOS_PROJETO = [
-        'Jardim Botânico',
-        'Parque',
-        'Reserva',
-        'Escola',
-        'Universidade',
-        'Instituição',
-        'Outro'
+        { value: 'instituicao', label: 'Instituição (Jardim Botânico, Univ., etc)' },
+        { value: 'publico', label: 'Lugar Público (Praça, Parque, Rua)' }
     ];
 
     // Permissions Check: Only Global Admins
@@ -170,11 +165,16 @@ export default function Projects() {
         }
     };
 
-    // Upload image to Supabase Storage
-    const uploadImage = async (file: File): Promise<string | null> => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `projeto_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `projetos/${fileName}`;
+    // Upload image to Supabase Storage with organized path structure
+    // Supports: locais/{projectId}/capa/ and locais/{projectId}/imagens/
+    const uploadProjectImage = async (
+        file: File,
+        projectId: string,
+        type: 'capa' | 'imagem' = 'capa'
+    ): Promise<string | null> => {
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const folder = type === 'capa' ? 'capa' : 'imagens';
+        const filePath = `locais/${projectId}/${folder}/${Date.now()}_${sanitizedName}`;
 
         const { error: uploadError } = await supabase.storage
             .from('arquivos-gerais')
@@ -208,20 +208,8 @@ export default function Projects() {
         setNewProjectLoading(true);
 
         try {
-            let imagemUrl: string | null = null;
-
-            // Upload image if selected
-            if (imageFile) {
-                imagemUrl = await uploadImage(imageFile);
-                if (!imagemUrl) {
-                    showToast('Erro ao fazer upload da imagem.', 'error');
-                    setNewProjectLoading(false);
-                    return;
-                }
-            }
-
-            // Insert into 'locais' table
-            const { error } = await supabase
+            // Step 1: Create project WITHOUT image first to get the ID
+            const { data: newProject, error: insertError } = await supabase
                 .from('locais')
                 .insert([{
                     nome: formData.nome.trim(),
@@ -230,10 +218,36 @@ export default function Projects() {
                     estado: formData.estado.trim() || null,
                     descricao: formData.descricao.trim() || null,
                     institution_id: profile.institution_id,
-                    imagem_capa: imagemUrl
-                }]);
+                    imagem_capa: null // Will be updated after upload
+                }])
+                .select('id')
+                .single();
 
-            if (error) throw error;
+            if (insertError || !newProject) {
+                throw insertError || new Error('Falha ao criar o projeto');
+            }
+
+            const projectId = newProject.id;
+
+            // Step 2: Upload image if selected (now we have the projectId)
+            if (imageFile) {
+                const imagemUrl = await uploadProjectImage(imageFile, projectId, 'capa');
+
+                if (!imagemUrl) {
+                    showToast('Projeto criado, mas erro ao fazer upload da imagem.', 'error');
+                } else {
+                    // Step 3: Update project with the image URL
+                    const { error: updateError } = await supabase
+                        .from('locais')
+                        .update({ imagem_capa: imagemUrl })
+                        .eq('id', projectId);
+
+                    if (updateError) {
+                        console.error('Error updating project image:', updateError);
+                        showToast('Projeto criado, mas erro ao salvar URL da imagem.', 'error');
+                    }
+                }
+            }
 
             // Success!
             showToast('Projeto criado com sucesso!');
@@ -475,7 +489,7 @@ export default function Projects() {
                                 >
                                     <option value="">Selecione um tipo</option>
                                     {TIPOS_PROJETO.map(tipo => (
-                                        <option key={tipo} value={tipo}>{tipo}</option>
+                                        <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
                                     ))}
                                 </select>
                             </div>
