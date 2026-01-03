@@ -240,7 +240,7 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
 
                         <p className="text-center text-xs text-gray-500 mt-4">
                             Não tem acesso?{' '}
-                            <a href="mailto:jayanmoura@gmail.com" className="text-emerald-600 hover:underline">
+                            <a href="mailto:contatos@veridiasaber.com.br" className="text-emerald-600 hover:underline">
                                 Solicite aqui
                             </a>
                         </p>

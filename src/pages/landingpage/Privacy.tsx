@@ -134,8 +134,8 @@ export default function Privacy() {
                         <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">5. Contato</h2>
                         <p className="text-gray-700 leading-relaxed">
                             Se tiver dúvidas sobre esta política, entre em contato:{' '}
-                            <a href="mailto:jayanmoura@gmail.com" className="text-emerald-600 hover:text-emerald-700 underline">
-                                jayanmoura@gmail.com
+                            <a href="mailto:contatos@veridiasaber.com.br" className="text-emerald-600 hover:text-emerald-700 underline">
+                                contatos@veridiasaber.com.br
                             </a>
                         </p>
                     </div>
