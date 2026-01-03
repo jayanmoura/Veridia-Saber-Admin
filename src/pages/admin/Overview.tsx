@@ -21,6 +21,30 @@ interface AuditLog {
     profiles?: { full_name: string } | { full_name: string }[];
 }
 
+// Discriminated union type for recent work items
+interface RecentSpecies {
+    type: 'especie';
+    id: string;
+    nome_cientifico: string;
+    created_at: string;
+    local_id: string | null;
+    familia_id: string | null;
+    familia?: { familia_nome: string }[] | { familia_nome: string } | null;
+    created_by?: string | null;
+    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
+}
+
+interface RecentFamily {
+    type: 'familia';
+    id: string;
+    familia_nome: string;
+    created_at: string;
+    created_by?: string | null;
+    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
+}
+
+type RecentWorkItem = RecentSpecies | RecentFamily;
+
 export default function Overview() {
     const { profile } = useAuth();
     const navigate = useNavigate();
@@ -44,7 +68,7 @@ export default function Overview() {
         seniorPending: 0
     });
     const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
-    const [recentWork, setRecentWork] = useState<any[]>([]);
+    const [recentWork, setRecentWork] = useState<RecentWorkItem[]>([]);
     const [pendingSpecies, setPendingSpecies] = useState<any[]>([]);
 
     // Senior Taxonomist Modal State
@@ -59,20 +83,18 @@ export default function Overview() {
         setIsSpeciesModalOpen(true);
     };
 
-    const handleEditWork = (work: any) => {
-        // Need to refetch full details? Modal handles it if we pass ID or basic data?
-        // SpeciesModal expects "Species" object. recentWork might be partial.
-        // It's safer to fetch full details inside Modal or pass what we have.
-        // SpeciesModal takes `initialData`. If we pass partial, it might break if fields missing.
-        // But for "Edit" button in list, we usually have ID.
-        // Let's rely on SpeciesModal fetching if we pass ID? No, SpeciesModal uses initialData to populate form.
-        // We will fetch full data for editing in `handleEditSpecies` wrapper if needed, 
-        // OR we just pass what we have and let the user fill the rest? 
-        // Actually, SpeciesModal expects full object to pre-fill. 
-        // Best approach: Pass what we have from table, but for reliable edit, we should probably fetch the single species first.
-        // However, to keep it simple and fast, let's pass the row data. The query for recentWork should select enough fields.
-        setEditingWork(work);
-        setIsSpeciesModalOpen(true);
+    const [editingFamily, setEditingFamily] = useState<any>(null);
+
+    const handleEditWork = (work: RecentWorkItem) => {
+        if (work.type === 'familia') {
+            // Open family modal for families
+            setEditingFamily(work);
+            setIsFamilyModalOpen(true);
+        } else {
+            // Open species modal for species
+            setEditingWork(work);
+            setIsSpeciesModalOpen(true);
+        }
     };
 
     const [loading, setLoading] = useState(true);
@@ -134,11 +156,19 @@ export default function Overview() {
     };
 
     const fetchSeniorStats = async () => {
-        // 1. My contributions (created_by me)
-        const { count: myCount } = await supabase
-            .from('especie')
-            .select('*', { count: 'exact', head: true })
-            .eq('created_by', profile?.id || '');
+        // 1. My contributions (created_by me) - count both species AND families
+        const [mySpeciesCount, myFamiliesCount] = await Promise.all([
+            supabase
+                .from('especie')
+                .select('*', { count: 'exact', head: true })
+                .eq('created_by', profile?.id || ''),
+            supabase
+                .from('familia')
+                .select('*', { count: 'exact', head: true })
+                .eq('created_by', profile?.id || '')
+        ]);
+
+        const myCount = (mySpeciesCount.count || 0) + (myFamiliesCount.count || 0);
 
         // 2. Global Total
         const { count: globalCount } = await supabase
@@ -184,18 +214,38 @@ export default function Overview() {
             seniorPending: pendingCount
         }));
 
-        // 4. Recent Work
-        const { data: recent } = await supabase
-            .from('especie')
-            .select('id, nome_cientifico, updated_at, local_id, familia_id, familia:familia_id(familia_nome)')
-            .is('local_id', null)
-            .order('updated_at', { ascending: false })
-            .limit(5);
+        // 4. Recent Work - Fetch from both especie and familia tables
+        const [recentSpecies, recentFamilies] = await Promise.all([
+            supabase
+                .from('especie')
+                .select('id, nome_cientifico, created_at, local_id, familia_id, familia:familia_id(familia_nome), created_by, creator:profiles(full_name, email)')
+                .is('local_id', null)
+                .order('created_at', { ascending: false })
+                .limit(10),
+            supabase
+                .from('familia')
+                .select('id, familia_nome, created_at, created_by, creator:profiles(full_name, email)')
+                .order('created_at', { ascending: false })
+                .limit(10)
+        ]);
 
-        if (recent) {
-            // Map to flatten family name for table if needed, but keeping object structure for Modal is better
-            setRecentWork(recent);
-        }
+        // Combine and tag each item with its type
+        const speciesItems: RecentSpecies[] = (recentSpecies.data || []).map(item => ({
+            ...item,
+            type: 'especie' as const
+        }));
+
+        const familyItems: RecentFamily[] = (recentFamilies.data || []).map(item => ({
+            ...item,
+            type: 'familia' as const
+        }));
+
+        // Merge and sort by created_at descending
+        const combined: RecentWorkItem[] = [...speciesItems, ...familyItems]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 5); // Keep only top 5
+
+        setRecentWork(combined);
     };
 
     const fetchLocalStats = async () => {
@@ -503,9 +553,10 @@ export default function Overview() {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <th className="px-4 py-3">Espécie</th>
                                     <th className="px-4 py-3">Família</th>
+                                    <th className="px-4 py-3">Espécie</th>
                                     <th className="px-4 py-3">Atualização</th>
+                                    <th className="px-4 py-3">Criado por</th>
                                     <th className="px-4 py-3 text-right">Ação</th>
                                 </tr>
                             </thead>
@@ -516,20 +567,37 @@ export default function Overview() {
                                             <td className="px-4 py-4"><div className="h-4 w-32 bg-gray-100 rounded"></div></td>
                                             <td className="px-4 py-4"><div className="h-4 w-24 bg-gray-100 rounded"></div></td>
                                             <td className="px-4 py-4"><div className="h-4 w-20 bg-gray-100 rounded"></div></td>
+                                            <td className="px-4 py-4"><div className="h-4 w-20 bg-gray-100 rounded"></div></td>
                                             <td className="px-4 py-4"><div className="h-8 w-8 bg-gray-100 rounded ml-auto"></div></td>
                                         </tr>
                                     ))
                                 ) : recentWork.length > 0 ? (
                                     recentWork.map((work) => (
-                                        <tr key={work.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-4">
-                                                <span className="font-medium text-gray-900 italic">{work.nome_cientifico}</span>
-                                            </td>
+                                        <tr key={`${work.type}-${work.id}`} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-4 text-gray-600">
-                                                {work.familia?.familia_nome || '-'}
+                                                {work.type === 'familia' ? (
+                                                    <span className="font-medium text-gray-900">{work.familia_nome}</span>
+                                                ) : (
+                                                    (Array.isArray(work.familia) ? work.familia[0]?.familia_nome : work.familia?.familia_nome) || '-'
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {work.type === 'especie' ? (
+                                                    <span className="font-medium text-gray-900 italic">{work.nome_cientifico}</span>
+                                                ) : (
+                                                    <span className="text-gray-400">—</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4 text-sm text-gray-400">
-                                                {work.updated_at ? formatDistanceToNow(new Date(work.updated_at), { addSuffix: true, locale: ptBR }) : '-'}
+                                                {work.created_at ? formatDistanceToNow(new Date(work.created_at), { addSuffix: true, locale: ptBR }) : '-'}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-500">
+                                                {(() => {
+                                                    const creator = Array.isArray(work.creator) ? work.creator[0] : work.creator;
+                                                    if (creator?.full_name) return creator.full_name;
+                                                    if (creator?.email) return creator.email.split('@')[0];
+                                                    return 'Sistema';
+                                                })()}
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <button
@@ -544,7 +612,7 @@ export default function Overview() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">
+                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
                                             Nenhum trabalho recente encontrado.
                                         </td>
                                     </tr>
@@ -577,8 +645,9 @@ export default function Overview() {
                 />
                 <FamilyModal
                     isOpen={isFamilyModalOpen}
-                    onClose={() => setIsFamilyModalOpen(false)}
+                    onClose={() => { setIsFamilyModalOpen(false); setEditingFamily(null); }}
                     onSave={fetchSeniorStats}
+                    initialData={editingFamily}
                 />
             </div>
         );

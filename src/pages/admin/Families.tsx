@@ -29,6 +29,9 @@ interface Family {
     imagem_referencia: string | null;
     especie?: { count: number }[];
     quantidade_especies: number;
+    created_at?: string | null;
+    created_by?: string | null;
+    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
 
 interface FamilyStats {
@@ -256,7 +259,7 @@ export default function Families() {
 
             let query = supabase
                 .from('familia')
-                .select('*, especie(count)', { count: 'exact' })
+                .select('*, especie(count), creator:profiles(full_name, email)', { count: 'exact' })
                 .order('familia_nome')
                 .range(from, to);
 
@@ -402,6 +405,7 @@ export default function Families() {
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Capa</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome da Família</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Riqueza</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Criado por</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Ações</th>
                                 </tr>
                             </thead>
@@ -412,6 +416,7 @@ export default function Families() {
                                             <td className="px-6 py-4"><div className="h-10 w-10 bg-gray-100 rounded-lg"></div></td>
                                             <td className="px-6 py-4"><div className="h-4 w-48 bg-gray-100 rounded"></div></td>
                                             <td className="px-6 py-4"><div className="h-4 w-12 bg-gray-100 rounded"></div></td>
+                                            <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-100 rounded"></div></td>
                                             <td className="px-6 py-4"><div className="h-8 w-24 bg-gray-100 rounded ml-auto"></div></td>
                                         </tr>
                                     ))
@@ -450,6 +455,14 @@ export default function Families() {
                                                     {family.quantidade_especies} spp.
                                                 </span>
                                             </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                {(() => {
+                                                    const creator = Array.isArray(family.creator) ? family.creator[0] : family.creator;
+                                                    if (creator?.full_name) return creator.full_name;
+                                                    if (creator?.email) return creator.email.split('@')[0];
+                                                    return 'Sistema';
+                                                })()}
+                                            </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     {canGenerateReports && (
@@ -483,7 +496,7 @@ export default function Families() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                             Nenhum registro encontrado.
                                         </td>
                                     </tr>

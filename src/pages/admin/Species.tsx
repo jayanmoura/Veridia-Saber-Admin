@@ -32,6 +32,9 @@ interface Species {
     familia_id: string;
     familia?: { familia_nome: string };
     imagens?: { url_imagem: string; local_id?: string | number | null }[];
+    created_at?: string | null;
+    created_by?: string | null;
+    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
 
 interface FamilyOption {
@@ -352,7 +355,8 @@ export default function SpeciesPage() {
                 .select(`
                     *,
                     familia (familia_nome),
-                    imagens (url_imagem, local_id)
+                    imagens (url_imagem, local_id),
+                    creator:profiles(full_name, email)
                 `, { count: 'exact' })
                 .order('nome_cientifico')
                 .range(from, to);
@@ -554,6 +558,7 @@ export default function SpeciesPage() {
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">Foto</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Família</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Espécie</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Criado por</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Ações</th>
                             </tr>
                         </thead>
@@ -564,6 +569,7 @@ export default function SpeciesPage() {
                                         <td className="px-6 py-4"><div className="h-10 w-10 bg-gray-100 rounded-md"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-100 rounded"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 w-40 bg-gray-100 rounded"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-100 rounded"></div></td>
                                         <td className="px-6 py-4"><div className="h-8 w-24 bg-gray-100 rounded ml-auto"></div></td>
                                     </tr>
                                 ))
@@ -587,6 +593,14 @@ export default function SpeciesPage() {
                                             </td>
                                             <td className="px-6 py-4 font-medium text-gray-900 italic">
                                                 {specie.nome_cientifico}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                {(() => {
+                                                    const creator = Array.isArray(specie.creator) ? specie.creator[0] : specie.creator;
+                                                    if (creator?.full_name) return creator.full_name;
+                                                    if (creator?.email) return creator.email.split('@')[0];
+                                                    return 'Sistema';
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
@@ -623,7 +637,7 @@ export default function SpeciesPage() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                         Nenhuma espécie encontrada.
                                     </td>
                                 </tr>

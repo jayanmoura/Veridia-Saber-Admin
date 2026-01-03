@@ -11,6 +11,9 @@ interface Family {
     descricao_familia?: string | null;
     fonte_referencia?: string | null;
     link_referencia?: string | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    creator?: { full_name: string } | { full_name: string }[] | null;
 }
 
 interface FamilyModalProps {
@@ -407,6 +410,36 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                             placeholder="Insira um link por linha..."
                         />
                     </div>
+
+                    {/* Authorship Info - Only show when editing */}
+                    {initialData?.id && initialData?.created_at && (
+                        <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
+                            <p>
+                                <span className="font-medium">Cadastrado em:</span>{' '}
+                                {new Date(initialData.created_at).toLocaleString('pt-BR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </p>
+                            {initialData.creator && (
+                                <p>
+                                    <span className="font-medium">Cadastrado por:</span>{' '}
+                                    {Array.isArray(initialData.creator)
+                                        ? initialData.creator[0]?.full_name || initialData.created_by || 'Usuário desconhecido'
+                                        : initialData.creator?.full_name || initialData.created_by || 'Usuário desconhecido'}
+                                </p>
+                            )}
+                            {!initialData.creator && initialData.created_by && (
+                                <p>
+                                    <span className="font-medium">Cadastrado por (ID):</span>{' '}
+                                    <span className="font-mono text-gray-400">{initialData.created_by}</span>
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </form>
 
                 {/* Footer */}
