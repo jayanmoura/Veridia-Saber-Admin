@@ -394,12 +394,25 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         });
     };
 
-    // Extract storage path from full URL
-    const extractStoragePath = (url: string): string | null => {
+    /**
+     * Extract storage path and bucket from full URL
+     * Supports both 'imagens-plantas' (global) and 'arquivos-gerais' (project) buckets
+     */
+    const extractStorageInfo = (url: string): { bucket: string; path: string } | null => {
         try {
-            // URL format: .../storage/v1/object/public/imagens-plantas/especies/...
-            const match = url.match(/\/imagens-plantas\/(.+)$/);
-            return match ? match[1] : null;
+            // Check for imagens-plantas bucket
+            const imagensMatch = url.match(/\/imagens-plantas\/(.+)$/);
+            if (imagensMatch) {
+                return { bucket: 'imagens-plantas', path: imagensMatch[1] };
+            }
+
+            // Check for arquivos-gerais bucket
+            const arquivosMatch = url.match(/\/arquivos-gerais\/(.+)$/);
+            if (arquivosMatch) {
+                return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
+            }
+
+            return null;
         } catch {
             return null;
         }
@@ -408,17 +421,15 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     // Delete existing image from storage and database
     const handleDeleteExistingImage = async (imageId: string, imageUrl: string) => {
         try {
-            // 1. Remove from storage
-            const storagePath = extractStoragePath(imageUrl);
-            if (storagePath) {
+            // 1. Remove from storage (detect bucket from URL)
+            const storageInfo = extractStorageInfo(imageUrl);
+            if (storageInfo) {
                 const { error: storageError } = await supabase.storage
-                    .from('imagens-plantas')
-                    .remove([storagePath]);
+                    .from(storageInfo.bucket)
+                    .remove([storageInfo.path]);
 
                 if (storageError) {
-                    console.warn('[DEBUG] Erro ao remover do storage (pode já não existir):', storageError);
-                } else {
-                    // console.log('[DEBUG] Imagem removida do storage:', storagePath);
+                    console.warn(`[DEBUG] Erro ao remover do ${storageInfo.bucket} (pode já não existir):`, storageError);
                 }
             }
 
@@ -431,8 +442,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
             if (dbError) {
                 throw dbError;
             }
-
-            // console.log('[DEBUG] Registro de imagem removido do banco:', imageId);
 
             // 3. Update local state
             setExistingImages(prev => prev.filter(img => img.id !== imageId));
@@ -448,23 +457,63 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         }
     };
 
-    const uploadImages = async (speciesId: string): Promise<string[]> => {
+    /**
+     * Upload images with hybrid bucket strategy:
+     * - NEW global species (crowdsourcing) -> 'imagens-plantas' bucket (persists globally)
+     * - Project context (occurrences/field notes) -> 'arquivos-gerais' bucket (tied to project lifecycle)
+     * 
+     * Path structure for project images: locais/{projectId}/imagens/{speciesName}/{file}
+     */
+    const uploadImages = async (
+        speciesId: string,
+        options: {
+            isCreatingNewGlobalSpecies: boolean;
+            projectId: string | null;
+            speciesName: string;
+        }
+    ): Promise<string[]> => {
         const urls: string[] = [];
+
+        // Sanitize species name for folder path (consistent with user request)
+        const sanitizedSpeciesName = options.speciesName
+            ? options.speciesName.trim().replace(/\s+/g, '_').toLowerCase()
+            : 'sem_nome';
 
         for (const file of imageFiles) {
             const fileExt = file.name.split('.').pop();
-            const fileName = `especies/${speciesId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(7);
+
+            let bucket: string;
+            let filePath: string;
+
+            if (options.isCreatingNewGlobalSpecies || !options.projectId) {
+                // GLOBAL SPECIES CONTEXT: Upload to 'imagens-plantas' bucket
+                bucket = 'imagens-plantas';
+                filePath = `especies/${speciesId}/${timestamp}_${randomSuffix}.${fileExt}`;
+            } else {
+                // PROJECT CONTEXT: Upload to 'arquivos-gerais' bucket
+                if (!options.projectId) throw new Error("ID do projeto não encontrado para upload local.");
+
+                bucket = 'arquivos-gerais';
+                // Path: locais/{projectId}/imagens/{sanitizedSpeciesName}/{file}
+                filePath = `locais/${options.projectId}/imagens/${sanitizedSpeciesName}/${timestamp}_${randomSuffix}.${fileExt}`;
+            }
 
             const { error } = await supabase.storage
-                .from('imagens-plantas')
-                .upload(fileName, file);
+                .from(bucket)
+                .upload(filePath, file);
 
-            if (!error) {
-                const { data: { publicUrl } } = supabase.storage
-                    .from('imagens-plantas')
-                    .getPublicUrl(fileName);
-                urls.push(publicUrl);
+            if (error) {
+                console.error(`[Upload] Erro ao fazer upload para ${bucket}:`, error);
+                continue;
             }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(filePath);
+
+            urls.push(publicUrl);
         }
 
         return urls;
@@ -603,9 +652,18 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 }
             }
 
-            // Upload new images if any (with local_id!)
+            // Upload new images if any
             if (imageFiles.length > 0 && speciesId) {
-                const imageUrls = await uploadImages(speciesId);
+                // Determine upload context:
+                // - Creating NEW global species (not linking existing global, not editing) -> global bucket
+                // - Working in project context (linking, editing, or adding local images) -> project bucket
+                const isCreatingNewGlobalSpecies = !isGlobalSpecies && !isEditingExisting;
+
+                const imageUrls = await uploadImages(speciesId, {
+                    isCreatingNewGlobalSpecies,
+                    projectId: effectiveLocalId,
+                    speciesName: formData.nome_cientifico
+                });
 
                 // Insert image references WITH local_id for project scope
                 const imageRecords = imageUrls.map(url => ({

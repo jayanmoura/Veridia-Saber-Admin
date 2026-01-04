@@ -27,6 +27,8 @@ interface Project {
     descricao: string | null;
     imagem_capa: string | null;
     tipo: string | null; // 'Instituição', 'Parque', etc
+    cidade?: string | null;
+    estado?: string | null;
     especie?: { count: number }[]; // Relation returns an array of objects
     quantidade_especies: number; // Mapped number for display
 }
@@ -80,6 +82,28 @@ export default function Projects() {
 
     // Toast State
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        nome: '',
+        tipo: '',
+        cidade: '',
+        estado: '',
+        descricao: ''
+    });
+    const [editImageFile, setEditImageFile] = useState<File | null>(null);
+    const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+    const [editLoading, setEditLoading] = useState(false);
+
+    // Delete Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Report Loading State
+    const [reportLoading, setReportLoading] = useState<string | null>(null);
 
     // Form Options - Values MUST match mobile app filters exactly
     const TIPOS_PROJETO = [
@@ -276,6 +300,193 @@ export default function Projects() {
         resetForm();
     };
 
+    // === EDIT PROJECT HANDLERS ===
+    const handleEditProject = (project: Project) => {
+        setSelectedProject(project);
+        setEditFormData({
+            nome: project.nome || '',
+            tipo: project.tipo || '',
+            cidade: project.cidade || '',
+            estado: project.estado || '',
+            descricao: project.descricao || ''
+        });
+        setEditImagePreview(project.imagem_capa || null);
+        setEditImageFile(null);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('Por favor, selecione apenas arquivos de imagem.', 'error');
+                return;
+            }
+            setEditImageFile(file);
+            setEditImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (!selectedProject) return;
+        if (!editFormData.nome.trim()) {
+            showToast('O nome do projeto é obrigatório.', 'error');
+            return;
+        }
+
+        setEditLoading(true);
+        try {
+            let imagemUrl = selectedProject.imagem_capa;
+
+            // Upload new image if provided
+            if (editImageFile) {
+                const newImageUrl = await uploadProjectImage(editImageFile, selectedProject.id, 'capa');
+                if (newImageUrl) {
+                    imagemUrl = newImageUrl;
+                }
+            }
+
+            // Update database
+            const { error } = await supabase
+                .from('locais')
+                .update({
+                    nome: editFormData.nome.trim(),
+                    tipo: editFormData.tipo || null,
+                    cidade: editFormData.cidade.trim() || null,
+                    estado: editFormData.estado.trim() || null,
+                    descricao: editFormData.descricao.trim() || null,
+                    imagem_capa: imagemUrl
+                })
+                .eq('id', selectedProject.id);
+
+            if (error) throw error;
+
+            showToast('Projeto atualizado com sucesso!');
+            closeEditModal();
+            fetchProjects();
+        } catch (err: any) {
+            console.error('Error updating project:', err);
+            showToast('Erro ao atualizar projeto: ' + err.message, 'error');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setSelectedProject(null);
+        setEditFormData({ nome: '', tipo: '', cidade: '', estado: '', descricao: '' });
+        setEditImageFile(null);
+        setEditImagePreview(null);
+    };
+
+    // === DELETE PROJECT HANDLERS ===
+    const openDeleteModal = (project: Project) => {
+        setProjectToDelete(project);
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setProjectToDelete(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!projectToDelete) return;
+        setDeleteLoading(true);
+        closeDeleteModal();
+
+        try {
+            // 1. Clean up Storage: Delete all files in project folders
+            // Check multiple possible path structures to ensure complete cleanup
+            const bucket = 'arquivos-gerais';
+            const projectId = projectToDelete.id;
+
+            // Helper function to clean a specific path
+            const cleanPath = async (path: string) => {
+                try {
+                    const { data: files, error } = await supabase.storage
+                        .from(bucket)
+                        .list(path);
+
+                    if (error) {
+                        console.warn(`[Storage Cleanup] Error listing ${path}:`, error.message);
+                        return;
+                    }
+
+                    if (files && files.length > 0) {
+                        // Filter out folders (items without metadata) and get file paths
+                        const filesToRemove = files
+                            .filter(f => f.id) // Only actual files have an id
+                            .map(f => `${path}/${f.name}`);
+
+                        if (filesToRemove.length > 0) {
+                            const { error: removeError } = await supabase.storage
+                                .from(bucket)
+                                .remove(filesToRemove);
+
+                            if (removeError) {
+                                console.warn(`[Storage Cleanup] Error removing files from ${path}:`, removeError.message);
+                            } else {
+                                console.log(`[Storage Cleanup] Removed ${filesToRemove.length} files from ${path}`);
+                            }
+                        }
+
+                        // Recursively clean subfolders
+                        const subfolders = files.filter(f => !f.id); // Items without id are folders
+                        for (const folder of subfolders) {
+                            await cleanPath(`${path}/${folder.name}`);
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[Storage Cleanup] Exception cleaning ${path}:`, err);
+                }
+            };
+
+            // Paths to check for this project
+            const pathsToClean = [
+                `locais/${projectId}`,           // Main project folder
+                `locais/${projectId}/capa`,      // Cover images
+                `locais/${projectId}/imagens`,   // Project images
+                `capa/locais/${projectId}`,      // Legacy path (if exists)
+            ];
+
+            // Clean all paths
+            for (const path of pathsToClean) {
+                await cleanPath(path);
+            }
+
+            // 2. Delete database record (cascade should handle especie_local, imagens, etc.)
+            const { error } = await supabase
+                .from('locais')
+                .delete()
+                .eq('id', projectId);
+
+            if (error) throw error;
+
+            showToast('Projeto excluído com sucesso!');
+            setProjects(prev => prev.filter(p => p.id !== projectId));
+            calculateStats(projects.filter(p => p.id !== projectId));
+        } catch (err: any) {
+            console.error('Error deleting project:', err);
+            showToast('Erro ao excluir projeto: ' + err.message, 'error');
+            fetchProjects(); // Re-sync on error
+        } finally {
+            setDeleteLoading(false);
+            setProjectToDelete(null);
+        }
+    };
+
+    // === REPORT HANDLER ===
+    const handleGenerateReport = (project: Project) => {
+        setReportLoading(project.id);
+        // Placeholder until full PDF implementation
+        setTimeout(() => {
+            alert(`Gerando relatório do projeto: ${project.nome}\n\nTotal de espécies: ${project.quantidade_especies}`);
+            setReportLoading(null);
+        }, 500);
+    };
+
     if (!isGlobalAdmin) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8">
@@ -401,23 +612,25 @@ export default function Projects() {
                             {/* Card Footer Actions */}
                             <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); /* TODO: Gerar relatório */ }}
-                                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); handleGenerateReport(project); }}
+                                    disabled={reportLoading === project.id}
+                                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50"
                                 >
-                                    <FileText size={16} />
+                                    {reportLoading === project.id ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
                                     <span className="hidden sm:inline">Relatório</span>
                                 </button>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); /* TODO: Editar */ }}
+                                        onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}
                                         className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                         title="Editar"
                                     >
                                         <Pencil size={18} />
                                     </button>
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); /* TODO: Excluir */ }}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); openDeleteModal(project); }}
+                                        disabled={deleteLoading}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                         title="Excluir"
                                     >
                                         <Trash2 size={18} />
@@ -594,6 +807,233 @@ export default function Projects() {
                                         <Plus size={18} />
                                         Criar Projeto
                                     </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={closeDeleteModal}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
+                        {/* Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="text-red-600" size={32} />
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                            Excluir Projeto?
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 text-center mb-6">
+                            Você tem certeza que deseja excluir o projeto{' '}
+                            <strong className="text-gray-900">{projectToDelete?.nome}</strong>?
+                            <br />
+                            <span className="text-sm text-gray-500">
+                                Todos os dados e arquivos serão removidos permanentemente.
+                            </span>
+                        </p>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeDeleteModal}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={deleteLoading}
+                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {deleteLoading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        Excluindo...
+                                    </>
+                                ) : (
+                                    'Sim, Excluir'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Edit Project Modal */}
+            {isEditModalOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={closeEditModal}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-fade-in-up">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                    <Pencil className="text-indigo-600" size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Editar Projeto</h2>
+                                    <p className="text-sm text-gray-500">Atualize os dados do local</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closeEditModal}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+                            {/* Nome (Required) */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nome do Projeto <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editFormData.nome}
+                                    onChange={(e) => setEditFormData(prev => ({ ...prev, nome: e.target.value }))}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    placeholder="Ex: Jardim Botânico de Brasília"
+                                />
+                            </div>
+
+                            {/* Tipo */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                                <select
+                                    value={editFormData.tipo}
+                                    onChange={(e) => setEditFormData(prev => ({ ...prev, tipo: e.target.value }))}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                >
+                                    <option value="">Selecione um tipo</option>
+                                    {TIPOS_PROJETO.map(tipo => (
+                                        <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Cidade e Estado */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.cidade}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, cidade: e.target.value }))}
+                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        placeholder="Ex: São Paulo"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.estado}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, estado: e.target.value }))}
+                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        placeholder="Ex: SP"
+                                        maxLength={2}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Descrição */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                                <textarea
+                                    value={editFormData.descricao}
+                                    onChange={(e) => setEditFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                    placeholder="Uma breve descrição do projeto..."
+                                />
+                            </div>
+
+                            {/* Imagem de Capa */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem de Capa</label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors">
+                                    {editImagePreview ? (
+                                        <div className="relative">
+                                            <img
+                                                src={editImagePreview}
+                                                alt="Preview"
+                                                className="w-full h-40 object-cover rounded-lg"
+                                            />
+                                            <button
+                                                onClick={() => { setEditImageFile(null); setEditImagePreview(selectedProject?.imagem_capa || null); }}
+                                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="cursor-pointer block">
+                                            <div className="flex flex-col items-center gap-2 py-4">
+                                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                                    <Upload className="text-gray-400" size={24} />
+                                                </div>
+                                                <p className="text-sm text-gray-500">Clique para selecionar uma imagem</p>
+                                                <p className="text-xs text-gray-400">PNG, JPG ou WEBP</p>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleEditImageChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-gray-100 flex gap-3 bg-gray-50">
+                            <button
+                                onClick={closeEditModal}
+                                disabled={editLoading}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={editLoading || !editFormData.nome.trim()}
+                                className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {editLoading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        Salvando...
+                                    </>
+                                ) : (
+                                    'Salvar Alterações'
                                 )}
                             </button>
                         </div>

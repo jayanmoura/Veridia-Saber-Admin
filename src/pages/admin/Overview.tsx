@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
-import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle, Users, Camera, X, Loader2 } from 'lucide-react';
+import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle, Users, Camera, X, Loader2, Eye } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { SpeciesModal } from '../../components/Modals/SpeciesModal';
 import { FamilyModal } from '../../components/Modals/FamilyModal';
 import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
 import { BetaTestersModal } from '../../components/Modals/BetaTestersModal';
+import { PhotoGalleryModal } from '../../components/Modals/PhotoGalleryModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -88,6 +89,20 @@ export default function Overview() {
     const [isLocalFamiliesModalOpen, setIsLocalFamiliesModalOpen] = useState(false);
     const [localFamilies, setLocalFamilies] = useState<{ familia_nome: string; count: number }[]>([]);
     const [loadingFamilies, setLoadingFamilies] = useState(false);
+
+    // Recent Species State (for Gestor)
+    interface RecentLocalSpecies {
+        id: string;
+        nome_cientifico: string;
+        nome_popular: string | null;
+        created_at: string;
+        imagem_url: string | null;
+    }
+    const [recentLocalSpecies, setRecentLocalSpecies] = useState<RecentLocalSpecies[]>([]);
+    const [loadingRecentSpecies, setLoadingRecentSpecies] = useState(false);
+
+    // Photo Gallery Modal State
+    const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
 
     // Edit Project Modal State
     const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -314,6 +329,42 @@ export default function Overview() {
 
         // Also set old stats for compatibility
         setStats(prev => ({ ...prev, species: speciesCount || 0 }));
+
+        // 5. Fetch recent species for the "Recent Species" table
+        setLoadingRecentSpecies(true);
+        try {
+            const { data: recentData } = await supabase
+                .from('especie_local')
+                .select(`
+                    created_at,
+                    especie:especie_id(
+                        id,
+                        nome_cientifico,
+                        nome_popular,
+                        imagens(url_imagem)
+                    )
+                `)
+                .eq('local_id', profile.local_id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (recentData) {
+                const mapped = recentData
+                    .filter((item: any) => item.especie) // Filter out null species
+                    .map((item: any) => ({
+                        id: item.especie.id,
+                        nome_cientifico: item.especie.nome_cientifico,
+                        nome_popular: item.especie.nome_popular || null,
+                        created_at: item.created_at,
+                        imagem_url: item.especie.imagens?.[0]?.url_imagem || null
+                    }));
+                setRecentLocalSpecies(mapped);
+            }
+        } catch (err) {
+            console.error('Error fetching recent local species:', err);
+        } finally {
+            setLoadingRecentSpecies(false);
+        }
     };
 
     // Fetch families for local project
@@ -667,6 +718,7 @@ export default function Overview() {
                         icon={Camera}
                         color="purple"
                         loading={loading}
+                        onClick={() => setIsPhotoGalleryOpen(true)}
                     />
                 </div>
 
@@ -718,6 +770,88 @@ export default function Overview() {
                     </div>
                 </div>
 
+                {/* Recent Species Table */}
+                {localStats.speciesCount > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Leaf size={20} className="text-emerald-600" />
+                                Espécies Recentes no Acervo
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">Últimas adições ao seu projeto</p>
+                        </div>
+
+                        {loadingRecentSpecies ? (
+                            <div className="flex justify-center py-12">
+                                <Loader2 className="animate-spin text-emerald-600" size={32} />
+                            </div>
+                        ) : recentLocalSpecies.length > 0 ? (
+                            <div className="divide-y divide-gray-100">
+                                {recentLocalSpecies.map((species) => (
+                                    <div
+                                        key={species.id}
+                                        className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+                                    >
+                                        {/* Avatar Image */}
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                                            {species.imagem_url ? (
+                                                <img
+                                                    src={species.imagem_url}
+                                                    alt={species.nome_cientifico}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Leaf size={20} className="text-gray-300" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Species Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-gray-900 truncate italic">
+                                                {species.nome_cientifico}
+                                            </h4>
+                                            {species.nome_popular && (
+                                                <p className="text-sm text-gray-500 truncate">
+                                                    {species.nome_popular}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Date */}
+                                        <div className="text-sm text-gray-400 hidden sm:block">
+                                            {new Date(species.created_at).toLocaleDateString('pt-BR')}
+                                        </div>
+
+                                        {/* View Button */}
+                                        <NavLink
+                                            to="/species"
+                                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                            title="Ver detalhes"
+                                        >
+                                            <Eye size={18} />
+                                        </NavLink>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Leaf size={20} className="text-gray-300" />
+                                </div>
+                                <p className="text-gray-500 mb-4">Nenhuma espécie cadastrada neste projeto ainda.</p>
+                                <NavLink
+                                    to="/species"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                                >
+                                    <Plus size={16} />
+                                    Adicionar Espécie
+                                </NavLink>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {/* Welcome Message for Empty State */}
                 {localStats.speciesCount === 0 && !loading && (
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 p-8 text-center">
@@ -865,6 +999,13 @@ export default function Overview() {
                     </div>,
                     document.body
                 )}
+
+                {/* Photo Gallery Modal */}
+                <PhotoGalleryModal
+                    isOpen={isPhotoGalleryOpen}
+                    onClose={() => setIsPhotoGalleryOpen(false)}
+                    localId={profile?.local_id || ''}
+                />
             </div>
         );
     }

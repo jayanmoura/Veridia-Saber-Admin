@@ -415,17 +415,17 @@ export default function SpeciesPage() {
                     .order('nome_cientifico')
                     .range(from, to);
             } else {
-                // Global Admins: See all species (global catalog)
+                // Global Admins: See ALL species in the catalog (no filtering)
                 query = supabase
                     .from('especie')
                     .select(`
-                        *,
-                        familia (familia_nome),
-                        imagens (url_imagem, local_id),
-                        creator:profiles(full_name, email),
-                        especie_local (local_id, descricao_ocorrencia)
-                    `, { count: 'exact' })
-                    .is('local_id', null) // Only global species (not duplicates)
+                    *,
+                    familia (familia_nome),
+                    imagens (url_imagem, local_id),
+                    creator:profiles(full_name, email),
+                    especie_local (local_id, descricao_ocorrencia)
+                `, { count: 'exact' })
+                    // NO local_id filter - global admins see everything
                     .order('nome_cientifico')
                     .range(from, to);
             }
