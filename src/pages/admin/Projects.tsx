@@ -397,64 +397,59 @@ export default function Projects() {
         closeDeleteModal();
 
         try {
-            // 1. Clean up Storage: Delete all files in project folders
-            // Check multiple possible path structures to ensure complete cleanup
+            // 1. Clean up Storage: NUCLEAR RECURSIVE DELETION
+            // Scans project root and deletes EVERYTHING inside, regardless of folder structure
             const bucket = 'arquivos-gerais';
             const projectId = projectToDelete.id;
 
-            // Helper function to clean a specific path
-            const cleanPath = async (path: string) => {
-                try {
-                    const { data: files, error } = await supabase.storage
-                        .from(bucket)
-                        .list(path);
+            // Root paths to check (covers new and legacy structures)
+            const rootsToCheck = [
+                `locais/${projectId}`,
+                `capa/locais/${projectId}` // Legacy, if exists
+            ];
 
-                    if (error) {
-                        console.warn(`[Storage Cleanup] Error listing ${path}:`, error.message);
-                        return;
+
+            // Generic recursive function: "If file, kill. If folder, enter and kill."
+            const nukeFolder = async (path: string): Promise<void> => {
+                // List everything at current path
+                const { data: items, error } = await supabase.storage.from(bucket).list(path);
+
+                if (error) {
+                    return;
+                }
+
+                if (!items || items.length === 0) return;
+
+                const filesToDelete: string[] = [];
+
+                for (const item of items) {
+                    const fullPath = `${path}/${item.name}`;
+
+                    // In Supabase: no ID = virtual folder
+                    if (!item.id) {
+                        // It's a FOLDER: Recurse into it
+                        await nukeFolder(fullPath);
+                        // Try to remove the now-empty folder
+                        await supabase.storage.from(bucket).remove([fullPath]);
+                    } else {
+                        // It's a FILE: Add to kill list
+                        filesToDelete.push(fullPath);
                     }
+                }
 
-                    if (files && files.length > 0) {
-                        // Filter out folders (items without metadata) and get file paths
-                        const filesToRemove = files
-                            .filter(f => f.id) // Only actual files have an id
-                            .map(f => `${path}/${f.name}`);
-
-                        if (filesToRemove.length > 0) {
-                            const { error: removeError } = await supabase.storage
-                                .from(bucket)
-                                .remove(filesToRemove);
-
-                            if (removeError) {
-                                console.warn(`[Storage Cleanup] Error removing files from ${path}:`, removeError.message);
-                            } else {
-                                console.log(`[Storage Cleanup] Removed ${filesToRemove.length} files from ${path}`);
-                            }
-                        }
-
-                        // Recursively clean subfolders
-                        const subfolders = files.filter(f => !f.id); // Items without id are folders
-                        for (const folder of subfolders) {
-                            await cleanPath(`${path}/${folder.name}`);
-                        }
-                    }
-                } catch (err) {
-                    console.warn(`[Storage Cleanup] Exception cleaning ${path}:`, err);
+                // Batch delete all files at this level
+                if (filesToDelete.length > 0) {
+                    await supabase.storage.from(bucket).remove(filesToDelete);
                 }
             };
 
-            // Paths to check for this project
-            const pathsToClean = [
-                `locais/${projectId}`,           // Main project folder
-                `locais/${projectId}/capa`,      // Cover images
-                `locais/${projectId}/imagens`,   // Project images
-                `capa/locais/${projectId}`,      // Legacy path (if exists)
-            ];
-
-            // Clean all paths
-            for (const path of pathsToClean) {
-                await cleanPath(path);
+            // Execute nuke for each possible root
+            for (const root of rootsToCheck) {
+                await nukeFolder(root);
+                // Try to remove the project root folder
+                await supabase.storage.from(bucket).remove([root]);
             }
+
 
             // 2. Delete database record (cascade should handle especie_local, imagens, etc.)
             const { error } = await supabase

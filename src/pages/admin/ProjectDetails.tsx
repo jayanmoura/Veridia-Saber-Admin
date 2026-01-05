@@ -254,15 +254,12 @@ export default function ProjectDetailsPage() {
                 .eq('id', id);
 
             if (error) {
-                console.error('[DEBUG] Erro ao excluir projeto:', error);
                 alert('Erro ao excluir projeto: ' + error.message);
             } else {
-                console.log('[DEBUG] Projeto excluído com sucesso');
                 setShowDeleteModal(false);
                 setShowSuccessModal(true);
             }
         } catch (err) {
-            console.error('[DEBUG] Erro geral ao excluir:', err);
             alert('Erro inesperado ao excluir projeto.');
         } finally {
             setDeleteLoading(false);
@@ -383,10 +380,8 @@ export default function ProjectDetailsPage() {
             // Download
             const fileName = `Relatorio_${project.nome.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
             doc.save(fileName);
-            console.log('[DEBUG] Relatório gerado:', fileName);
 
         } catch (err) {
-            console.error('[DEBUG] Erro ao gerar relatório:', err);
             alert('Erro ao gerar relatório PDF.');
         }
     };
@@ -398,8 +393,6 @@ export default function ProjectDetailsPage() {
         setModalLoading(true);
         setModalSpecies([]);
 
-        console.log('[DEBUG] Abrindo modal para família:', familyName, '| ID:', familyId);
-
         try {
             const { data, error } = await supabase
                 .from('especie')
@@ -409,13 +402,11 @@ export default function ProjectDetailsPage() {
                 .order('nome_cientifico');
 
             if (error) {
-                console.error('[DEBUG] Erro ao buscar espécies da família:', error);
+                // Handle error silently
             } else {
-                console.log('[DEBUG] Espécies da família encontradas:', data?.length);
                 setModalSpecies(data || []);
             }
         } catch (err) {
-            console.error('[DEBUG] Erro geral no modal:', err);
         } finally {
             setModalLoading(false);
         }
@@ -430,7 +421,6 @@ export default function ProjectDetailsPage() {
     // ============ FETCH COUNTS (runs once on mount) ============
     const fetchCounts = async () => {
         if (!id) return;
-        console.log('[DEBUG] Buscando contadores iniciais para projeto ID:', id);
 
         try {
             // Count Users
@@ -440,7 +430,6 @@ export default function ProjectDetailsPage() {
                 .eq('local_id', id);
 
             if (!userError && userCount !== null) {
-                console.log('[DEBUG] Total de usuários:', userCount);
                 setUsersCount(userCount);
             }
 
@@ -451,7 +440,6 @@ export default function ProjectDetailsPage() {
                 .eq('local_id', id);
 
             if (!specError && specCount !== null) {
-                console.log('[DEBUG] Total de espécies:', specCount);
                 setSpeciesCountTotal(specCount);
             }
 
@@ -464,27 +452,24 @@ export default function ProjectDetailsPage() {
 
             if (!familyError && familyData) {
                 const uniqueFamilyIds = new Set(familyData.map(s => s.familia_id));
-                console.log('[DEBUG] Total de famílias únicas:', uniqueFamilyIds.size);
                 setFamiliesCount(uniqueFamilyIds.size);
             }
         } catch (err) {
-            console.error('[DEBUG] Erro ao buscar contadores:', err);
+            // Handle error silently
         }
     };
 
     // ============ DATA FETCHING ============
     useEffect(() => {
         if (id && isGlobalAdmin) {
-            console.log('[DEBUG] Iniciando fetch do projeto. ID:', id);
             fetchProjectDetails();
-            fetchCounts(); // Load counts immediately
+            fetchCounts();
         }
     }, [id, profile]);
 
     // When tab changes, reset pagination and fetch data
     useEffect(() => {
         if (id && project) {
-            console.log('[DEBUG] Aba alterada para:', activeTab, '- Resetando página para 1');
             setCurrentPage(1);
             fetchTabData(activeTab, 1);
         }
@@ -493,7 +478,6 @@ export default function ProjectDetailsPage() {
     // When page changes (but not tab), fetch data for new page
     useEffect(() => {
         if (id && project && currentPage > 0) {
-            console.log('[DEBUG] Página alterada para:', currentPage);
             fetchTabData(activeTab, currentPage);
         }
     }, [currentPage]);
@@ -501,7 +485,6 @@ export default function ProjectDetailsPage() {
     const fetchProjectDetails = async () => {
         setLoading(true);
         setError(null);
-        console.log('[DEBUG] fetchProjectDetails() - Buscando projeto ID:', id);
         try {
             const { data, error: fetchError } = await supabase
                 .from('locais')
@@ -510,10 +493,8 @@ export default function ProjectDetailsPage() {
                 .single();
 
             if (fetchError) {
-                console.error('[DEBUG] ERRO ao buscar projeto:', fetchError);
                 throw fetchError;
             }
-            console.log('[DEBUG] Projeto encontrado:', data);
             setProject(data);
         } catch (err) {
             console.error('Error fetching project details:', err);
@@ -530,42 +511,27 @@ export default function ProjectDetailsPage() {
         const start = (page - 1) * ITEMS_PER_PAGE;
         const end = start + ITEMS_PER_PAGE - 1;
 
-        console.log('[DEBUG] fetchTabData() - Aba:', tab, '| Página:', page, '| Range:', start, '-', end);
-
         try {
             switch (tab) {
                 case 'users':
-                    console.log('[DEBUG] Buscando usuários com local_id =', id);
-                    const { data: usersData, error: usersError } = await supabase
+                    const { data: usersData } = await supabase
                         .from('profiles')
                         .select('id, full_name, email, role, avatar_url')
                         .eq('local_id', id)
                         .order('full_name')
                         .range(start, end);
 
-                    if (usersError) {
-                        console.error('[DEBUG] ERRO ao buscar usuários:', usersError);
-                    } else {
-                        console.log('[DEBUG] Usuários encontrados:', usersData?.length, usersData);
-                    }
                     setLinkedUsers(usersData || []);
                     setTotalPages(Math.ceil(usersCount / ITEMS_PER_PAGE) || 1);
                     break;
 
                 case 'species':
-                    console.log('[DEBUG] Buscando espécies com local_id =', id);
-                    const { data: speciesData, error: speciesError } = await supabase
+                    const { data: speciesData } = await supabase
                         .from('especie')
                         .select('id, nome_cientifico, nome_popular, familia_id, familia:familia_id(id, familia_nome), imagens(url_imagem)')
                         .eq('local_id', id)
                         .order('nome_cientifico')
                         .range(start, end);
-
-                    if (speciesError) {
-                        console.error('[DEBUG] ERRO ao buscar espécies:', speciesError);
-                    } else {
-                        console.log('[DEBUG] Espécies encontradas:', speciesData?.length, speciesData);
-                    }
 
                     // Normalize familia and imagem from arrays to single values
                     const normalizedSpecies: LinkedSpecies[] = (speciesData || []).map((s: any) => {
@@ -586,18 +552,11 @@ export default function ProjectDetailsPage() {
                     break;
 
                 case 'families':
-                    console.log('[DEBUG] Buscando famílias (via espécies) com local_id =', id);
                     // Fetch ALL species to aggregate by family (then paginate client-side)
-                    const { data: speciesForFamilies, error: familiesError } = await supabase
+                    const { data: speciesForFamilies } = await supabase
                         .from('especie')
                         .select('familia_id, familia:familia_id(id, familia_nome)')
                         .eq('local_id', id);
-
-                    if (familiesError) {
-                        console.error('[DEBUG] ERRO ao buscar famílias:', familiesError);
-                    } else {
-                        console.log('[DEBUG] Espécies para agregação de famílias:', speciesForFamilies?.length, speciesForFamilies);
-                    }
 
                     if (speciesForFamilies) {
                         const familyMap = new Map<number, { id: number; familia_nome: string; speciesCount: number }>();
@@ -620,14 +579,13 @@ export default function ProjectDetailsPage() {
 
                         // Client-side pagination for families
                         const paginatedFamilies = allFamilies.slice(start, end + 1);
-                        console.log('[DEBUG] Famílias agregadas:', allFamilies.length, '| Página:', paginatedFamilies.length);
                         setLinkedFamilies(paginatedFamilies);
                         setTotalPages(Math.ceil(allFamilies.length / ITEMS_PER_PAGE) || 1);
                     }
                     break;
             }
         } catch (err) {
-            console.error(`[DEBUG] ERRO GERAL ao buscar dados da aba ${tab}:`, err);
+            // Handle error silently
         } finally {
             setTabLoading(false);
         }

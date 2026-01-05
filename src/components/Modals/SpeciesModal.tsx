@@ -424,13 +424,9 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
             // 1. Remove from storage (detect bucket from URL)
             const storageInfo = extractStorageInfo(imageUrl);
             if (storageInfo) {
-                const { error: storageError } = await supabase.storage
+                await supabase.storage
                     .from(storageInfo.bucket)
                     .remove([storageInfo.path]);
-
-                if (storageError) {
-                    console.warn(`[DEBUG] Erro ao remover do ${storageInfo.bucket} (pode já não existir):`, storageError);
-                }
             }
 
             // 2. Remove from database
@@ -493,8 +489,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 filePath = `especies/${speciesId}/${timestamp}_${randomSuffix}.${fileExt}`;
             } else {
                 // PROJECT CONTEXT: Upload to 'arquivos-gerais' bucket
-                if (!options.projectId) throw new Error("ID do projeto não encontrado para upload local.");
-
                 bucket = 'arquivos-gerais';
                 // Path: locais/{projectId}/imagens/{sanitizedSpeciesName}/{file}
                 filePath = `locais/${options.projectId}/imagens/${sanitizedSpeciesName}/${timestamp}_${randomSuffix}.${fileExt}`;
@@ -505,7 +499,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 .upload(filePath, file);
 
             if (error) {
-                console.error(`[Upload] Erro ao fazer upload para ${bucket}:`, error);
                 continue;
             }
 
@@ -657,7 +650,8 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 // Determine upload context:
                 // - Creating NEW global species (not linking existing global, not editing) -> global bucket
                 // - Working in project context (linking, editing, or adding local images) -> project bucket
-                const isCreatingNewGlobalSpecies = !isGlobalSpecies && !isEditingExisting;
+                // Uma espécie só é "global" se NÃO tiver projectId associado
+                const isCreatingNewGlobalSpecies = !isGlobalSpecies && !isEditingExisting && !effectiveLocalId;
 
                 const imageUrls = await uploadImages(speciesId, {
                     isCreatingNewGlobalSpecies,
