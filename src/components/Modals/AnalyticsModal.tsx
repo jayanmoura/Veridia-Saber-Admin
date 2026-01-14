@@ -80,16 +80,24 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
     };
 
     const fetchMetrics = async () => {
-        const today = new Date().toISOString().split('T')[0];
+        // Get start of today in local timezone, then convert to ISO string
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const todayStart = startOfToday.toISOString();
+
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
         // Active users today
-        const { data: todayUsers } = await supabase
+        const { data: todayUsers, error: todayError } = await supabase
             .from('analytics_events')
             .select('user_id')
-            .gte('created_at', today)
+            .gte('created_at', todayStart)
             .not('user_id', 'is', null);
+
+        if (todayError) {
+            console.error('Error fetching today users:', todayError);
+        }
 
         const uniqueTodayUsers = new Set(todayUsers?.map(e => e.user_id)).size;
         setActiveUsersToday(uniqueTodayUsers);
