@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
-import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle, Users, Camera, X, Loader2, Eye } from 'lucide-react';
+import { Leaf, TreeDeciduous, MapPin, Activity, BookOpen, Shield, Globe, Award, AlertTriangle, Plus, Pencil, CheckCircle, Users, Camera, X, Loader2, Eye, BarChart3 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { SpeciesModal } from '../../components/Modals/SpeciesModal';
 import { FamilyModal } from '../../components/Modals/FamilyModal';
 import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
 import { BetaTestersModal } from '../../components/Modals/BetaTestersModal';
 import { PhotoGalleryModal } from '../../components/Modals/PhotoGalleryModal';
+import { AnalyticsModal } from '../../components/Modals/AnalyticsModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -117,6 +118,7 @@ export default function Overview() {
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const [isBetaTestersModalOpen, setIsBetaTestersModalOpen] = useState(false);
+    const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
     const [editingWork, setEditingWork] = useState<any>(null);
 
     const handleNewSpecies = () => {
@@ -577,12 +579,18 @@ export default function Overview() {
                                 </div>
                             )}
 
-                            {/* Placeholder para Coordenador Científico */}
-                            {profile?.role === 'Coordenador Científico' && (
-                                <div className="col-span-full flex flex-col items-center justify-center p-8 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
-                                    <Activity size={32} className="text-gray-300 mb-3" />
-                                    <p className="text-gray-400 text-sm font-medium">Novas ferramentas de gestão em breve para Coordenadores.</p>
-                                </div>
+                            {/* Card Dados Analíticos - Curador Mestre E Coordenador Científico */}
+                            {isGlobalAdmin && (
+                                <button
+                                    onClick={() => setIsAnalyticsModalOpen(true)}
+                                    className="flex flex-col items-center justify-center p-6 bg-cyan-50 border border-cyan-100 rounded-xl hover:shadow-md transition-all group"
+                                >
+                                    <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                        <BarChart3 className="text-cyan-600" size={24} />
+                                    </div>
+                                    <h4 className="font-semibold text-gray-800">Dados Analíticos</h4>
+                                    <p className="text-xs text-center text-gray-500 mt-1">Métricas de uso do app</p>
+                                </button>
                             )}
                         </div>
                     </div>
@@ -652,6 +660,11 @@ export default function Overview() {
                 <BetaTestersModal
                     isOpen={isBetaTestersModalOpen}
                     onClose={() => setIsBetaTestersModalOpen(false)}
+                />
+
+                <AnalyticsModal
+                    isOpen={isAnalyticsModalOpen}
+                    onClose={() => setIsAnalyticsModalOpen(false)}
                 />
             </div >
         );
