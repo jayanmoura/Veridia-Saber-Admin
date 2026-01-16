@@ -136,9 +136,13 @@ export const adminRouter = createBrowserRouter([
                 path: 'mapa-projetos',
                 element: (
                     <OnlyGlobalAdmin>
-                        <ProjectMap />
+                        <GlobalMap />
                     </OnlyGlobalAdmin>
                 ),
+            },
+            {
+                path: 'project-map',
+                element: <ProjectMap />,
             },
         ],
     },

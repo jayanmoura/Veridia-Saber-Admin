@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { hasMinLevel } from '../../types/auth';
@@ -32,7 +32,13 @@ const MENU_ITEMS = [
         icon: MapPin,
         minLevel: 2, // Curador(1), Coord(2)
     },
-
+    {
+        label: 'Mapa do Projeto',
+        path: '/project-map',
+        icon: MapPinned,
+        minLevel: 5,
+        requiresLocalId: true, // Apenas para usuários com local_id
+    },
     {
         label: 'Usuários',
         path: '/users',
@@ -44,10 +50,12 @@ const MENU_ITEMS = [
 export function Sidebar() {
     const { signOut, profile } = useAuth();
 
-    // Filtrar itens por nível mínimo usando a nova lógica
-    const filteredItems = MENU_ITEMS.filter(item =>
-        hasMinLevel(profile?.role, item.minLevel)
-    );
+    // Filtrar itens por nível mínimo e requisito de local_id
+    const filteredItems = MENU_ITEMS.filter(item => {
+        if (!hasMinLevel(profile?.role, item.minLevel)) return false;
+        if (item.requiresLocalId && !profile?.local_id) return false;
+        return true;
+    });
 
     return (
         <aside className="w-64 bg-teal-950 text-white flex flex-col fixed inset-y-0 left-0 z-50 transition-all duration-300 shadow-xl">
