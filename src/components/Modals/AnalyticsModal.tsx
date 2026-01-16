@@ -203,14 +203,42 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
     };
 
     const fetchRecentEvents = async () => {
-        const { data } = await supabase
+        // Fetch events without the join (FK may not exist)
+        const { data: events } = await supabase
             .from('analytics_events')
-            .select('id, event_type, platform, created_at, user_id, profiles:user_id(full_name)')
+            .select('id, event_type, platform, created_at, user_id')
             .order('created_at', { ascending: false })
             .limit(15);
 
-        if (data) {
-            setRecentEvents(data);
+        if (events && events.length > 0) {
+            // Get unique user IDs
+            const userIds = [...new Set(events.filter(e => e.user_id).map(e => e.user_id))];
+
+            // Fetch user names if there are any user IDs
+            let userMap: Record<string, string> = {};
+            if (userIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', userIds);
+
+                if (profiles) {
+                    userMap = profiles.reduce((acc, p) => {
+                        acc[p.id] = p.full_name;
+                        return acc;
+                    }, {} as Record<string, string>);
+                }
+            }
+
+            // Map events with user names
+            const eventsWithProfiles = events.map(e => ({
+                ...e,
+                profiles: e.user_id && userMap[e.user_id] ? { full_name: userMap[e.user_id] } : null
+            }));
+
+            setRecentEvents(eventsWithProfiles);
+        } else {
+            setRecentEvents([]);
         }
     };
 

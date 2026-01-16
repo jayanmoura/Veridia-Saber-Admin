@@ -32,6 +32,7 @@ const MENU_ITEMS = [
         icon: MapPin,
         minLevel: 2, // Curador(1), Coord(2)
     },
+
     {
         label: 'Usuários',
         path: '/users',

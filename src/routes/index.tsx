@@ -8,6 +8,8 @@ import Projects from '../pages/admin/Projects';
 import ProjectDetails from '../pages/admin/ProjectDetails';
 import EducationalContent from '../pages/admin/EducationalContent';
 import AuditLogs from '../pages/admin/AuditLogs';
+import ProjectMap from '../pages/admin/ProjectMap';
+import GlobalMap from '../pages/admin/GlobalMap';
 import LandingPage from '../pages/landingpage/LandingPage';
 import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
@@ -119,6 +121,22 @@ export const adminRouter = createBrowserRouter([
                 element: (
                     <OnlyGlobalAdmin>
                         <AuditLogs />
+                    </OnlyGlobalAdmin>
+                ),
+            },
+            {
+                path: 'mapa-global',
+                element: (
+                    <OnlyGlobalAdmin>
+                        <GlobalMap />
+                    </OnlyGlobalAdmin>
+                ),
+            },
+            {
+                path: 'mapa-projetos',
+                element: (
+                    <OnlyGlobalAdmin>
+                        <ProjectMap />
                     </OnlyGlobalAdmin>
                 ),
             },

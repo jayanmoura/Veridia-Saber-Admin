@@ -128,6 +128,7 @@ Tabela mestre de espécies (Dados Globais/Taxonômicos).
 | created_by_institution_id | `uuid` | YES | - | -> `institutions.id` |
 | created_by | `uuid` | YES | - | -> `auth.users` (Implicit) |
 | local_id | `bigint` | YES | - | -> `locais.id` |
+| autor | `text` | YES | - | - |
 
 ### especie_local
 Dados de ocorrência de uma espécie em um local específico (Xiloteca/Herbário).
@@ -144,6 +145,18 @@ Dados de ocorrência de uma espécie em um local específico (Xiloteca/Herbário
 | descricao_ocorrencia | `text` | YES | - | - |
 | institution_id | `uuid` | NO | - | -> `institutions.id` |
 | nome_popular_local | `text` | YES | - | - |
+
+### etiquetas
+Registros de etiquetas de herbário geradas para espécies em projetos.
+
+| Coluna | Tipo | Nulo? | Default | Relação (FK) |
+| :--- | :--- | :--- | :--- | :--- |
+| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
+| especie_local_id | `bigint` | NO | - | -> `especie_local.id` |
+| created_at | `timestamptz` | NO | `now()` | - |
+| gerado_por | `uuid` | YES | - | -> `auth.users` |
+| conteudo_json | `jsonb` | YES | - | - |
+| numero_tombo | `bigint` | YES | - | - |
 
 ### estados
 Lista fixa de estados (UF).
@@ -213,6 +226,8 @@ Locais físicos (Campus, Reservas, Prédios).
 | cidade | `text` | YES | - | - |
 | estado | `text` | YES | - | - |
 | contato | `text` | YES | - | - |
+| latitude | `double` | YES | - | - |
+| longitude | `double` | YES | - | - |
 
 ### locais_estatisticas
 Dados agregados para performance.
