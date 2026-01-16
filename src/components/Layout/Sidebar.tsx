@@ -1,7 +1,7 @@
-import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned } from 'lucide-react';
+import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned, Globe } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { hasMinLevel } from '../../types/auth';
+import { hasMinLevel, ROLES_CONFIG } from '../../types/auth';
 import logoIcon from '../../assets/icon.png';
 import { InstallPWA } from '../InstallPWA';
 
@@ -40,6 +40,12 @@ const MENU_ITEMS = [
         requiresLocalId: true, // Apenas para usuários com local_id
     },
     {
+        label: 'Mapa Global',
+        path: '/mapa-global',
+        icon: Globe,
+        exactLevel: 3, // Apenas TaxSênior(3) - Curador e Coord já têm no Overview
+    },
+    {
         label: 'Usuários',
         path: '/users',
         icon: Users,
@@ -50,9 +56,16 @@ const MENU_ITEMS = [
 export function Sidebar() {
     const { signOut, profile } = useAuth();
 
-    // Filtrar itens por nível mínimo e requisito de local_id
+    // Filtrar itens por nível mínimo/exato e requisito de local_id
     const filteredItems = MENU_ITEMS.filter(item => {
-        if (!hasMinLevel(profile?.role, item.minLevel)) return false;
+        // Se tem exactLevel, verifica se é exatamente esse nível
+        if (item.exactLevel) {
+            const roleLevel = ROLES_CONFIG[profile?.role as keyof typeof ROLES_CONFIG]?.level;
+            if (roleLevel !== item.exactLevel) return false;
+        } else if (item.minLevel) {
+            // Caso contrário, usa minLevel
+            if (!hasMinLevel(profile?.role, item.minLevel)) return false;
+        }
         if (item.requiresLocalId && !profile?.local_id) return false;
         return true;
     });

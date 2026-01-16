@@ -8,8 +8,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPinned, AlertTriangle, Loader2, Leaf, Layers } from 'lucide-react';
+import { MapPinned, AlertTriangle, Loader2, Leaf, Layers, User, FileText } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Utility to create project center icon
 const createProjectCenterIcon = (name: string) => {
@@ -36,6 +38,11 @@ interface ProjectData {
     longitude: number | null;
 }
 
+interface TaxonomistData {
+    id: string;
+    full_name: string;
+}
+
 interface SpeciesLocation {
     id: string;
     latitude: number | null;
@@ -47,6 +54,7 @@ interface SpeciesLocation {
         nome_popular: string | null;
         familia?: { familia_nome: string } | null;
         imagens?: { url_imagem: string }[] | null;
+        created_by?: string | null; // Who created the species
     } | null;
 }
 
@@ -74,15 +82,27 @@ const FitBounds = ({ species, projectCenter }: { species: { latitude: number, lo
 };
 
 export default function ProjectMap() {
-    const { profile } = useAuth();
+    const { profile, session } = useAuth();
+    const currentUserId = session?.user?.id;
     const [project, setProject] = useState<ProjectData | null>(null);
     const [species, setSpecies] = useState<SpeciesLocation[]>([]);
+    const [taxonomists, setTaxonomists] = useState<TaxonomistData[]>([]);
+    const [selectedTaxonomist, setSelectedTaxonomist] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mapStyle, setMapStyle] = useState<'light' | 'satellite'>('light');
 
     // Access check - only users with local_id
     const hasAccess = profile?.local_id != null;
+    const isGestor = profile?.role === 'Gestor de Acervo';
+
+    // Helper to determine marker color - orange for user's own plants, green for others
+    const getMarkerColor = (createdBy: string | null | undefined) => {
+        if (currentUserId && createdBy === currentUserId) {
+            return '#F97316'; // Orange-500 for user's own plants
+        }
+        return '#10B981'; // Emerald-500 for other plants
+    };
 
     useEffect(() => {
         if (!profile?.local_id) {
@@ -115,7 +135,8 @@ export default function ProjectMap() {
                             nome_cientifico,
                             nome_popular,
                             familia:familia_id(familia_nome),
-                            imagens(url_imagem)
+                            imagens(url_imagem),
+                            created_by
                         )
                     `)
                     .eq('local_id', profile.local_id)
@@ -134,6 +155,17 @@ export default function ProjectMap() {
                 }));
 
                 setSpecies(mappedSpecies);
+
+                // Fetch taxonomists from this project (only for Gestor de Acervo)
+                if (profile.role === 'Gestor de Acervo') {
+                    const { data: taxonomistData } = await supabase
+                        .from('profiles')
+                        .select('id, full_name')
+                        .eq('local_id', profile.local_id)
+                        .eq('role', 'Taxonomista de Campo');
+
+                    setTaxonomists(taxonomistData || []);
+                }
             } catch (err: any) {
                 console.error('Error fetching project map data:', err);
                 setError(err.message || 'Erro ao carregar dados do mapa.');
@@ -143,7 +175,7 @@ export default function ProjectMap() {
         };
 
         fetchData();
-    }, [profile?.local_id]);
+    }, [profile?.local_id, profile?.role]);
 
     const getTileUrl = () => {
         switch (mapStyle) {
@@ -152,10 +184,56 @@ export default function ProjectMap() {
         }
     };
 
-    // Filter species with valid coordinates
-    const validSpecies = useMemo(() =>
-        species.filter(s => s.latitude && s.longitude),
-        [species]);
+    // Filter species with valid coordinates and optional taxonomist filter
+    const validSpecies = useMemo(() => {
+        let filtered = species.filter(s => s.latitude && s.longitude);
+        if (selectedTaxonomist) {
+            filtered = filtered.filter(s => s.especie?.created_by === selectedTaxonomist);
+        }
+        return filtered;
+    }, [species, selectedTaxonomist]);
+
+    // Generate PDF report for selected taxonomist
+    const generateReport = () => {
+        if (!selectedTaxonomist || !project) return;
+
+        const taxonomist = taxonomists.find(t => t.id === selectedTaxonomist);
+        const taxonomistSpecies = validSpecies;
+
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(16, 185, 129); // Emerald
+        doc.text('Relatório de Catalogação', 14, 20);
+
+        doc.setFontSize(12);
+        doc.setTextColor(60, 60, 60);
+        doc.text(`Projeto: ${project.nome}`, 14, 30);
+        doc.text(`Taxonomista: ${taxonomist?.full_name || 'Desconhecido'}`, 14, 37);
+        doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 44);
+        doc.text(`Total de plantas: ${taxonomistSpecies.length}`, 14, 51);
+
+        // Table
+        const tableData = taxonomistSpecies.map((sp, index) => [
+            index + 1,
+            sp.especie?.nome_cientifico || 'N/I',
+            sp.especie?.familia?.familia_nome || 'N/I',
+            `${sp.latitude?.toFixed(5)}, ${sp.longitude?.toFixed(5)}`,
+        ]);
+
+        autoTable(doc, {
+            startY: 58,
+            head: [['#', 'Espécie', 'Família', 'Coordenadas']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [16, 185, 129] },
+            styles: { fontSize: 9 },
+        });
+
+        // Save
+        doc.save(`relatorio_${taxonomist?.full_name?.replace(/\s+/g, '_') || 'taxonomista'}.pdf`);
+    };
 
     // Access denied
     if (!hasAccess) {
@@ -229,6 +307,42 @@ export default function ProjectMap() {
                             <Layers size={14} />
                         </button>
                     </div>
+
+                    {/* Taxonomist Filter - Only for Gestor de Acervo */}
+                    {isGestor && (
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={selectedTaxonomist}
+                                    onChange={(e) => setSelectedTaxonomist(e.target.value)}
+                                    className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none appearance-none bg-white min-w-[180px]"
+                                    disabled={taxonomists.length === 0}
+                                >
+                                    {taxonomists.length === 0 ? (
+                                        <option value="">Nenhum taxonomista</option>
+                                    ) : (
+                                        <>
+                                            <option value="">Todos os Taxonomistas</option>
+                                            {taxonomists.map(t => (
+                                                <option key={t.id} value={t.id}>{t.full_name}</option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                            {selectedTaxonomist && (
+                                <button
+                                    onClick={generateReport}
+                                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                    title="Gerar relatório PDF"
+                                >
+                                    <FileText size={16} />
+                                    <span className="hidden sm:inline">Relatório</span>
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -237,6 +351,23 @@ export default function ProjectMap() {
                 {loading && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
                         <Loader2 className="animate-spin text-emerald-600" size={40} />
+                    </div>
+                )}
+
+                {/* Legend - Only show if user is logged in */}
+                {currentUserId && (
+                    <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5">Legenda</p>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm"></div>
+                                <span className="text-xs text-gray-600">Cadastro por Mim</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white shadow-sm"></div>
+                                <span className="text-xs text-gray-600">Cadastros da Instituição</span>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -267,7 +398,7 @@ export default function ProjectMap() {
                             key={sp.id}
                             center={[sp.latitude!, sp.longitude!]}
                             radius={8}
-                            fillColor="#10B981"
+                            fillColor={getMarkerColor(sp.especie?.created_by)}
                             color="#fff"
                             weight={2}
                             opacity={1}

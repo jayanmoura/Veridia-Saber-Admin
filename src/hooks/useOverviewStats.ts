@@ -75,6 +75,7 @@ export interface UseOverviewStatsReturn {
     isGlobalAdmin: boolean;
     isLocalAdmin: boolean;
     isSenior: boolean;
+    isFieldTaxonomist: boolean;
     isCataloger: boolean;
 
     // Global stats
@@ -113,7 +114,8 @@ export function useOverviewStats(): UseOverviewStatsReturn {
     const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
     const isLocalAdmin = profile?.role === 'Gestor de Acervo';
     const isSenior = profile?.role === 'Taxonomista Sênior';
-    const isCataloger = (profile?.role?.includes('Taxonomista') && !isSenior) || profile?.role === 'Consulente';
+    const isFieldTaxonomist = profile?.role === 'Taxonomista de Campo';
+    const isCataloger = profile?.role === 'Consulente';
 
     // Global stats
     const [stats, setStats] = useState<GlobalStats>({
@@ -345,15 +347,15 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 await fetchGlobalStats();
             } else if (isLocalAdmin) {
                 await fetchLocalStats();
-            } else if (isSenior) {
-                await fetchSeniorStats();
+            } else if (isSenior || isFieldTaxonomist) {
+                await fetchSeniorStats(); // Reuse same logic for field taxonomist
             } else if (isCataloger) {
                 await fetchPersonalStats();
             }
         } finally {
             setLoading(false);
         }
-    }, [isGlobalAdmin, isLocalAdmin, isSenior, isCataloger, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchPersonalStats]);
+    }, [isGlobalAdmin, isLocalAdmin, isSenior, isFieldTaxonomist, isCataloger, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchPersonalStats]);
 
     // Initial load
     useEffect(() => {
@@ -364,6 +366,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         isGlobalAdmin,
         isLocalAdmin,
         isSenior,
+        isFieldTaxonomist,
         isCataloger,
         stats,
         recentLogs,

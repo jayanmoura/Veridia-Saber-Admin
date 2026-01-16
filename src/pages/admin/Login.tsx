@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Lock, Mail } from 'lucide-react';
 import { InstallPWA } from '../../components/InstallPWA';
@@ -87,6 +87,16 @@ export default function Login() {
                     >
                         {loading ? 'Entrando...' : 'Acessar Painel'}
                     </button>
+
+                    {/* Disclaimer Link */}
+                    <div className="text-center pt-4">
+                        <Link
+                            to="/disclaimer"
+                            className="text-sm text-slate-500 hover:text-emerald-600 transition-colors"
+                        >
+                            Isenção de Responsabilidade
+                        </Link>
+                    </div>
                 </form>
             </div>
         </div>

@@ -2,13 +2,14 @@
  * Overview - Refactored version using extracted hook and view components.
  * 
  * Original: 1252 lines
- * Refactored: ~50 lines
+ * Refactored: ~60 lines
  */
 import { useOverviewStats } from '../../hooks';
 import {
     GlobalAdminView,
     LocalAdminView,
     SeniorView,
+    FieldTaxonomistView,
     CatalogerView
 } from '../../components/Overview';
 
@@ -17,6 +18,7 @@ export default function Overview() {
         isGlobalAdmin,
         isLocalAdmin,
         isSenior,
+        isFieldTaxonomist,
         stats,
         recentLogs,
         recentWork,
@@ -71,6 +73,18 @@ export default function Overview() {
         );
     }
 
+    if (isFieldTaxonomist) {
+        return (
+            <FieldTaxonomistView
+                stats={stats}
+                recentWork={recentWork}
+                pendingSpecies={pendingSpecies}
+                loading={loading}
+                refetch={refetch}
+            />
+        );
+    }
+
     // Default: Cataloger / Consulente
     return (
         <CatalogerView
@@ -79,3 +93,4 @@ export default function Overview() {
         />
     );
 }
+

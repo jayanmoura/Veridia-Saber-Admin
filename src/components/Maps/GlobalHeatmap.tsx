@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, Filter, X, Map as MapIcon, Layers } from 'lucide-react';
 
 interface LocationData {
@@ -13,6 +14,7 @@ interface LocationData {
     collector: string;
     date: string;
     image?: string;
+    user_id: string | null; // Added to track plant owner
 }
 
 // Fix Leaflet clean up issues
@@ -25,6 +27,9 @@ const MapController = () => {
 };
 
 export function GlobalHeatmap() {
+    const { session } = useAuth();
+    const currentUserId = session?.user?.id;
+
     const [locations, setLocations] = useState<LocationData[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterFamily, setFilterFamily] = useState('');
@@ -38,8 +43,8 @@ export function GlobalHeatmap() {
     const fetchLocations = async () => {
         setLoading(true);
         try {
-            // Fetch field collections with coordinates
-            const { data, error } = await supabase
+            // Fetch from plantas_da_colecao (app mobile registrations)
+            const { data: plantasData, error: plantasError } = await supabase
                 .from('plantas_da_colecao')
                 .select(`
                     id, 
@@ -49,29 +54,71 @@ export function GlobalHeatmap() {
                     familia_custom,
                     familia_id,
                     data_registro, 
-                    fotos
+                    fotos,
+                    user_id
                 `)
                 .not('latitude', 'is', null)
                 .not('longitude', 'is', null)
-                .limit(2000); // Safety limit
+                .limit(1000);
 
-            if (error) throw error;
+            if (plantasError) throw plantasError;
 
-            const mapped: LocationData[] = (data || []).map((item: any) => ({
-                id: item.id,
+            // Fetch from especie_local (web panel registrations)
+            const { data: especieLocalData, error: especieLocalError } = await supabase
+                .from('especie_local')
+                .select(`
+                    id, 
+                    latitude, 
+                    longitude,
+                    created_at,
+                    especie:especie_id (
+                        nome_cientifico,
+                        familia:familia_id(familia_nome),
+                        created_by,
+                        imagens(url_imagem)
+                    )
+                `)
+                .not('latitude', 'is', null)
+                .not('longitude', 'is', null)
+                .limit(1000);
+
+            if (especieLocalError) throw especieLocalError;
+
+            // Map plantas_da_colecao
+            const mappedPlantas: LocationData[] = (plantasData || []).map((item: any) => ({
+                id: `planta_${item.id}`,
                 latitude: Number(item.latitude),
                 longitude: Number(item.longitude),
                 species_name: item.especie || 'Não Identificada',
                 family_name: item.familia?.familia_nome || item.familia_custom || 'Sem Família',
-                collector: item.profiles?.full_name || 'Usuário do App',
+                collector: 'Usuário do App',
                 date: item.data_registro,
-                image: item.fotos && item.fotos.length > 0 ? item.fotos[0] : undefined
+                image: item.fotos && item.fotos.length > 0 ? item.fotos[0] : undefined,
+                user_id: item.user_id
             }));
 
-            setLocations(mapped);
+            // Map especie_local
+            const mappedEspecieLocal: LocationData[] = (especieLocalData || []).map((item: any) => {
+                const especie = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                return {
+                    id: `especie_local_${item.id}`,
+                    latitude: Number(item.latitude),
+                    longitude: Number(item.longitude),
+                    species_name: especie?.nome_cientifico || 'Não Identificada',
+                    family_name: especie?.familia?.familia_nome || 'Sem Família',
+                    collector: 'Painel Web',
+                    date: item.created_at,
+                    image: especie?.imagens?.[0]?.url_imagem || undefined,
+                    user_id: especie?.created_by || null
+                };
+            });
+
+            // Combine both sources
+            const allLocations = [...mappedPlantas, ...mappedEspecieLocal];
+            setLocations(allLocations);
 
             // Extract unique families for filter
-            const families = Array.from(new Set(mapped.map(l => l.family_name))).sort();
+            const families = Array.from(new Set(allLocations.map(l => l.family_name))).sort();
             setUniqueFamilies(families);
 
         } catch (error: any) {
@@ -86,6 +133,14 @@ export function GlobalHeatmap() {
     const filteredLocations = filterFamily
         ? locations.filter(l => l.family_name === filterFamily)
         : locations;
+
+    // Helper to determine marker color - orange for user's own plants, green for others
+    const getMarkerColor = (plantUserId: string | null) => {
+        if (currentUserId && plantUserId === currentUserId) {
+            return '#F97316'; // Orange-500 for user's own plants
+        }
+        return '#059669'; // Emerald-600 for other plants
+    };
 
     // Center map calculation
     const center: [number, number] = filteredLocations.length > 0
@@ -173,6 +228,23 @@ export function GlobalHeatmap() {
                     </div>
                 )}
 
+                {/* Legend - Only show if user is logged in */}
+                {currentUserId && (
+                    <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5">Legenda</p>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm"></div>
+                                <span className="text-xs text-gray-600">Cadastro por Mim</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-emerald-600 border border-white shadow-sm"></div>
+                                <span className="text-xs text-gray-600">Cadastros da Instituição</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <MapContainer
                     center={center}
                     zoom={4}
@@ -190,11 +262,11 @@ export function GlobalHeatmap() {
                             key={loc.id}
                             center={[loc.latitude, loc.longitude]}
                             radius={6}
-                            fillColor={filterFamily ? "#10B981" : "#059669"} // Emerald-500 vs 600
+                            fillColor={getMarkerColor(loc.user_id)}
                             color="#ffffff"
                             weight={1}
                             opacity={0.8}
-                            fillOpacity={0.6}
+                            fillOpacity={0.7}
                         >
                             <Popup>
                                 <div className="p-1">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     WifiOff,
     Cloud,
@@ -114,6 +114,7 @@ interface BetaDownloadModalProps {
 }
 
 function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
@@ -151,6 +152,12 @@ function BetaDownloadModal({ isOpen, onClose }: BetaDownloadModalProps) {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+
+                // Redirect to disclaimer page after download starts
+                setTimeout(() => {
+                    onClose();
+                    navigate('/disclaimer');
+                }, 1500);
             }, 1000);
 
         } catch {
@@ -675,6 +682,9 @@ function AboutCreatorSection() {
                             </Link>
                             <Link to="/termos" className="text-gray-300 hover:text-white transition-colors">
                                 Termos
+                            </Link>
+                            <Link to="/disclaimer" className="text-gray-300 hover:text-white transition-colors">
+                                Isenção
                             </Link>
                             <a
                                 href="https://painel-admin.veridiasaber.com.br"

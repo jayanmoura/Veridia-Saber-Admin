@@ -10,9 +10,11 @@ import EducationalContent from '../pages/admin/EducationalContent';
 import AuditLogs from '../pages/admin/AuditLogs';
 import ProjectMap from '../pages/admin/ProjectMap';
 import GlobalMap from '../pages/admin/GlobalMap';
+import { ProjectMapViz } from '../components/Maps/ProjectMapViz';
 import LandingPage from '../pages/landingpage/LandingPage';
 import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
+import Disclaimer from '../pages/landingpage/Disclaimer';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import React from 'react';
@@ -70,6 +72,10 @@ export const publicRouter = createBrowserRouter([
         element: <Terms />,
     },
     {
+        path: '/disclaimer',
+        element: <Disclaimer />,
+    },
+    {
         path: '*',
         element: <Navigate to="/" replace />
     }
@@ -79,6 +85,10 @@ export const adminRouter = createBrowserRouter([
     {
         path: '/login',
         element: <Login />,
+    },
+    {
+        path: '/disclaimer',
+        element: <Disclaimer />,
     },
     {
         path: '/',
@@ -126,17 +136,13 @@ export const adminRouter = createBrowserRouter([
             },
             {
                 path: 'mapa-global',
-                element: (
-                    <OnlyGlobalAdmin>
-                        <GlobalMap />
-                    </OnlyGlobalAdmin>
-                ),
+                element: <GlobalMap />,
             },
             {
                 path: 'mapa-projetos',
                 element: (
                     <OnlyGlobalAdmin>
-                        <GlobalMap />
+                        <ProjectMapViz />
                     </OnlyGlobalAdmin>
                 ),
             },

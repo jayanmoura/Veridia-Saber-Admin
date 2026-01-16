@@ -48,6 +48,9 @@ function Footer() {
                         <Link to="/termos" className="text-gray-400 hover:text-white transition-colors">
                             Termos de Uso
                         </Link>
+                        <Link to="/disclaimer" className="text-gray-400 hover:text-white transition-colors">
+                            Isenção de Responsabilidade
+                        </Link>
                         <a
                             href="https://painel-admin.veridiasaber.com.br"
                             target="_blank"
