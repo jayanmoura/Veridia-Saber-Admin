@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateHerbariumLabels } from '../utils/pdfGenerator';
 
@@ -25,6 +25,7 @@ interface ProjectFormData {
     latitude: string;
     longitude: string;
     descricao: string;
+    gestor_id: string;
 }
 
 const INITIAL_FORM: ProjectFormData = {
@@ -34,7 +35,8 @@ const INITIAL_FORM: ProjectFormData = {
     estado: '',
     latitude: '',
     longitude: '',
-    descricao: ''
+    descricao: '',
+    gestor_id: ''
 };
 
 interface UseProjectActionsOptions {
@@ -86,6 +88,10 @@ interface UseProjectActionsReturn {
 
     // Permissions
     isGlobalAdmin: boolean;
+
+    // Users for Gestor select
+    users: { id: string; full_name: string | null; email: string | null }[];
+    loadingUsers: boolean;
 }
 
 export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptions): UseProjectActionsReturn {
@@ -117,6 +123,43 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
     // Permissions
     const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
+
+    // Users for Gestor select
+    const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
+    // Fetch users when modal opens
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!isNewModalOpen && !isEditModalOpen) return;
+
+            setLoadingUsers(true);
+            try {
+                // Build query - filter by role 'Gestor de Acervo'
+                let query = supabase
+                    .from('profiles')
+                    .select('id, full_name, email, local_id')
+                    .eq('role', 'Gestor de Acervo')
+                    .order('full_name', { ascending: true });
+
+                // For edit mode, also filter by the project's local_id
+                if (isEditModalOpen && selectedProject) {
+                    query = query.eq('local_id', selectedProject.id);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+                setUsers(data || []);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+
+        fetchUsers();
+    }, [isNewModalOpen, isEditModalOpen, selectedProject]);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToast({ message, type });
@@ -192,6 +235,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                     latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                     longitude: formData.longitude ? parseFloat(formData.longitude) : null,
                     institution_id: profile?.institution_id || null,
+                    gestor_id: formData.gestor_id || null,
                 })
                 .select()
                 .single();
@@ -227,7 +271,8 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             estado: (project as any).estado || '',
             latitude: (project as any).latitude?.toString() || '',
             longitude: (project as any).longitude?.toString() || '',
-            descricao: project.descricao || ''
+            descricao: project.descricao || '',
+            gestor_id: (project as any).gestor_id || ''
         });
         setEditImagePreview(project.imagem_capa);
         setEditImageFile(null);
@@ -256,7 +301,8 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                     estado: editFormData.estado.trim() || null,
                     latitude: editFormData.latitude ? parseFloat(editFormData.latitude) : null,
                     longitude: editFormData.longitude ? parseFloat(editFormData.longitude) : null,
-                    imagem_capa: imageUrl
+                    imagem_capa: imageUrl,
+                    gestor_id: editFormData.gestor_id || null
                 })
                 .eq('id', selectedProject.id);
 
@@ -410,6 +456,8 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         confirmDelete,
         reportLoading,
         handleGenerateReport,
-        isGlobalAdmin
+        isGlobalAdmin,
+        users,
+        loadingUsers
     };
 }

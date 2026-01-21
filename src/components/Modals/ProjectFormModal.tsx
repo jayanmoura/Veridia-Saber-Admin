@@ -9,6 +9,13 @@ interface ProjectFormData {
     latitude: string;
     longitude: string;
     descricao: string;
+    gestor_id: string;
+}
+
+interface UserOption {
+    id: string;
+    full_name: string | null;
+    email: string | null;
 }
 
 interface ProjectFormModalProps {
@@ -21,6 +28,8 @@ interface ProjectFormModalProps {
     setFormData: React.Dispatch<React.SetStateAction<ProjectFormData>>;
     imagePreview: string | null;
     onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    users?: UserOption[];
+    loadingUsers?: boolean;
 }
 
 const TIPOS_PROJETO = [
@@ -37,7 +46,9 @@ export function ProjectFormModal({
     formData,
     setFormData,
     imagePreview,
-    onImageChange
+    onImageChange,
+    users = [],
+    loadingUsers = false
 }: ProjectFormModalProps) {
     if (!isOpen) return null;
 
@@ -104,6 +115,24 @@ export function ProjectFormModal({
                             <option value="">Selecione o tipo</option>
                             {TIPOS_PROJETO.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Gestor do Projeto */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Gestor do Projeto</label>
+                        <select
+                            value={formData.gestor_id}
+                            onChange={(e) => setFormData(prev => ({ ...prev, gestor_id: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none appearance-none bg-white"
+                            disabled={loadingUsers}
+                        >
+                            <option value="">{loadingUsers ? 'Carregando usuários...' : 'Selecione um gestor (opcional)'}</option>
+                            {users.map(user => (
+                                <option key={user.id} value={user.id}>
+                                    {user.full_name || user.email || 'Usuário sem nome'}
+                                </option>
                             ))}
                         </select>
                     </div>

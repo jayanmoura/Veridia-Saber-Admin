@@ -228,6 +228,7 @@ Locais físicos (Campus, Reservas, Prédios).
 | contato | `text` | YES | - | - |
 | latitude | `double` | YES | - | - |
 | longitude | `double` | YES | - | - |
+| gestor_id | `uuid` | YES | - | -> `profiles.id` (ON DELETE SET NULL) |
 
 ### locais_estatisticas
 Dados agregados para performance.

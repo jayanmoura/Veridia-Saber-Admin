@@ -84,9 +84,6 @@ export default function ProjectDetailsPage() {
     const speciesCount = useMemo(() => project?.especie?.[0]?.count || 0, [project]);
 
     // ============ ACTION HANDLERS ============
-    const handleEditProject = () => {
-        alert('Funcionalidade de edição ainda não implementada.');
-    };
 
     const handleDeleteProject = async () => {
         if (!id || !project) return;
@@ -397,7 +394,6 @@ export default function ProjectDetailsPage() {
                     onGenerateReport={handleGenerateReport}
                     onGenerateLabels={handleGenerateLabels}
                     onExportCSV={handleExportCSV}
-                    onEdit={handleEditProject}
                     onDelete={() => setShowDeleteModal(true)}
                     genLabelsLoading={genLabelsLoading}
                     exportCSVLoading={exportCSVLoading}

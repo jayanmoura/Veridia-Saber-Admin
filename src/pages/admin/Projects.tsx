@@ -128,6 +128,8 @@ export default function Projects() {
                 setFormData={actions.setFormData}
                 imagePreview={actions.imagePreview}
                 onImageChange={actions.handleImageChange}
+                users={actions.users}
+                loadingUsers={actions.loadingUsers}
             />
 
             {/* Edit Project Modal */}
@@ -141,6 +143,8 @@ export default function Projects() {
                 setFormData={actions.setEditFormData}
                 imagePreview={actions.editImagePreview}
                 onImageChange={actions.handleEditImageChange}
+                users={actions.users}
+                loadingUsers={actions.loadingUsers}
             />
 
             {/* Delete Confirmation Modal */}

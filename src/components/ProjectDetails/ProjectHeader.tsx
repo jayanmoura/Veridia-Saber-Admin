@@ -5,7 +5,6 @@ import {
     Calendar,
     Leaf,
     FileText,
-    Pencil,
     Trash2,
     Loader2,
     Tag,
@@ -33,7 +32,6 @@ interface ProjectHeaderProps {
     onGenerateReport: () => void;
     onGenerateLabels: () => void;
     onExportCSV: () => void;
-    onEdit: () => void;
     onDelete: () => void;
 
     // Loading states
@@ -71,7 +69,6 @@ export function ProjectHeader({
     onGenerateReport,
     onGenerateLabels,
     onExportCSV,
-    onEdit,
     onDelete,
     genLabelsLoading,
     exportCSVLoading
@@ -165,13 +162,7 @@ export function ProjectHeader({
                     {exportCSVLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
                     Exportar CSV
                 </button>
-                <button
-                    onClick={onEdit}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-                >
-                    <Pencil size={16} />
-                    Editar Projeto
-                </button>
+
                 <button
                     onClick={onDelete}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
