@@ -15,6 +15,7 @@ import LandingPage from '../pages/landingpage/LandingPage';
 import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
 import Disclaimer from '../pages/landingpage/Disclaimer';
+import EmailConfirmed from '../pages/landingpage/EmailConfirmed';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import React from 'react';
@@ -76,6 +77,10 @@ export const publicRouter = createBrowserRouter([
         element: <Disclaimer />,
     },
     {
+        path: '/email-confirmed',
+        element: <EmailConfirmed />,
+    },
+    {
         path: '*',
         element: <Navigate to="/" replace />
     }
@@ -89,6 +94,10 @@ export const adminRouter = createBrowserRouter([
     {
         path: '/disclaimer',
         element: <Disclaimer />,
+    },
+    {
+        path: '/email-confirmed',
+        element: <EmailConfirmed />,
     },
     {
         path: '/',
