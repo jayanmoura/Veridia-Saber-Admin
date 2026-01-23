@@ -127,6 +127,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     local_id: form.isSenior ? null : effectiveLocalId,
                     created_by_institution_id: profile?.institution_id || null,
                     created_by: profile?.id || null,
+                    created_by_name: profile?.full_name || null,
                     autor: form.formData.autor?.trim() || null,
                 };
 

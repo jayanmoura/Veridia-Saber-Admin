@@ -130,7 +130,6 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                         *,
                         familia (familia_nome),
                         imagens (url_imagem, local_id),
-                        creator:profiles(full_name, email),
                         especie_local!inner (local_id, descricao_ocorrencia)
                     `, { count: 'exact' })
                     .eq('especie_local.local_id', userLocalId)
@@ -143,7 +142,6 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                         *,
                         familia (familia_nome),
                         imagens (url_imagem, local_id),
-                        creator:profiles(full_name, email),
                         especie_local (local_id, descricao_ocorrencia)
                     `, { count: 'exact' })
                     .order('nome_cientifico')

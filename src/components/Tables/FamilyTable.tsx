@@ -5,6 +5,7 @@ interface Family {
     familia_nome: string;
     imagem_referencia: string | null;
     quantidade_especies: number;
+    created_by_name?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
 
@@ -38,9 +39,15 @@ export function FamilyTable({
     canGenerateReports
 }: FamilyTableProps) {
     const getCreatorName = (family: Family): string => {
-        if (!family.creator) return 'Sistema';
-        const creator = Array.isArray(family.creator) ? family.creator[0] : family.creator;
-        return creator?.full_name || 'Sistema';
+        // First try creator from join
+        if (family.creator) {
+            const creator = Array.isArray(family.creator) ? family.creator[0] : family.creator;
+            if (creator?.full_name) return creator.full_name;
+        }
+        // Fallback to stored name (preserved even if user deleted)
+        if (family.created_by_name) return family.created_by_name;
+        // Final fallback
+        return 'Sistema';
     };
 
     return (

@@ -1,330 +1,388 @@
-# 🗄️ Supabase Database Schema Documentation
+# Supabase Schema - Veridia Saber
 
-> **Last Updated:** 2026-01-03
-> **Status:** Production / Active Development
-
----
-
-## 📋 Table of Contents
-
-1.  [admin_notifications](#admin_notifications)
-2.  [audit_logs](#audit_logs)
-3.  [beta_testers](#beta_testers)
-4.  [colecoes](#colecoes)
-5.  [colecao_imagens](#colecao_imagens)
-6.  [conteudo_orgaos](#conteudo_orgaos)
-7.  [especie](#especie)
-8.  [especie_local](#especie_local)
-9.  [especie_imagens](#especie_imagens) *(Nota: Tabela mencionada em logs anteriores, verifique se ainda está ativa ou foi substituída por 'imagens')*
-10. [estados](#estados)
-11. [familia](#familia)
-12. [family_requests](#family_requests) *(Nota: Tabela de requisições)*
-13. [imagens](#imagens)
-14. [institutions](#institutions)
-15. [locais](#locais)
-16. [locais_estatisticas](#locais_estatisticas)
-17. [municipios](#municipios)
-18. [plantas_da_colecao](#plantas_da_colecao)
-19. [profiles](#profiles)
-20. [user_roles_display](#user_roles_display) *(View)*
-21. [view_pendentes_oficial](#view_pendentes_oficial) *(View)*
+> Última atualização: 2026-01-23
 
 ---
 
-## 📊 Tables & Structures
+## 📊 Tabelas
 
 ### admin_notifications
-Notificações do sistema para administradores.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| user_id | `uuid` | YES | - | -> `profiles.id` |
-| message | `text` | NO | - | - |
-| is_read | `boolean` | YES | `false` | - |
-| created_at | `timestamptz` | YES | `now()` | - |
-| local_id | `bigint` | YES | - | -> `locais.id` |
-| status | `text` | YES | `'pending'` | - |
-
-### audit_logs
-Registro de auditoria para segurança e rastreabilidade.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| user_id | `uuid` | YES | - | -> `profiles.id` |
-| action_type | `text` | NO | - | - |
-| table_name | `text` | NO | - | - |
-| record_id | `text` | YES | - | - |
-| details | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| action | `text` | YES | - | - |
-| old_data | `jsonb` | YES | - | - |
-| new_data | `jsonb` | YES | - | - |
-
-### beta_testers
-Lista de controle para acesso antecipado.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| email | `text` | NO | - | - |
-| name | `text` | YES | - | - |
-| added_at | `timestamptz` | YES | `now()` | - |
-| downloaded_at | `timestamptz` | YES | - | - |
-| is_active | `boolean` | YES | `true` | - |
-
-### colecao_imagens
-Imagens específicas das plantas dentro de coleções de usuários.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| planta_colecao_id | `uuid` | NO | - | -> `plantas_da_colecao.id` |
-| url_imagem | `text` | NO | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-
-### colecoes
-Agrupamentos de plantas criados por usuários.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| user_id | `uuid` | NO | - | -> `auth.users` (Implicit) |
-| descricao | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| nome_colecao | `text` | NO | `'Minha Coleção'` | - |
-| imagem_capa | `text` | YES | - | - |
-| institution_id | `uuid` | NO | - | -> `institutions.id` |
-
-### conteudo_orgaos
-Conteúdo educativo sobre morfologia vegetal.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| orgao | `text` | NO | - | - |
-| titulo | `text` | NO | - | - |
-| conteudo | `text` | YES | - | - |
-| ordem | `integer` | NO | `0` | - |
-
-### especie
-Tabela mestre de espécies (Dados Globais/Taxonômicos).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `text` | NO | `gen_random_uuid()` | - |
-| familia_id | `text` | YES | - | -> `familia.id` |
-| nome_cientifico | `text` | NO | - | - |
-| nome_popular | `text` | YES | - | - |
-| descricao_especie | `text` | YES | - | - |
-| cuidados_luz | `text` | YES | - | - |
-| cuidados_temperatura | `text` | YES | - | - |
-| cuidados_agua | `text` | YES | - | - |
-| cuidados_nutrientes | `text` | YES | - | - |
-| cuidados_substrato | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| familia_custom | `text` | YES | - | - |
-| created_by_institution_id | `uuid` | YES | - | -> `institutions.id` |
-| created_by | `uuid` | YES | - | -> `auth.users` (Implicit) |
-| local_id | `bigint` | YES | - | -> `locais.id` |
-| autor | `text` | YES | - | - |
-
-### especie_local
-Dados de ocorrência de uma espécie em um local específico (Xiloteca/Herbário).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| especie_id | `text` | NO | - | -> `especie.id` |
-| local_id | `bigint` | NO | - | -> `locais.id` |
-| detalhes_localizacao | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| latitude | `double` | YES | - | - |
-| longitude | `double` | YES | - | - |
-| descricao_ocorrencia | `text` | YES | - | - |
-| institution_id | `uuid` | NO | - | -> `institutions.id` |
-| nome_popular_local | `text` | YES | - | - |
-
-### etiquetas
-Registros de etiquetas de herbário geradas para espécies em projetos.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| especie_local_id | `bigint` | NO | - | -> `especie_local.id` |
-| created_at | `timestamptz` | NO | `now()` | - |
-| gerado_por | `uuid` | YES | - | -> `auth.users` |
-| conteudo_json | `jsonb` | YES | - | - |
-| numero_tombo | `bigint` | YES | - | - |
-
-### estados
-Lista fixa de estados (UF).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `integer` | NO | - | - |
-| nome | `text` | NO | - | - |
-| uf | `char` | NO | - | - |
-
-### familia
-Dados taxonômicos de famílias botânicas.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `text` | NO | `gen_random_uuid()` | - |
-| familia_nome | `text` | NO | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| distribuicao_geografica | `text` | YES | - | - |
-| imagem_referencia | `text` | YES | - | - |
-| caracteristicas | `text` | YES | - | - |
-| fonte_referencia | `text` | YES | - | - |
-| link_referencia | `text` | YES | - | - |
-| descricao_familia | `text` | YES | - | - |
-| created_by_institution_id | `uuid` | YES | - | -> `institutions.id` |
-| created_by | `uuid` | YES | `auth.uid()` | -> `auth.users` (Implicit) |
-
-### imagens
-Banco central de imagens (Globais e Locais).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| created_at | `timestamptz` | YES | `now()` | - |
-| especie_id | `text` | YES | - | -> `especie.id` |
-| url_imagem | `text` | NO | - | - |
-| creditos | `text` | YES | - | - |
-| institution_id | `uuid` | YES | - | -> `institutions.id` |
-| especie_local_id | `bigint` | YES | - | -> `especie_local.id` |
-| criado_por | `text` | YES | - | - |
-| local_id | `bigint` | YES | - | -> `locais.id` |
-
-### institutions
-Instituições cadastradas (Ex: UFRRJ, Jardins Botânicos).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| name | `text` | NO | - | - |
-| logo_url | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-
-### locais
-Locais físicos (Campus, Reservas, Prédios).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `bigint` | NO | - | - |
-| nome | `text` | NO | - | - |
-| descricao | `text` | YES | - | - |
-| imagem_capa | `text` | YES | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| tipo | `text` | YES | - | - |
-| institution_id | `uuid` | NO | - | -> `institutions.id` |
-| historia | `text` | YES | - | - |
-| endereco | `text` | YES | - | - |
-| cidade | `text` | YES | - | - |
-| estado | `text` | YES | - | - |
-| contato | `text` | YES | - | - |
-| latitude | `double` | YES | - | - |
-| longitude | `double` | YES | - | - |
-| gestor_id | `uuid` | YES | - | -> `profiles.id` (ON DELETE SET NULL) |
-
-### locais_estatisticas
-Dados agregados para performance.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| local_id | `bigint` | YES | - | - |
-| total_especies | `bigint` | YES | - | - |
-| total_familias | `bigint` | YES | - | - |
-
-### municipios
-Lista de municípios vinculada a estados.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `integer` | NO | - | - |
-| nome | `text` | NO | - | - |
-| estado_id | `integer` | NO | - | -> `estados.id` |
-
-### plantas_da_colecao
-Registros individuais de plantas feitos pelos usuários (App).
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | `gen_random_uuid()` | - |
-| user_id | `uuid` | NO | - | -> `auth.users` |
-| colecao_id | `uuid` | NO | - | -> `colecoes.id` |
-| familia_id | `text` | YES | - | -> `familia.id` |
-| anotacoes | `text` | YES | - | - |
-| latitude | `numeric` | YES | - | - |
-| longitude | `numeric` | YES | - | - |
-| data_registro | `date` | NO | - | - |
-| created_at | `timestamptz` | NO | `now()` | - |
-| fotos | `jsonb` | NO | `[]` | - |
-| nome_popular | `text` | YES | - | - |
-| familia_custom | `text` | YES | - | - |
-| especie | `text` | YES | - | - |
-| institution_id | `uuid` | YES | - | -> `institutions.id` |
-| estado_id | `integer` | YES | - | -> `estados.id` |
-| municipio_id | `integer` | YES | - | -> `municipios.id` |
-
-### profiles
-Dados públicos dos usuários.
-
-| Coluna | Tipo | Nulo? | Default | Relação (FK) |
-| :--- | :--- | :--- | :--- | :--- |
-| **id** (PK) | `uuid` | NO | - | -> `auth.users` |
-| email | `text` | YES | - | - |
-| role | `text` | YES | `'user'` | - |
-| created_at | `timestamptz` | YES | `now()` | - |
-| username | `text` | YES | - | - |
-| full_name | `text` | YES | - | - |
-| avatar_url | `text` | YES | - | - |
-| institution_id | `uuid` | YES | - | -> `institutions.id` |
-| local_id | `bigint` | YES | - | -> `locais.id` |
-
-### Views (Somente Leitura)
-
-#### user_roles_display
-Visualização simplificada para admin, juntando dados de perfil e roles.
-* **Colunas:** id, full_name, email, role, local_id, cargo_display.
-
-#### view_pendentes_oficial
-Visualização para curadoria de espécies pendentes de revisão.
-* **Colunas:** id, familia_id, nome_cientifico, nome_popular, descricao, cuidados, created_at, created_by_institution_id, foto_provisoria.
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| user_id | uuid | YES | - |
+| message | text | NO | - |
+| is_read | boolean | YES | false |
+| created_at | timestamp with time zone | YES | now() |
+| local_id | bigint | YES | - |
+| status | text | YES | 'pending' |
 
 ---
 
-## 🏗️ Relacionamentos Principais (Resumo)
+### analytics_events
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | uuid_generate_v4() |
+| user_id | uuid | YES | - |
+| event_type | text | NO | - |
+| event_data | jsonb | YES | - |
+| session_id | text | YES | - |
+| platform | text | YES | - |
+| app_version | text | YES | - |
+| created_at | timestamp with time zone | YES | now() |
 
-* **Hierarquia Taxonômica:** `especie` -> `familia`
-* **Hierarquia Geográfica:** `municipios` -> `estados`
-* **Estrutura Institucional:** `locais` -> `institutions`
-* **Ocorrências:** `especie_local` conecta uma `especie` a um `local` (Many-to-Many via tabela pivô com dados extras).
-* **Coleções de Usuário:** `plantas_da_colecao` -> `colecoes` -> `profiles`.
+---
 
+### audit_logs
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| user_id | uuid | YES | - |
+| action_type | text | NO | - |
+| table_name | text | NO | - |
+| record_id | text | YES | - |
+| details | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
+| action | text | YES | - |
+| old_data | jsonb | YES | - |
+| new_data | jsonb | YES | - |
+
+---
+
+### beta_testers
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| email | text | NO | - |
+| name | text | YES | - |
+| added_at | timestamp with time zone | YES | now() |
+| downloaded_at | timestamp with time zone | YES | - |
+| is_active | boolean | YES | true |
+
+---
+
+### colecao_imagens
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| planta_colecao_id | uuid | NO | - |
+| url_imagem | text | NO | - |
+| created_at | timestamp with time zone | NO | now() |
+
+---
+
+### colecoes
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| user_id | uuid | YES | - |
+| descricao | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
+| nome_colecao | text | NO | 'Minha Coleção' |
+| imagem_capa | text | YES | - |
+| institution_id | uuid | YES | - |
+
+---
+
+### conteudo_orgaos
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| orgao | text | NO | - |
+| titulo | text | NO | - |
+| conteudo | text | YES | - |
+| ordem | integer | NO | 0 |
+
+---
+
+### especie
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | text | NO | gen_random_uuid()::text |
+| familia_id | text | YES | - |
+| nome_cientifico | text | NO | - |
+| nome_popular | text | YES | - |
+| descricao_especie | text | YES | - |
+| cuidados_luz | text | YES | - |
+| cuidados_temperatura | text | YES | - |
+| cuidados_agua | text | YES | - |
+| cuidados_nutrientes | text | YES | - |
+| cuidados_substrato | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
+| familia_custom | text | YES | - |
+| created_by_institution_id | uuid | YES | - |
+| created_by | uuid | YES | - |
+| local_id | bigint | YES | - |
+| autor | text | YES | - |
+| **created_by_name** | text | YES | - |
+
+---
+
+### especie_local
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| especie_id | text | NO | - |
+| local_id | bigint | NO | - |
+| detalhes_localizacao | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
+| latitude | double precision | YES | - |
+| longitude | double precision | YES | - |
+| descricao_ocorrencia | text | YES | - |
+| institution_id | uuid | NO | - |
+| nome_popular_local | text | YES | - |
+| determinador | text | YES | - |
+| data_determinacao | date | YES | - |
+| coletor | text | YES | - |
+| numero_coletor | text | YES | - |
+| morfologia | text | YES | - |
+| habitat_ecologia | text | YES | - |
+| created_by | uuid | YES | - |
+
+---
+
+### estados
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer | NO | - |
+| nome | text | NO | - |
+| uf | character(2) | NO | - |
+
+---
+
+### etiquetas
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| especie_local_id | bigint | NO | - |
+| created_at | timestamp with time zone | NO | now() |
+| gerado_por | uuid | YES | - |
+| conteudo_json | jsonb | YES | - |
+| numero_tombo | bigint | YES | - |
+
+---
+
+### familia
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | text | NO | gen_random_uuid()::text |
+| familia_nome | text | NO | - |
+| created_at | timestamp with time zone | NO | now() |
+| distribuicao_geografica | text | YES | - |
+| imagem_referencia | text | YES | - |
+| caracteristicas | text | YES | - |
+| fonte_referencia | text | YES | - |
+| link_referencia | text | YES | - |
+| descricao_familia | text | YES | - |
+| created_by_institution_id | uuid | YES | - |
+| created_by | uuid | YES | auth.uid() |
+| **created_by_name** | text | YES | - |
+
+---
+
+### imagens
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| created_at | timestamp with time zone | YES | now() |
+| especie_id | text | YES | - |
+| url_imagem | text | NO | - |
+| creditos | text | YES | - |
+| institution_id | uuid | YES | - |
+| especie_local_id | bigint | YES | - |
+| criado_por | text | YES | - |
+| local_id | bigint | YES | - |
+
+---
+
+### institutions
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| name | text | NO | - |
+| logo_url | text | YES | - |
+| created_at | timestamp with time zone | NO | timezone('utc', now()) |
+
+---
+
+### locais
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | bigint | NO | - |
+| nome | text | NO | - |
+| descricao | text | YES | - |
+| imagem_capa | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
+| tipo | text | YES | - |
+| institution_id | uuid | NO | - |
+| historia | text | YES | - |
+| endereco | text | YES | - |
+| cidade | text | YES | - |
+| estado | text | YES | - |
+| contato | text | YES | - |
+| latitude | numeric | YES | - |
+| longitude | numeric | YES | - |
+| gestor_id | uuid | YES | - |
+
+---
+
+### municipios
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer | NO | - |
+| nome | text | NO | - |
+| estado_id | integer | NO | - |
+
+---
+
+### plantas_da_colecao
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| user_id | uuid | YES | - |
+| colecao_id | uuid | NO | - |
+| familia_id | text | YES | - |
+| anotacoes | text | YES | - |
+| latitude | numeric | YES | - |
+| longitude | numeric | YES | - |
+| data_registro | date | NO | - |
+| created_at | timestamp with time zone | NO | now() |
+| fotos | jsonb | NO | '[]' |
+| nome_popular | text | YES | - |
+| familia_custom | text | YES | - |
+| especie | text | YES | - |
+| institution_id | uuid | YES | - |
+| estado_id | integer | YES | - |
+| municipio_id | integer | YES | - |
+
+---
+
+### profiles
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | - |
+| email | text | YES | - |
+| role | text | YES | 'Consulente' |
+| created_at | timestamp with time zone | YES | now() |
+| username | text | YES | - |
+| full_name | text | YES | - |
+| avatar_url | text | YES | - |
+| institution_id | uuid | YES | - |
+| local_id | bigint | YES | - |
+
+---
+
+## 🔗 Foreign Keys (Relacionamentos)
+
+| Tabela Origem | Coluna | Tabela Destino | Coluna Destino |
+|---------------|--------|----------------|----------------|
+| admin_notifications | local_id | locais | id |
+| admin_notifications | user_id | profiles | id |
+| audit_logs | user_id | profiles | id |
+| colecao_imagens | planta_colecao_id | plantas_da_colecao | id |
+| colecoes | institution_id | institutions | id |
+| especie | created_by_institution_id | institutions | id |
+| especie | familia_id | familia | id |
+| especie | local_id | locais | id |
+| especie_local | especie_id | especie | id |
+| especie_local | institution_id | institutions | id |
+| especie_local | local_id | locais | id |
+| etiquetas | especie_local_id | especie_local | id |
+| familia | created_by_institution_id | institutions | id |
+| imagens | especie_id | especie | id |
+| imagens | especie_local_id | especie_local | id |
+| imagens | institution_id | institutions | id |
+| imagens | local_id | locais | id |
+| locais | institution_id | institutions | id |
+| municipios | estado_id | estados | id |
+| plantas_da_colecao | colecao_id | colecoes | id |
+| plantas_da_colecao | estado_id | estados | id |
+| plantas_da_colecao | familia_id | familia | id |
+| plantas_da_colecao | institution_id | institutions | id |
+| plantas_da_colecao | municipio_id | municipios | id |
+| profiles | institution_id | institutions | id |
+| profiles | local_id | locais | id |
+
+---
+
+## 👁️ Views
+
+### analytics_daily_active_users
+```sql
+SELECT date(created_at) AS date,
+    count(DISTINCT user_id) AS active_users
+FROM analytics_events
+WHERE (created_at > (now() - '30 days'::interval))
+GROUP BY (date(created_at))
+ORDER BY (date(created_at)) DESC;
+```
+
+### analytics_events_summary
+```sql
+SELECT event_type,
+    count(*) AS count,
+    count(DISTINCT user_id) AS unique_users
+FROM analytics_events
+WHERE (created_at > (now() - '7 days'::interval))
+GROUP BY event_type
+ORDER BY (count(*)) DESC;
+```
+
+### locais_estatisticas
+```sql
+SELECT l.id AS local_id,
+    count(DISTINCT el.especie_id) AS total_especies,
+    count(DISTINCT e.familia_id) AS total_familias
+FROM ((locais l
+    LEFT JOIN especie_local el ON ((l.id = el.local_id)))
+    LEFT JOIN especie e ON ((el.especie_id = e.id)))
+GROUP BY l.id;
+```
+
+### user_roles_display
+```sql
+SELECT id, full_name, email, role, local_id,
+    CASE
+        WHEN (role = 'super_admin') THEN 'Curador Mestre'
+        WHEN (role = 'admin' AND local_id IS NULL) THEN 'Coordenador Científico'
+        WHEN (role = 'admin' AND local_id IS NOT NULL) THEN 'Gestor de Acervo'
+        WHEN (role = 'catalogador' AND local_id IS NULL) THEN 'Taxonomista Sênior'
+        WHEN (role = 'catalogador' AND local_id IS NOT NULL) THEN 'Taxonomista de Campo'
+        ELSE 'Consulente'
+    END AS cargo_display
+FROM profiles;
+```
+
+### view_pendentes_oficial
+```sql
+SELECT id, familia_id, nome_cientifico, nome_popular, descricao_especie,
+    cuidados_luz, cuidados_temperatura, cuidados_agua, cuidados_nutrientes,
+    cuidados_substrato, created_at, familia_custom, created_by_institution_id,
+    (SELECT i.url_imagem FROM imagens i WHERE i.especie_id = e.id ORDER BY i.created_at DESC LIMIT 1) AS foto_provisoria
+FROM especie e
+WHERE NOT EXISTS (SELECT 1 FROM imagens i WHERE i.especie_id = e.id);
+```
+
+---
 
 ## 📦 Storage Buckets
 
-| Bucket ID | Nome | Público |
-| :--- | :--- | :--- |
-| **imagens_conteudo** | imagens_conteudo | true |
-| **fotos-das-colecoes** | fotos-das-colecoes | true |
-| **arquivos-gerais** | arquivos-gerais | true |
-| **imagens-plantas** | imagens-plantas | true |
+| ID | Nome | Público |
+|----|------|---------|
+| imagens_conteudo | imagens_conteudo | ✅ |
+| fotos-das-colecoes | fotos-das-colecoes | ✅ |
+| arquivos-gerais | arquivos-gerais | ✅ |
+| imagens-plantas | imagens-plantas | ✅ |
 
 ---
 
-## 🔑 Key Relationships Logic (Architecture)
+## 🔐 Roles do Sistema
 
-1. **Species Global vs Local:**
-   - `especie`: Stores global/canonical data (Scientific Name, Botanical Description).
-   - `especie_local`: Stores project-specific data (Occurrence Description, Location Details). Links `especie.id` to `locais.id`.
-
-2. **Images Context:**
-   - Table `imagens` is the main source for species photos.
-   - It links to a species via `especie_id`.
-   - It links to a project via `local_id`.
-   - **Logic:** If `local_id` is present, the image belongs to that project's gallery. If `local_id` is NULL, it's a global/Veridia image.
+| Role Técnica | Nome de Exibição | Escopo |
+|--------------|------------------|--------|
+| super_admin | Curador Mestre | Global |
+| admin (local_id = NULL) | Coordenador Científico | Global |
+| admin (local_id ≠ NULL) | Gestor de Acervo | Local |
+| catalogador (local_id = NULL) | Taxonomista Sênior | Global |
+| catalogador (local_id ≠ NULL) | Taxonomista de Campo | Local |
+| - | Consulente | Read-only |

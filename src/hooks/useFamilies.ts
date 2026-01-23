@@ -98,7 +98,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
 
             let query = supabase
                 .from('familia')
-                .select('*, especie(count), creator:profiles(full_name, email)', { count: 'exact' })
+                .select('*, especie(count)', { count: 'exact' })
                 .order('familia_nome')
                 .range(from, to);
 

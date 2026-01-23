@@ -92,12 +92,22 @@ export const adminRouter = createBrowserRouter([
         element: <Login />,
     },
     {
+        // OAuth redirect route - /admin/login
+        path: '/admin/login',
+        element: <Login />,
+    },
+    {
         path: '/disclaimer',
         element: <Disclaimer />,
     },
     {
         path: '/email-confirmed',
         element: <EmailConfirmed />,
+    },
+    {
+        // OAuth redirect route - /admin/dashboard redirects to main dashboard
+        path: '/admin/dashboard',
+        element: <Navigate to="/" replace />,
     },
     {
         path: '/',

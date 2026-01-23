@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { X, Upload, Loader2 } from 'lucide-react';
 
 interface Family {
@@ -24,6 +25,7 @@ interface FamilyModalProps {
 }
 
 export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModalProps) {
+    const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -220,10 +222,14 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
                 if (error) throw error;
             } else {
-                // Insert new
+                // Insert new - include created_by and created_by_name
                 const { error } = await supabase
                     .from('familia')
-                    .insert(dataToSave);
+                    .insert({
+                        ...dataToSave,
+                        created_by: profile?.id || null,
+                        created_by_name: profile?.full_name || null,
+                    });
 
                 if (error) throw error;
             }

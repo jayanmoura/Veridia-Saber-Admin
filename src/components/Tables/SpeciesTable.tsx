@@ -6,6 +6,7 @@ export interface SpeciesItem {
     nome_popular: string | null;
     familia?: { familia_nome: string };
     imagens?: { url_imagem: string }[];
+    created_by_name?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
 
@@ -51,10 +52,14 @@ export function SpeciesTable({
     deleteLoading = false,
     canGenerateReports = false
 }: SpeciesTableProps) {
-    const getCreatorName = (creator: SpeciesItem['creator']) => {
-        const c = Array.isArray(creator) ? creator[0] : creator;
+    const getCreatorName = (specie: SpeciesItem) => {
+        // First try creator from join
+        const c = Array.isArray(specie.creator) ? specie.creator[0] : specie.creator;
         if (c?.full_name) return c.full_name;
         if (c?.email) return c.email.split('@')[0];
+        // Fallback to stored name (preserved even if user deleted)
+        if (specie.created_by_name) return specie.created_by_name;
+        // Final fallback
         return 'Sistema';
     };
 
@@ -104,7 +109,7 @@ export function SpeciesTable({
                                             {specie.nome_cientifico}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            {getCreatorName(specie.creator)}
+                                            {getCreatorName(specie)}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
