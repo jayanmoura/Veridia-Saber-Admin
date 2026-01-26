@@ -73,7 +73,7 @@ const FitBounds = ({ species, projectCenter }: { species: { latitude: number, lo
         if (species.length > 0) {
             const bounds = L.latLngBounds(species.map(s => [s.latitude, s.longitude]));
             // Add some padding
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 19 });
         } else if (projectCenter) {
             map.setView(projectCenter, 16);
         }
@@ -374,6 +374,7 @@ export default function ProjectMap() {
                 <MapContainer
                     center={center}
                     zoom={project?.latitude ? 15 : 4}
+                    maxZoom={22}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom={true}
                 >
@@ -382,7 +383,12 @@ export default function ProjectMap() {
                         species={validSpecies.filter(s => s.latitude && s.longitude).map(s => ({ latitude: s.latitude!, longitude: s.longitude! }))}
                         projectCenter={project?.latitude && project?.longitude ? [project.latitude, project.longitude] : undefined}
                     />
-                    <TileLayer attribution='&copy; CARTO' url={getTileUrl()} />
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        url={getTileUrl()}
+                        maxNativeZoom={19}
+                        maxZoom={22}
+                    />
 
                     {/* Project center marker */}
                     {project?.latitude && project?.longitude && (

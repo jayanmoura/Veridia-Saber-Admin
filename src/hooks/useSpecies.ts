@@ -166,7 +166,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
                 if (!isGlobalAdmin && userLocalId && filteredImages.length > 0) {
                     filteredImages = filteredImages.filter((img: any) =>
-                        img.local_id === userLocalId || img.local_id === String(userLocalId)
+                        img.local_id === userLocalId || img.local_id === String(userLocalId) || img.local_id === null
                     );
                 }
 

@@ -248,6 +248,7 @@ export function GlobalHeatmap() {
                 <MapContainer
                     center={center}
                     zoom={4}
+                    maxZoom={22}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom={true}
                 >
@@ -255,6 +256,8 @@ export function GlobalHeatmap() {
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         url={getTileUrl()}
+                        maxNativeZoom={19}
+                        maxZoom={22}
                     />
 
                     {filteredLocations.map((loc) => (
