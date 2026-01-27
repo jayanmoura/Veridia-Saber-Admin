@@ -26,17 +26,12 @@ export interface LocalOption {
     nome: string;
 }
 
-export interface LocalData {
-    descricao_ocorrencia: string;
-    latitude: string;
-    longitude: string;
-}
+
 
 interface SpeciesDataTabProps {
     formData: Species;
     onFormDataChange: <K extends keyof Species>(field: K, value: Species[K]) => void;
-    localData: LocalData;
-    onLocalDataChange: (field: keyof LocalData, value: string) => void;
+
 
     // Options
     families: FamilyOption[];
@@ -60,9 +55,7 @@ interface SpeciesDataTabProps {
     isSenior: boolean;
     getUserLocalName: () => string;
 
-    // Geolocation
-    geoLoading: boolean;
-    onGetLocation: () => void;
+
 }
 
 /**
@@ -72,8 +65,7 @@ interface SpeciesDataTabProps {
 export function SpeciesDataTab({
     formData,
     onFormDataChange,
-    localData,
-    onLocalDataChange,
+
     families,
     locais,
     suggestions,
@@ -90,8 +82,7 @@ export function SpeciesDataTab({
     isProjectUser,
     isSenior,
     getUserLocalName,
-    geoLoading,
-    onGetLocation
+
 }: SpeciesDataTabProps) {
     const isGlobalAdmin = userRole === 'Curador Mestre' || userRole === 'Coordenador Científico' || userRole === 'Taxonomista Sênior';
 
@@ -267,72 +258,7 @@ export function SpeciesDataTab({
                 />
             </section>
 
-            {/* Section 2.5: Project-specific Notes - Only for Project Users */}
-            {isProjectUser && (
-                <section className="space-y-4">
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
-                            📝 Descrição da Ocorrência
-                            <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                Exibida no App
-                            </span>
-                        </h3>
-                        <textarea
-                            value={localData.descricao_ocorrencia}
-                            onChange={(e) => onLocalDataChange('descricao_ocorrencia', e.target.value)}
-                            rows={3}
-                            className="w-full px-4 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-emerald-50/30"
-                            placeholder="Texto descritivo sobre como a espécie ocorre neste local específico. Esta informação será exibida no aplicativo."
-                        />
-                    </div>
 
-                    {/* Geolocation */}
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-                                📍 Geolocalização
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={onGetLocation}
-                                disabled={geoLoading}
-                                className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 disabled:opacity-50"
-                            >
-                                {geoLoading ? (
-                                    <>
-                                        <Loader2 size={12} className="animate-spin" />
-                                        Obtendo...
-                                    </>
-                                ) : (
-                                    <>📍 Obter Localização Atual</>
-                                )}
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Latitude</label>
-                                <input
-                                    type="text"
-                                    value={localData.latitude}
-                                    onChange={(e) => onLocalDataChange('latitude', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
-                                    placeholder="-23.550520"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Longitude</label>
-                                <input
-                                    type="text"
-                                    value={localData.longitude}
-                                    onChange={(e) => onLocalDataChange('longitude', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
-                                    placeholder="-46.633308"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            )}
 
             {/* Section 3: Cultivation Guide - Hidden for Project Users */}
             {!isProjectUser && (

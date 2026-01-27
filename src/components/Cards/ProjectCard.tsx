@@ -53,6 +53,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, onGenerateRepo
             <div className="relative h-48 bg-gray-100">
                 {project.imagem_capa ? (
                     <img
+                        key={project.imagem_capa} // Force re-render on URL change
                         src={project.imagem_capa}
                         alt={project.nome}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

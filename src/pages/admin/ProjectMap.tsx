@@ -12,6 +12,7 @@ import { MapPinned, AlertTriangle, Loader2, Leaf, Layers, User, FileText } from 
 import 'leaflet/dist/leaflet.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { specimenRepo } from '../../services/specimenRepo'; // Import Repo
 
 // Utility to create project center icon
 const createProjectCenterIcon = (name: string) => {
@@ -122,28 +123,11 @@ export default function ProjectMap() {
                 if (projectError) throw projectError;
                 setProject(projectData);
 
-                // Fetch species ONLY from this project
-                const { data: speciesData, error: speciesError } = await supabase
-                    .from('especie_local')
-                    .select(`
-                        id,
-                        latitude,
-                        longitude,
-                        descricao_ocorrencia,
-                        especie:especie_id (
-                            id,
-                            nome_cientifico,
-                            nome_popular,
-                            familia:familia_id(familia_nome),
-                            imagens(url_imagem),
-                            created_by
-                        )
-                    `)
-                    .eq('local_id', profile.local_id)
-                    .not('latitude', 'is', null)
-                    .not('longitude', 'is', null);
-
-                if (speciesError) throw speciesError;
+                // Fetch specimens (occurrences) from this project using the semantics VIEW via Repo
+                const speciesData = await specimenRepo.listSpecimens({
+                    localId: Number(profile.local_id),
+                    withCoordinates: true
+                });
 
                 // Map to correct structure
                 const mappedSpecies: SpeciesLocation[] = (speciesData || []).map((sp: any) => ({
@@ -287,7 +271,7 @@ export default function ProjectMap() {
                     <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full">
                         <Leaf size={16} className="text-emerald-600" />
                         <span className="font-medium text-emerald-700">{validSpecies.length}</span>
-                        <span className="text-sm text-emerald-600">espécies mapeadas</span>
+                        <span className="text-sm text-emerald-600">espécimes mapeados</span>
                     </div>
 
                     {/* Style Switcher */}
@@ -444,7 +428,7 @@ export default function ProjectMap() {
                 {!loading && validSpecies.length === 0 && (
                     <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-10 pointer-events-none">
                         <Leaf size={48} className="text-gray-300 mb-3" />
-                        <p className="text-gray-500 font-medium">Nenhuma espécie com coordenadas neste projeto.</p>
+                        <p className="text-gray-500 font-medium">Nenhum espécime com coordenadas neste projeto.</p>
                         <p className="text-sm text-gray-400 mt-1">
                             Adicione coordenadas GPS ao registrar espécies.
                         </p>

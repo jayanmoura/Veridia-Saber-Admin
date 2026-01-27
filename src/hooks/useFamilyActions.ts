@@ -107,18 +107,21 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
         try {
             const { data: allFamilies, error } = await supabase
                 .from('familia')
-                .select('familia_nome, created_at, especie(count)')
+                .select('familia_nome, autoria_taxonomica, created_at, especie(count)')
                 .order('familia_nome');
 
             if (error) throw error;
 
             const reportData = (allFamilies || []).map((f: any) => ({
                 name: f.familia_nome,
+                autoria_taxonomica: f.autoria_taxonomica,
                 count: f.especie?.[0]?.count || 0,
                 createdAt: f.created_at ? new Date(f.created_at).toLocaleDateString('pt-BR') : '-'
             }));
 
-            generateFamiliesReportWithChart(reportData, 'relatorio_familias_geral.pdf', {});
+            generateFamiliesReportWithChart(reportData, 'relatorio_familias_geral.pdf', {
+                userName: profile?.full_name || 'Sistema'
+            });
         } catch (error) {
             console.error('Export error:', error);
             alert('Erro ao exportar relatório.');
@@ -139,8 +142,37 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
 
             if (error) throw error;
 
+            // Fetch full family details
+            const { data: fullFamily } = await supabase
+                .from('familia')
+                .select('*')
+                .eq('id', family.id)
+                .single();
+
+            // Fetch legacy names
+            const { data: legacyNames } = await supabase
+                .from('familia_nomenclatura_legado')
+                .select('*')
+                .eq('familia_id', family.id)
+                .order('nome_legado');
+
+            if (error) throw error;
+
             const safeName = family.familia_nome.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            generateFamilyReportWithCharts(family.familia_nome, species || [], `relatorio_${safeName}.pdf`, {});
+
+            generateFamilyReportWithCharts(
+                {
+                    ...family,
+                    autoria_taxonomica: fullFamily?.autoria_taxonomica,
+                    fonte_referencia: fullFamily?.fonte_referencia,
+                    link_referencia: fullFamily?.link_referencia,
+                    created_at: fullFamily?.created_at,
+                    created_by_name: fullFamily?.created_by_name
+                },
+                species || [],
+                legacyNames || [],
+                `relatorio_${safeName}.pdf`
+            );
         } catch (error) {
             console.error('Report error:', error);
             alert('Erro ao gerar relatório.');

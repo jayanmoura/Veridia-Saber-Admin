@@ -23,9 +23,9 @@ import {
     Plus,
     Filter,
     Loader2,
-    Tag,
     AlertTriangle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Types for component
 interface Species {
@@ -51,6 +51,7 @@ export default function SpeciesPage() {
     const [search, setSearch] = useState('');
     const [selectedFamily, setSelectedFamily] = useState('');
     const [page, setPage] = useState(1);
+    const navigate = useNavigate();
 
     // Data fetching hook
     const { species, families, loading, totalCount, stats, refetch } = useSpecies({
@@ -250,7 +251,7 @@ export default function SpeciesPage() {
                     color="blue"
                     loading={loading}
                 />
-                <StatCard title="Sem Imagem (Pág)" value={stats.missingImages} icon={ImageOff} color="red" loading={loading} />
+                <StatCard title="Sem Imagem" value={stats.missingImages} icon={ImageOff} color="red" loading={loading} />
             </div>
 
             {/* Controls */}
@@ -284,14 +285,7 @@ export default function SpeciesPage() {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     {actions.canGenerateReports && (
                         <>
-                            <button
-                                onClick={actions.handleGenerateLabels}
-                                disabled={actions.genLabelsLoading}
-                                className="flex items-center justify-center gap-2 px-4 py-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors flex-1 md:flex-none disabled:opacity-50 text-sm font-medium"
-                            >
-                                {actions.genLabelsLoading ? <Loader2 size={18} className="animate-spin" /> : <Tag size={18} />}
-                                <span className="hidden sm:inline">{actions.genLabelsLoading ? 'Gerando...' : 'Etiquetas'}</span>
-                            </button>
+
                             <button
                                 onClick={actions.handleExportSpecies}
                                 disabled={actions.exportLoading}
@@ -322,12 +316,11 @@ export default function SpeciesPage() {
                 onPageChange={setPage}
                 onEdit={handleEditSpecies}
                 onDelete={openDeleteModal}
-                onGenerateLabel={actions.handleGenerateSingleLabel}
                 onGenerateReport={actions.handleGenerateSingleReport}
                 singleReportLoading={actions.singleReportLoading}
-                singleLabelLoading={actions.singleLabelLoading}
                 deleteLoading={deleteLoading}
                 canGenerateReports={actions.canGenerateReports}
+                onViewSpecimens={(speciesId) => navigate(`/admin/specimens?especie_id=${speciesId}`)}
             />
 
             {/* Modals */}

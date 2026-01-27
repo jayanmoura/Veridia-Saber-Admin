@@ -45,7 +45,7 @@ export interface ModalSpecies {
     nome_popular: string | null;
 }
 
-export type TabType = 'users' | 'species' | 'families';
+export type TabType = 'users' | 'species' | 'families' | 'specimens';
 
 export interface UseProjectDetailsOptions {
     projectId: string | undefined;
@@ -284,6 +284,13 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         setLinkedFamilies(paginatedFamilies);
                         setTotalPages(Math.ceil(allFamilies.length / itemsPerPage) || 1);
                     }
+                    break;
+
+                case 'specimens':
+                    // Specimens are handled by their own hook/component (SpecimensTab)
+                    // We just need to support the tab switch
+                    setTabLoading(false);
+                    setTotalPages(1);
                     break;
             }
         } catch (err) {

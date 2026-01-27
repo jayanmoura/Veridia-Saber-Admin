@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { X, Upload, Loader2 } from 'lucide-react';
+import { X, Upload, Loader2, Info, List } from 'lucide-react';
+import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
 
 interface Family {
     id?: string;
     familia_nome: string;
+    autoria_taxonomica?: string | null;
     imagem_referencia?: string | null;
     caracteristicas?: string | null;
     descricao_familia?: string | null;
@@ -35,6 +37,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
     // Form state
     const [formData, setFormData] = useState<Family>({
         familia_nome: '',
+        autoria_taxonomica: '',
         caracteristicas: '',
         descricao_familia: '',
         fonte_referencia: '',
@@ -46,6 +49,9 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
     const [duplicateError, setDuplicateError] = useState<string | null>(null);
     const [similarFamilies, setSimilarFamilies] = useState<string[]>([]);
     const checkTimeout = useRef<any>(null);
+
+    // Tab Interface
+    const [activeTab, setActiveTab] = useState<'details' | 'legacy'>('details');
 
     const checkFamilyName = async (name: string) => {
         // Clear previous timeout
@@ -107,6 +113,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             if (initialData) {
                 setFormData({
                     familia_nome: initialData.familia_nome || '',
+                    autoria_taxonomica: initialData.autoria_taxonomica || '',
                     caracteristicas: initialData.caracteristicas || '',
                     descricao_familia: initialData.descricao_familia || '',
                     fonte_referencia: initialData.fonte_referencia || '',
@@ -116,6 +123,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             } else {
                 setFormData({
                     familia_nome: '',
+                    autoria_taxonomica: '',
                     caracteristicas: '',
                     descricao_familia: '',
                     fonte_referencia: '',
@@ -126,6 +134,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             setImageFile(null);
             setDuplicateError(null);
             setSimilarFamilies([]);
+            setActiveTab('details'); // Reset to details on open
         }
     }, [isOpen, initialData]);
 
@@ -206,6 +215,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
             const dataToSave = {
                 familia_nome: formData.familia_nome.trim(),
+                autoria_taxonomica: formData.autoria_taxonomica?.trim() || null,
                 caracteristicas: formData.caracteristicas?.trim() || null,
                 descricao_familia: formData.descricao_familia?.trim() || null,
                 fonte_referencia: formData.fonte_referencia?.trim() || null,
@@ -255,9 +265,9 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-fade-in-up">
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex-none">
                     <h2 className="text-xl font-bold text-gray-900">
                         {initialData ? 'Editar Família' : 'Nova Família'}
                     </h2>
@@ -269,211 +279,263 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                     </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
-                    {/* Image Upload */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Imagem de Capa
-                        </label>
-                        <div
-                            className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragActive
-                                ? 'border-emerald-500 bg-emerald-50'
-                                : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
+                {/* Tabs - Only show if editing */}
+                {initialData?.id && (
+                    <div className="flex border-b border-gray-200 px-6 flex-none">
+                        <button
+                            onClick={() => setActiveTab('details')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details'
+                                    ? 'border-emerald-500 text-emerald-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
-                            onDragEnter={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDragOver={handleDrag}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
                         >
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileInput}
-                                className="hidden"
-                            />
-
-                            {imagePreview ? (
-                                <div className="flex flex-col items-center gap-3">
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
-                                    />
-                                    <p className="text-sm text-gray-500">Clique ou arraste para substituir</p>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-2 text-gray-500">
-                                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                        <Upload size={28} />
-                                    </div>
-                                    <p className="text-sm font-medium">Arraste uma imagem ou clique para selecionar</p>
-                                    <p className="text-xs text-gray-400">PNG, JPG até 5MB</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Nome da Família */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nome da Família <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.familia_nome}
-                            onChange={(e) => {
-                                const newName = e.target.value;
-                                setFormData(prev => ({ ...prev, familia_nome: newName }));
-                                checkFamilyName(newName);
-                            }}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${duplicateError
-                                ? 'border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50'
-                                : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                            <Info size={16} />
+                            Dados da Família
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('legacy')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'legacy'
+                                    ? 'border-emerald-500 text-emerald-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
-                            placeholder="Ex: Fabaceae"
-                            required
-                        />
-                        {/* Status Checker */}
-                        <div className="mt-2 min-h-[20px]">
-                            {isChecking ? (
-                                <p className="text-xs text-gray-400 flex items-center gap-1">
-                                    <Loader2 size={12} className="animate-spin" /> Verificando disponibilidade...
-                                </p>
-                            ) : duplicateError ? (
-                                <p className="text-sm text-red-600 font-medium flex items-center gap-1 animate-in slide-in-from-top-1">
-                                    <span>⚠️</span> {duplicateError}
-                                </p>
-                            ) : similarFamilies.length > 0 ? (
-                                <div className="text-xs text-gray-500 animate-in fade-in">
-                                    <span className="font-medium text-gray-600">Famílias similares encontradas:</span>
-                                    <ul className="flex flex-wrap gap-2 mt-1">
-                                        {similarFamilies.map(f => (
-                                            <li key={f} className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
-                                                {f}
-                                            </li>
-                                        ))}
-                                    </ul>
+                        >
+                            <List size={16} />
+                            Nomenclatura Legada
+                        </button>
+                    </div>
+                )}
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto flex-1">
+                    {activeTab === 'details' ? (
+                        <form id="family-form" onSubmit={handleSubmit} className="space-y-5">
+                            {/* Image Upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Imagem de Capa
+                                </label>
+                                <div
+                                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragActive
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
+                                        }`}
+                                    onDragEnter={handleDrag}
+                                    onDragLeave={handleDrag}
+                                    onDragOver={handleDrag}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileInput}
+                                        className="hidden"
+                                    />
+
+                                    {imagePreview ? (
+                                        <div className="flex flex-col items-center gap-3">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
+                                            />
+                                            <p className="text-sm text-gray-500">Clique ou arraste para substituir</p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2 text-gray-500">
+                                            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                                <Upload size={28} />
+                                            </div>
+                                            <p className="text-sm font-medium">Arraste uma imagem ou clique para selecionar</p>
+                                            <p className="text-xs text-gray-400">PNG, JPG até 5MB</p>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : null}
-                        </div>
-                    </div>
+                            </div>
 
-                    {/* Características */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Características Chave
-                        </label>
-                        <textarea
-                            value={formData.caracteristicas || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, caracteristicas: e.target.value }))}
-                            rows={3}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
-                            placeholder="Descreva as características principais..."
-                        />
-                    </div>
+                            {/* Nome da Família e Autoria */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nome da Família <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.familia_nome}
+                                        onChange={(e) => {
+                                            const newName = e.target.value;
+                                            setFormData(prev => ({ ...prev, familia_nome: newName }));
+                                            checkFamilyName(newName);
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${duplicateError
+                                            ? 'border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50'
+                                            : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+                                            }`}
+                                        placeholder="Ex: Fabaceae"
+                                        required
+                                    />
+                                    {/* Status Checker */}
+                                    <div className="mt-2 min-h-[20px]">
+                                        {isChecking ? (
+                                            <p className="text-xs text-gray-400 flex items-center gap-1">
+                                                <Loader2 size={12} className="animate-spin" /> Verificando disponibilidade...
+                                            </p>
+                                        ) : duplicateError ? (
+                                            <p className="text-sm text-red-600 font-medium flex items-center gap-1 animate-in slide-in-from-top-1">
+                                                <span>⚠️</span> {duplicateError}
+                                            </p>
+                                        ) : similarFamilies.length > 0 ? (
+                                            <div className="text-xs text-gray-500 animate-in fade-in">
+                                                <span className="font-medium text-gray-600">Famílias similares encontradas:</span>
+                                                <ul className="flex flex-wrap gap-2 mt-1">
+                                                    {similarFamilies.map(f => (
+                                                        <li key={f} className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
+                                                            {f}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                </div>
 
-                    {/* Descrição */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Descrição Detalhada
-                        </label>
-                        <textarea
-                            value={formData.descricao_familia || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, descricao_familia: e.target.value }))}
-                            rows={4}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
-                            placeholder="Informações detalhadas sobre a família..."
-                        />
-                    </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Autoria Taxonômica
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.autoria_taxonomica || ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, autoria_taxonomica: e.target.value }))}
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        placeholder="Ex: Juss., R.Br."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Autoria botânica do nome científico da família.
+                                    </p>
+                                </div>
+                            </div>
 
-                    {/* Fonte */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Fontes / Referências <span className="text-gray-400 font-normal">(uma por linha)</span>
-                        </label>
-                        <textarea
-                            value={formData.fonte_referencia || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, fonte_referencia: e.target.value }))}
-                            rows={3}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
-                            placeholder="Ex: Flora do Brasil 2020&#10;Lorenzi, H. - Árvores Brasileiras&#10;APG IV (2016)"
-                        />
-                    </div>
+                            {/* Características */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Características Chave
+                                </label>
+                                <textarea
+                                    value={formData.caracteristicas || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, caracteristicas: e.target.value }))}
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    placeholder="Descreva as características principais..."
+                                />
+                            </div>
 
-                    {/* Links */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Links / URLs
-                        </label>
-                        <textarea
-                            value={formData.link_referencia || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, link_referencia: e.target.value }))}
-                            rows={2}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none font-mono text-sm"
-                            placeholder="Insira um link por linha..."
-                        />
-                    </div>
+                            {/* Descrição */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Descrição Detalhada
+                                </label>
+                                <textarea
+                                    value={formData.descricao_familia || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, descricao_familia: e.target.value }))}
+                                    rows={4}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    placeholder="Informações detalhadas sobre a família..."
+                                />
+                            </div>
 
-                    {/* Authorship Info - Only show when editing */}
-                    {initialData?.id && initialData?.created_at && (
-                        <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
-                            <p>
-                                <span className="font-medium">Cadastrado em:</span>{' '}
-                                {new Date(initialData.created_at).toLocaleString('pt-BR', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
-                            </p>
-                            {initialData.creator && (
-                                <p>
-                                    <span className="font-medium">Cadastrado por:</span>{' '}
-                                    {Array.isArray(initialData.creator)
-                                        ? initialData.creator[0]?.full_name || initialData.created_by || 'Usuário desconhecido'
-                                        : initialData.creator?.full_name || initialData.created_by || 'Usuário desconhecido'}
-                                </p>
+                            {/* Fonte */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Fontes / Referências <span className="text-gray-400 font-normal">(uma por linha)</span>
+                                </label>
+                                <textarea
+                                    value={formData.fonte_referencia || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, fonte_referencia: e.target.value }))}
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    placeholder="Ex: Flora do Brasil 2020&#10;Lorenzi, H. - Árvores Brasileiras&#10;APG IV (2016)"
+                                />
+                            </div>
+
+                            {/* Links */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Links / URLs
+                                </label>
+                                <textarea
+                                    value={formData.link_referencia || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, link_referencia: e.target.value }))}
+                                    rows={2}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none font-mono text-sm"
+                                    placeholder="Insira um link por linha..."
+                                />
+                            </div>
+
+                            {/* Authorship Info - Only show when editing */}
+                            {initialData?.id && initialData?.created_at && (
+                                <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
+                                    <p>
+                                        <span className="font-medium">Cadastrado em:</span>{' '}
+                                        {new Date(initialData.created_at).toLocaleString('pt-BR', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </p>
+                                    {initialData.creator && (
+                                        <p>
+                                            <span className="font-medium">Cadastrado por:</span>{' '}
+                                            {Array.isArray(initialData.creator)
+                                                ? initialData.creator[0]?.full_name || initialData.created_by || 'Usuário desconhecido'
+                                                : initialData.creator?.full_name || initialData.created_by || 'Usuário desconhecido'}
+                                        </p>
+                                    )}
+                                    {!initialData.creator && initialData.created_by && (
+                                        <p>
+                                            <span className="font-medium">Cadastrado por (ID):</span>{' '}
+                                            <span className="font-mono text-gray-400">{initialData.created_by}</span>
+                                        </p>
+                                    )}
+                                </div>
                             )}
-                            {!initialData.creator && initialData.created_by && (
-                                <p>
-                                    <span className="font-medium">Cadastrado por (ID):</span>{' '}
-                                    <span className="font-mono text-gray-400">{initialData.created_by}</span>
-                                </p>
-                            )}
-                        </div>
+                        </form>
+                    ) : (
+                        initialData?.id && <FamilyLegacyNamesSection familiaId={initialData.id} />
                     )}
-                </form>
+                </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex-none">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={loading}
                         className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
                     >
-                        Cancelar
+                        {activeTab === 'details' ? 'Cancelar' : 'Fechar'}
                     </button>
-                    <button
-                        type="submit"
-                        form="family-form"
-                        onClick={handleSubmit}
-                        disabled={loading || !!duplicateError || isChecking}
-                        className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 size={18} className="animate-spin" />
-                                <span>Salvando...</span>
-                            </>
-                        ) : (
-                            <span>{initialData ? 'Salvar Alterações' : 'Criar Família'}</span>
-                        )}
-                    </button>
+                    {activeTab === 'details' && (
+                        <button
+                            type="submit"
+                            form="family-form"
+                            onClick={handleSubmit}
+                            disabled={loading || !!duplicateError || isChecking}
+                            className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    <span>Salvando...</span>
+                                </>
+                            ) : (
+                                <span>{initialData ? 'Salvar Alterações' : 'Criar Família'}</span>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>,

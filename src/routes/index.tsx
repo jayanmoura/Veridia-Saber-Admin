@@ -5,6 +5,7 @@ import Users from '../pages/admin/Users';
 import Families from '../pages/admin/Families';
 import Species from '../pages/admin/Species';
 import Projects from '../pages/admin/Projects';
+import Specimens from '../pages/admin/Specimens';
 import ProjectDetails from '../pages/admin/ProjectDetails';
 import EducationalContent from '../pages/admin/EducationalContent';
 import AuditLogs from '../pages/admin/AuditLogs';
@@ -140,6 +141,10 @@ export const adminRouter = createBrowserRouter([
             {
                 path: 'projects/:id',
                 element: <ProjectDetails />,
+            },
+            {
+                path: 'specimens',
+                element: <Specimens />,
             },
             {
                 path: 'conteudo-didatico',

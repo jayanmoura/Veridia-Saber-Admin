@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../lib/supabase';
 import { Loader2, Layers, Map as MapIcon, RotateCcw } from 'lucide-react';
 import L from 'leaflet';
+import { specimenRepo } from '../../services/specimenRepo';
 
 // Utility to create custom div icons for Project Balloons
 const createProjectIcon = (name: string, count: number) => {
@@ -88,21 +89,11 @@ export function ProjectMapViz() {
 
             if (projectsError) throw projectsError;
 
-            // 2. Fetch plants linked to projects (especie_local)
-            const { data: plantsData, error: plantsError } = await supabase
-                .from('especie_local')
-                .select(`
-                    id,
-                    latitude,
-                    longitude,
-                    local_id,
-                    especie:especie_id(nome_cientifico, familia:familia_id(familia_nome), imagens(url_imagem)),
-                    locais:local_id(nome, latitude, longitude)
-                `)
-                .not('latitude', 'is', null)
-                .not('longitude', 'is', null);
-
-            if (plantsError) throw plantsError;
+            // 2. Fetch plants linked to projects using Repo
+            // We want ALL plants with coordinates
+            const plantsData = await specimenRepo.listSpecimens({
+                withCoordinates: true
+            });
 
             const mappedPlants: PlantLocation[] = (plantsData || []).map((item: any) => ({
                 id: item.id,
@@ -240,7 +231,7 @@ export function ProjectMapViz() {
                             onClick={() => { setViewMode('plants'); setFocussedProject(null); }}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'plants' && !focussedProject ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                            Todas as Plantas
+                            Todos os Espécimes
                         </button>
                     </div>
 

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned, Globe, Sprout } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { hasMinLevel, ROLES_CONFIG } from '../../types/auth';
@@ -25,6 +25,12 @@ const MENU_ITEMS = [
         path: '/species',
         icon: Leaf,
         minLevel: 5, // Curador(1), Coord(2), TaxSênior(3), Gestor(4), TaxCampo(5)
+    },
+    {
+        label: 'Espécimes',
+        path: '/specimens',
+        icon: Sprout,
+        minLevel: 5,
     },
     {
         label: 'Projetos',

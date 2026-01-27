@@ -139,6 +139,8 @@
 | habitat_ecologia | text | YES | - |
 | created_by | uuid | YES | - |
 
+> ℹ️ **Nota**: Esta tabela representa registros de ocorrência georreferenciada (espécime). A VIEW `especime` deve ser usada como nome padrão de consulta para mapas e camadas geográficas.
+
 ---
 
 ### estados
@@ -167,6 +169,7 @@
 |--------|------|----------|---------|
 | id | text | NO | gen_random_uuid()::text |
 | familia_nome | text | NO | - |
+| autoria_taxonomica | text | YES | - |
 | created_at | timestamp with time zone | NO | now() |
 | distribuicao_geografica | text | YES | - |
 | imagem_referencia | text | YES | - |
@@ -177,6 +180,19 @@
 | created_by_institution_id | uuid | YES | - |
 | created_by | uuid | YES | auth.uid() |
 | **created_by_name** | text | YES | - |
+
+---
+
+### familia_nomenclatura_legado
+| Coluna | Tipo | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NO | gen_random_uuid() |
+| familia_id | text | NO | - |
+| nome_legado | text | NO | - |
+| tipo | text | YES | 'sinonimo' |
+| fonte | text | YES | - |
+| observacao | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
 
 ---
 
@@ -192,6 +208,10 @@
 | especie_local_id | bigint | YES | - |
 | criado_por | text | YES | - |
 | local_id | bigint | YES | - |
+| **especime_id** | bigint | YES | - |
+
+> ℹ️ **Restrição de Integridade**: Cada imagem deve pertencer exclusivamente a uma Espécie OU a um Espécime.
+> `CHECK ((especie_id IS NOT NULL AND especime_id IS NULL) OR (especie_id IS NULL AND especime_id IS NOT NULL))`
 
 ---
 
@@ -289,10 +309,12 @@
 | especie_local | local_id | locais | id |
 | etiquetas | especie_local_id | especie_local | id |
 | familia | created_by_institution_id | institutions | id |
+| familia_nomenclatura_legado | familia_id | familia | id |
 | imagens | especie_id | especie | id |
 | imagens | especie_local_id | especie_local | id |
 | imagens | institution_id | institutions | id |
 | imagens | local_id | locais | id |
+| imagens | **especime_id** | especie_local | id |
 | locais | institution_id | institutions | id |
 | municipios | estado_id | estados | id |
 | plantas_da_colecao | colecao_id | colecoes | id |
@@ -362,6 +384,31 @@ SELECT id, familia_id, nome_cientifico, nome_popular, descricao_especie,
 FROM especie e
 WHERE NOT EXISTS (SELECT 1 FROM imagens i WHERE i.especie_id = e.id);
 ```
+
+### especime (VIEW)
+- **Tipo**: VIEW
+- **Fonte**: alias semântico de `especie_local`
+- **Finalidade**: representar "espécimes/ocorrências" no mapa, separando do conceito taxonômico de `especie`.
+
+| Coluna |
+|--------|
+| id |
+| especie_id |
+| local_id |
+| institution_id |
+| latitude |
+| longitude |
+| detalhes_localizacao |
+| descricao_ocorrencia |
+| nome_popular_local |
+| determinador |
+| data_determinacao |
+| coletor |
+| numero_coletor |
+| morfologia |
+| habitat_ecologia |
+| created_at |
+| created_by |
 
 ---
 

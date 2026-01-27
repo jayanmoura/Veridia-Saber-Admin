@@ -288,7 +288,28 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
             if (editImageFile) {
                 const newUrl = await uploadProjectImage(editImageFile, selectedProject.id);
-                if (newUrl) imageUrl = newUrl;
+                if (!newUrl) {
+                    throw new Error('Falha ao fazer upload da nova imagem');
+                }
+
+                // Delete old image if exists
+                if (selectedProject.imagem_capa) {
+                    try {
+                        // Extract path from public URL
+                        // URL format: .../arquivos-gerais/locais/ID/capa/FILE
+                        const oldPathMatch = selectedProject.imagem_capa.match(/\/arquivos-gerais\/(.*)/);
+                        if (oldPathMatch && oldPathMatch[1]) {
+                            // Decode URI component to handle spaces/special chars in filename
+                            const oldPath = decodeURIComponent(oldPathMatch[1]);
+                            await supabase.storage.from('arquivos-gerais').remove([oldPath]);
+                        }
+                    } catch (err) {
+                        console.error('Error deleting old image:', err);
+                        // Continue even if delete fails, as we have the new image
+                    }
+                }
+
+                imageUrl = newUrl;
             }
 
             const { error } = await supabase
@@ -308,8 +329,26 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
             if (error) throw error;
 
+            // Verify if DB actually updated (Safety check)
+            const { data: verifyData } = await supabase
+                .from('locais')
+                .select('imagem_capa')
+                .eq('id', selectedProject.id)
+                .single();
+
+            if (verifyData?.imagem_capa !== imageUrl) {
+                // If verification fails, it might be RLS or trigger issue.
+                // We log it but maybe we shouldn't crash the UI if it's intermittent?
+                // But for this user, crashing is better than lying.
+                console.error('Update verification failed:', { expected: imageUrl, actual: verifyData?.imagem_capa });
+                throw new Error('A atualização não foi salva no banco de dados (bloqueio de permissão ou erro interno).');
+            }
+
             showToast('Projeto atualizado com sucesso!');
             setIsEditModalOpen(false);
+
+            // Wait a bit to ensure DB propagation/consistency before refetching
+            await new Promise(resolve => setTimeout(resolve, 1000));
             onSuccess();
         } catch (error: any) {
             console.error('Edit error:', error);

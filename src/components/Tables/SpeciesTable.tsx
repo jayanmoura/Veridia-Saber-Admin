@@ -1,4 +1,4 @@
-import { Leaf, FileText, Tag, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Leaf, FileText, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 export interface SpeciesItem {
     id: string;
@@ -18,17 +18,15 @@ interface SpeciesTableProps {
     totalPages: number;
     onPageChange: (page: number) => void;
 
-    // Actions
     onEdit: (species: SpeciesItem) => void;
     onDelete: (species: SpeciesItem) => void;
-    onGenerateLabel: (species: SpeciesItem) => void;
     onGenerateReport?: (speciesId: string) => void;
 
     // Loading states for individual items
     singleReportLoading?: string | null;
-    singleLabelLoading?: string | null;
     deleteLoading?: boolean;
 
+    onViewSpecimens?: (speciesId: string) => void;
     // Permissions
     canGenerateReports?: boolean;
 }
@@ -45,12 +43,11 @@ export function SpeciesTable({
     onPageChange,
     onEdit,
     onDelete,
-    onGenerateLabel,
     onGenerateReport,
     singleReportLoading,
-    singleLabelLoading,
     deleteLoading = false,
-    canGenerateReports = false
+    canGenerateReports = false,
+    onViewSpecimens
 }: SpeciesTableProps) {
     const getCreatorName = (specie: SpeciesItem) => {
         // First try creator from join
@@ -123,14 +120,19 @@ export function SpeciesTable({
                                                         {singleReportLoading === specie.id ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => onGenerateLabel(specie)}
-                                                    disabled={singleLabelLoading === specie.id}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
-                                                    title="Gerar Etiqueta"
-                                                >
-                                                    {singleLabelLoading === specie.id ? <Loader2 size={18} className="animate-spin" /> : <Tag size={18} />}
-                                                </button>
+
+                                                {onViewSpecimens && (
+                                                    <button
+                                                        onClick={() => onViewSpecimens(specie.id)}
+                                                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                        title="Ver Espécimes"
+                                                    >
+                                                        <Eye size={18} />
+                                                    </button>
+                                                )}
+
+
+
                                                 <button
                                                     onClick={() => onEdit(specie)}
                                                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"

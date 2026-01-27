@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { X, Upload, Loader2, Leaf, Image as ImageIcon, Trash2, FileText } from 'lucide-react';
+import { X, Upload, Loader2, Leaf, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface Species {
     id?: string;
@@ -784,31 +784,8 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                     </button>
                 </div>
 
-                {/* Tabs - Only for Project Users */}
-                {isProjectUser && (
-                    <div className="flex border-b border-gray-100 bg-gray-50/50 px-6">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('species')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'species' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <Leaf size={16} />
-                                Dados da Espécie
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('label')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'label' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <FileText size={16} />
-                                Etiqueta de Herbário
-                            </span>
-                        </button>
-                    </div>
-                )}
+                {/* Tabs Removed - Single View */}
+
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-210px)]">
@@ -1271,156 +1248,8 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                 </>
                             )}
 
-                            {/* LABEL TAB CONTENT */}
-                            {activeTab === 'label' && (
-                                <div className="space-y-8">
-                                    <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 flex items-start gap-3">
-                                        <FileText className="text-emerald-600 mt-0.5" size={20} />
-                                        <div>
-                                            <h3 className="font-semibold text-emerald-900 text-sm">Editor de Etiqueta de Herbário</h3>
-                                            <p className="text-sm text-emerald-700 mt-1">
-                                                Preencha os dados necessários para a geração da etiqueta padrão (padrão científico).
-                                            </p>
-                                        </div>
-                                    </div>
+                            {/* LABEL TAB REMOVED - Logic moved to Specimen Management */}
 
-                                    {/* 1. Identificação/Determinação */}
-                                    <section className="space-y-4">
-                                        <h4 className="text-sm font-bold text-gray-800 border-b pb-2 uppercase tracking-wide">1. Identificação e Coleta</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Determinador (Quem identificou)</label>
-                                                <input
-                                                    type="text"
-                                                    value={localData.determinador}
-                                                    onChange={(e) => setLocalData(prev => ({ ...prev, determinador: e.target.value }))}
-                                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                    placeholder="Ex: Souza, J. M."
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Data da Determinação</label>
-                                                <input
-                                                    type="date"
-                                                    value={localData.data_determinacao}
-                                                    onChange={(e) => setLocalData(prev => ({ ...prev, data_determinacao: e.target.value }))}
-                                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Coletor Principal</label>
-                                                <input
-                                                    type="text"
-                                                    value={localData.coletor}
-                                                    onChange={(e) => setLocalData(prev => ({ ...prev, coletor: e.target.value }))}
-                                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                    placeholder="Ex: Silva, A."
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Número do Coletor</label>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={localData.numero_coletor}
-                                                        onChange={(e) => setLocalData(prev => ({ ...prev, numero_coletor: e.target.value }))}
-                                                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                        placeholder="Ex: 1240"
-                                                    />
-                                                    {/* Tombo display removed */}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* 2. Localização */}
-                                    <section className="space-y-4">
-                                        <h4 className="text-sm font-bold text-gray-800 border-b pb-2 uppercase tracking-wide">2. Localização</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Latitude (Decimal)</label>
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    value={localData.latitude}
-                                                    onChange={(e) => setLocalData(prev => ({ ...prev, latitude: e.target.value }))}
-                                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Longitude (Decimal)</label>
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    value={localData.longitude}
-                                                    onChange={(e) => setLocalData(prev => ({ ...prev, longitude: e.target.value }))}
-                                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Descrição da Localização
-                                                <span className="text-xs font-normal text-gray-500 ml-2">(País, província, localidade, ref. geográficas)</span>
-                                            </label>
-                                            <textarea
-                                                value={localData.detalhes_localizacao}
-                                                onChange={(e) => setLocalData(prev => ({ ...prev, detalhes_localizacao: e.target.value }))}
-                                                rows={3}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                                                placeholder="Ex: Brasil, RJ, Mangaratiba. Próximo ao Rio Sahy, 500m da estrada principal."
-                                            />
-                                        </div>
-                                    </section>
-
-                                    {/* 3. Ecologia e Morfologia */}
-                                    <section className="space-y-4">
-                                        <h4 className="text-sm font-bold text-gray-800 border-b pb-2 uppercase tracking-wide">3. Ecologia e Descrição</h4>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Habitat e Ecologia
-                                                <span className="text-xs font-normal text-gray-500 ml-2">(Tipo de vegetação, substrato, associadas, abundância)</span>
-                                            </label>
-                                            <textarea
-                                                value={localData.habitat_ecologia}
-                                                onChange={(e) => setLocalData(prev => ({ ...prev, habitat_ecologia: e.target.value }))}
-                                                rows={3}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                                                placeholder="Ex: Floresta Ombrófila Densa. Solo argiloso. Espécie frequente no sub-bosque."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Descrição Morfológica (Planta Fresca)
-                                                <span className="text-xs font-normal text-gray-500 ml-2">(Hábito, cor, cheiro, dimensões, características perdidas na secagem)</span>
-                                            </label>
-                                            <textarea
-                                                value={localData.morfologia}
-                                                onChange={(e) => setLocalData(prev => ({ ...prev, morfologia: e.target.value }))}
-                                                rows={3}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                                                placeholder="Ex: Arbusto de 2m. Flores brancas com aroma adocicado. Frutos imaturos verdes."
-                                            />
-                                        </div>
-                                    </section>
-
-                                    {/* Preview Label (Mini) */}
-                                    <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Pré-visualização Rápida</h4>
-                                        <div className="font-serif text-sm leading-relaxed text-gray-800 border-l-4 border-emerald-500 pl-4 py-1">
-                                            <p><span className="font-bold italic">{formData.nome_cientifico}</span> {formData.autor}</p>
-                                            <p className="text-xs uppercase text-gray-500 mb-1">{families.find(f => f.id === formData.familia_id)?.familia_nome}</p>
-                                            <p className="mb-1"><span className="font-semibold">Loc:</span> {localData.detalhes_localizacao}</p>
-                                            <p className="mb-1"><span className="font-semibold">Eco:</span> {localData.habitat_ecologia}</p>
-                                            <p className="mb-1"><span className="font-semibold">Des:</span> {localData.morfologia}</p>
-                                            <p className="mt-2 text-xs text-gray-600">
-                                                {localData.coletor} {localData.numero_coletor ? `nº ${localData.numero_coletor}` : ''}
-                                                {localData.data_determinacao ? ` (${new Date(localData.data_determinacao).toLocaleDateString()})` : ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Authorship Info - Only show when editing (Generic for both tabs) */}
                             {initialData?.id && initialData?.created_at && (

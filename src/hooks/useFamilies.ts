@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export interface Family {
     id: string;
     familia_nome: string;
+    autoria_taxonomica?: string | null;
     imagem_referencia: string | null;
     especie?: { count: number }[];
     quantidade_especies: number;
@@ -69,10 +70,8 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
     const [pendingFamilies, setPendingFamilies] = useState<PendingFamily[]>([]);
     const [pendingLoading, setPendingLoading] = useState(false);
 
-    // Calculate stats from current page data
-    const calculateStats = useCallback((data: Family[], total: number) => {
-        const missingImages = data.filter(f => !f.imagem_referencia).length;
-
+    // Calculate stats from current page data (Richest) and global data (Missing Images)
+    const calculateStats = useCallback((data: Family[], total: number, missingImagesGlobal: number) => {
         let richest: FamilyStats['richest'] = null;
         let maxCount = 0;
 
@@ -84,7 +83,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
             }
         });
 
-        setStats({ total, richest, missingImages });
+        setStats({ total, richest, missingImages: missingImagesGlobal });
     }, []);
 
     // Main families fetch function
@@ -102,11 +101,19 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
                 .order('familia_nome')
                 .range(from, to);
 
+            let imgQuery = supabase
+                .from('familia')
+                .select('id', { count: 'exact', head: true })
+                .is('imagem_referencia', null);
+
             if (search) {
                 query = query.ilike('familia_nome', `%${search}%`);
+                imgQuery = imgQuery.ilike('familia_nome', `%${search}%`);
             }
 
-            const { data, error, count } = await query;
+            const [mainResult, imgResult] = await Promise.all([query, imgQuery]);
+
+            const { data, error, count } = mainResult;
 
             if (error) throw error;
 
@@ -115,9 +122,12 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
                 quantidade_especies: item.especie?.[0]?.count || 0
             }));
 
+            // Use the parallel count stats
+            const missingImagesGlobal = imgResult.count || 0;
+
             setFamilies(formattedData);
             setTotalCount(count || 0);
-            calculateStats(formattedData, count || 0);
+            calculateStats(formattedData, count || 0, missingImagesGlobal);
 
         } catch (error) {
             console.error('Error fetching families:', error);

@@ -70,9 +70,9 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
         missingImages: 0
     });
 
-    // Calculate stats from current page data
-    const calculateStats = useCallback((data: Species[], total: number) => {
-        const missingImages = data.filter(s => !s.imagens || s.imagens.length === 0).length;
+    // Calculate stats from current page data (Top Epithet) and global data (Missing Images)
+    const calculateStats = useCallback((data: Species[], total: number, missingImagesGlobal: number) => {
+        // missingImages is now passed from global query, distinguishing from page-local data
         const epithetCounts: Record<string, number> = {};
 
         data.forEach(s => {
@@ -95,7 +95,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             }
         });
 
-        setStats({ total, missingImages, topEpithet });
+        setStats({ total, missingImages: missingImagesGlobal, topEpithet });
     }, []);
 
     // Fetch families for filter dropdown
@@ -156,11 +156,43 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                 query = query.eq('familia_id', familyId);
             }
 
-            const { data, error, count } = await query;
 
+            // 2. Fetch species with images count (Global/Filtered)
+            // We want to count how many species in total (matching filters) HAVE images, then subtract from totalCount.
+            let countWithImages = 0;
+            let imgQuery;
+
+            if (!isGlobalAdmin && userLocalId) {
+                // Local Admin: Filter by species in local AND images in local
+                imgQuery = supabase
+                    .from('especie')
+                    .select('id, especie_local!inner(local_id), imagens!inner(local_id)', { count: 'exact', head: true })
+                    .eq('especie_local.local_id', userLocalId)
+                    .eq('imagens.local_id', userLocalId);
+            } else {
+                // Global Admin: Filter by existence of images
+                imgQuery = supabase
+                    .from('especie')
+                    .select('id, imagens!inner(id)', { count: 'exact', head: true });
+            }
+
+            if (search) {
+                imgQuery = imgQuery.ilike('nome_cientifico', `%${search}%`);
+            }
+            if (familyId) {
+                imgQuery = imgQuery.eq('familia_id', familyId);
+            }
+
+            // execute parallel
+            const [mainResult, imgResult] = await Promise.all([query, imgQuery]);
+
+            const { data, error, count } = mainResult;
             if (error) throw error;
 
-            // Filter images by local_id for non-global admins
+            countWithImages = imgResult.count || 0;
+            const globalMissingImages = (count || 0) - countWithImages;
+
+            // Filter images by local_id for non-global admins (View logic)
             const formattedData: Species[] = (data || []).map((item: any) => {
                 let filteredImages = item.imagens || [];
 
@@ -175,7 +207,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
             setSpecies(formattedData);
             setTotalCount(count || 0);
-            calculateStats(formattedData, count || 0);
+            calculateStats(formattedData, count || 0, globalMissingImages);
 
         } catch (error) {
             console.error('Error fetching species:', error);

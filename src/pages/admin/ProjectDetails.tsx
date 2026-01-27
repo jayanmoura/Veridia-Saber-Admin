@@ -31,8 +31,10 @@ import {
     UsersTab,
     SpeciesTab,
     FamiliesTab,
+    SpecimensTab,
     type LinkedSpecies
 } from '../../components/ProjectDetails';
+import { MapPin } from 'lucide-react'; // Ensure MapPin is imported if not already
 
 // ============ COMPONENT ============
 export default function ProjectDetailsPage() {
@@ -78,6 +80,7 @@ export default function ProjectDetailsPage() {
         { id: 'users' as const, label: 'Usuários', icon: Users, count: usersCount },
         { id: 'species' as const, label: 'Espécies', icon: Leaf, count: speciesCountTotal },
         { id: 'families' as const, label: 'Famílias', icon: TreeDeciduous, count: familiesCount },
+        { id: 'specimens' as const, label: 'Espécimes', icon: MapPin, count: null }, // TODO: Fetch specimen count if needed
     ];
 
     // Derived
@@ -448,6 +451,9 @@ export default function ProjectDetailsPage() {
                                             families={linkedFamilies}
                                             onFamilyClick={openFamilyModal}
                                         />
+                                    )}
+                                    {activeTab === 'specimens' && (
+                                        <SpecimensTab projectId={id || ''} />
                                     )}
                                 </>
                             )}

@@ -1,12 +1,6 @@
-// Re-export ProjectDetails components
-export { ProjectHeader } from './ProjectHeader';
-export type { ProjectDetails } from './ProjectHeader';
-
-export { UsersTab } from './UsersTab';
-export type { LinkedUser } from './UsersTab';
-
-export { SpeciesTab } from './SpeciesTab';
+export * from './UsersTab';
+export * from './SpeciesTab';
+export * from './FamiliesTab';
+export * from './SpecimensTab';
+export * from './ProjectHeader';
 export type { LinkedSpecies } from './SpeciesTab';
-
-export { FamiliesTab } from './FamiliesTab';
-export type { LinkedFamily } from './FamiliesTab';

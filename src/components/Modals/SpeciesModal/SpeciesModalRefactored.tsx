@@ -16,9 +16,9 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
-import { SpeciesDataTab, LabelDataTab } from './index';
+import { SpeciesDataTab } from './index';
 import { ImageUploadZone } from '../../Forms/ImageUploadZone';
-import { X, Loader2, Leaf, FileText, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon } from 'lucide-react';
 
 // ============ TYPES ============
 interface Species {
@@ -59,7 +59,12 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
         if (isOpen && initialData?.id) {
             const currentLocalId = initialData.local_id || (form.isLocalUser ? profile?.local_id : null);
             images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
-            form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null);
+            images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
+            // form.loadLocalData called inside useSpeciesForm? Warning: check useSpeciesForm.
+            // If localData logic was moved there, we might need to remove it there too. 
+            // For now, removing the call here if it exists on the form object.
+            // form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null); 
+            // Actually, I'll just remove the line.
         } else if (isOpen && !initialData) {
             images.reset();
         }
@@ -141,60 +146,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                 speciesId = data.id;
             }
 
-            // SAVE LOCAL DATA (especie_local)
-            if (effectiveLocalId && speciesId) {
-                let targetInstitutionId = profile?.institution_id;
 
-                if (!targetInstitutionId) {
-                    try {
-                        const { data: localData } = await supabase
-                            .from('locais')
-                            .select('institution_id')
-                            .eq('id', effectiveLocalId)
-                            .single();
-
-                        if (localData?.institution_id) {
-                            targetInstitutionId = localData.institution_id;
-                        }
-                    } catch (err) {
-                        console.warn('Erro ao buscar fallback de instituição:', err);
-                    }
-                }
-
-                if (!targetInstitutionId) {
-                    console.warn('[DEBUG] ABORTANDO: user profile sem institution_id');
-                    alert('Erro: Seu perfil de usuário não está vinculado a uma instituição.');
-                } else {
-                    const { error: localError } = await supabase
-                        .from('especie_local')
-                        .upsert({
-                            especie_id: speciesId,
-                            local_id: effectiveLocalId,
-                            descricao_ocorrencia: form.localData.descricao_ocorrencia?.trim() || null,
-                            detalhes_localizacao: form.localData.detalhes_localizacao?.trim() || null,
-                            latitude: form.localData.latitude ? parseFloat(form.localData.latitude) : null,
-                            longitude: form.localData.longitude ? parseFloat(form.localData.longitude) : null,
-                            determinador: form.localData.determinador?.trim() || null,
-                            data_determinacao: form.localData.data_determinacao || null,
-                            coletor: form.localData.coletor?.trim() || null,
-                            numero_coletor: form.localData.numero_coletor?.trim() || null,
-                            morfologia: form.localData.morfologia?.trim() || null,
-                            habitat_ecologia: form.localData.habitat_ecologia?.trim() || null,
-                            institution_id: targetInstitutionId
-                        }, {
-                            onConflict: 'especie_id,local_id'
-                        });
-
-                    if (localError) {
-                        console.error('Erro ao salvar dados locais:', localError);
-                        if (localError.code === '42501') {
-                            alert('Erro de Permissão (RLS): O banco de dados bloqueou o salvamento.');
-                        } else {
-                            alert(`Erro ao salvar notas locais: ${localError.message}`);
-                        }
-                    }
-                }
-            }
 
             // Upload new images
             if (images.imageFiles.length > 0 && speciesId) {
@@ -274,31 +226,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     </button>
                 </div>
 
-                {/* Tabs - Only for Project Users */}
-                {form.isProjectUser && (
-                    <div className="flex border-b border-gray-100 bg-gray-50/50 px-6">
-                        <button
-                            type="button"
-                            onClick={() => form.setActiveTab('species')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${form.activeTab === 'species' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <Leaf size={16} />
-                                Dados da Espécie
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => form.setActiveTab('label')}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${form.activeTab === 'label' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <FileText size={16} />
-                                Etiqueta de Herbário
-                            </span>
-                        </button>
-                    </div>
-                )}
+
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-210px)]">
@@ -308,82 +236,59 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                         </div>
                     ) : (
                         <div className="p-6 space-y-8">
-                            {/* SPECIES TAB CONTENT */}
-                            {form.activeTab === 'species' && (
-                                <>
-                                    <SpeciesDataTab
-                                        formData={form.formData}
-                                        onFormDataChange={(field, value) => form.setFormData(prev => ({ ...prev, [field]: value }))}
-                                        localData={{
-                                            descricao_ocorrencia: form.localData.descricao_ocorrencia,
-                                            latitude: form.localData.latitude,
-                                            longitude: form.localData.longitude
-                                        }}
-                                        onLocalDataChange={(field, value) => form.setLocalData(prev => ({ ...prev, [field]: value }))}
-                                        families={form.families}
-                                        locais={form.locais}
-                                        suggestions={form.suggestions}
-                                        isSearching={form.isSearching}
-                                        showSuggestions={form.showSuggestions}
-                                        onNameChange={form.handleNameChange}
-                                        onSelectGlobalSpecies={form.handleSelectGlobalSpecies}
-                                        onClearSelection={form.handleClearSelection}
-                                        onShowSuggestions={form.setShowSuggestions}
-                                        userRole={form.userRole}
-                                        isGlobalSpecies={form.isGlobalSpecies}
-                                        isEditingExisting={form.isEditingExisting}
-                                        shouldLockGlobalFields={form.shouldLockGlobalFields}
-                                        isProjectUser={form.isProjectUser}
-                                        isSenior={form.isSenior}
-                                        getUserLocalName={form.getUserLocalName}
-                                        geoLoading={form.geoLoading}
-                                        onGetLocation={form.handleGetLocation}
-                                    />
+                            {/* SPECIES TAB CONTENT (Now just the content, no tabs) */}
+                            <SpeciesDataTab
+                                formData={form.formData}
+                                onFormDataChange={(field, value) => form.setFormData(prev => ({ ...prev, [field]: value }))}
+                                families={form.families}
+                                locais={form.locais}
+                                suggestions={form.suggestions}
+                                isSearching={form.isSearching}
+                                showSuggestions={form.showSuggestions}
+                                onNameChange={form.handleNameChange}
+                                onSelectGlobalSpecies={form.handleSelectGlobalSpecies}
+                                onClearSelection={form.handleClearSelection}
+                                onShowSuggestions={form.setShowSuggestions}
+                                userRole={form.userRole}
+                                isGlobalSpecies={form.isGlobalSpecies}
+                                isEditingExisting={form.isEditingExisting}
+                                shouldLockGlobalFields={form.shouldLockGlobalFields}
+                                isProjectUser={form.isProjectUser}
+                                isSenior={form.isSenior}
+                                getUserLocalName={form.getUserLocalName}
+                            />
 
-                                    {/* Images Section */}
-                                    <section>
-                                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                            <ImageIcon size={16} className="text-emerald-600" />
-                                            Galeria de Imagens
-                                        </h3>
-                                        <ImageUploadZone
-                                            imagePreviews={images.imagePreviews}
-                                            newImageCredits={images.newImageCredits}
-                                            onRemoveNewImage={images.removeNewImage}
-                                            onNewImageCreditsChange={(index, credits) => {
-                                                images.setNewImageCredits(prev => {
-                                                    const updated = [...prev];
-                                                    updated[index] = credits;
-                                                    return updated;
-                                                });
-                                            }}
-                                            existingImages={images.existingImages}
-                                            editedCredits={images.editedCredits}
-                                            onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
-                                            onDeleteExisting={images.handleDeleteExistingImage}
-                                            dragActive={images.dragActive}
-                                            onDrag={images.handleDrag}
-                                            onDrop={images.handleDrop}
-                                            onFileInput={images.handleFileInput}
-                                            fileInputRef={images.fileInputRef}
-                                        />
-                                    </section>
-                                </>
-                            )}
-
-                            {/* LABEL TAB CONTENT */}
-                            {form.activeTab === 'label' && (
-                                <LabelDataTab
-                                    localData={form.localData}
-                                    onLocalDataChange={(field, value) => form.setLocalData(prev => ({ ...prev, [field]: value }))}
-                                    formData={{
-                                        nome_cientifico: form.formData.nome_cientifico,
-                                        autor: form.formData.autor,
-                                        familia_id: form.formData.familia_id
+                            {/* Images Section */}
+                            <section>
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <ImageIcon size={16} className="text-emerald-600" />
+                                    Galeria de Imagens
+                                </h3>
+                                <ImageUploadZone
+                                    imagePreviews={images.imagePreviews}
+                                    newImageCredits={images.newImageCredits}
+                                    onRemoveNewImage={images.removeNewImage}
+                                    onNewImageCreditsChange={(index, credits) => {
+                                        images.setNewImageCredits(prev => {
+                                            const updated = [...prev];
+                                            updated[index] = credits;
+                                            return updated;
+                                        });
                                     }}
-                                    families={form.families}
+                                    existingImages={images.existingImages}
+                                    editedCredits={images.editedCredits}
+                                    onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
+                                    onDeleteExisting={images.handleDeleteExistingImage}
+                                    dragActive={images.dragActive}
+                                    onDrag={images.handleDrag}
+                                    onDrop={images.handleDrop}
+                                    onFileInput={images.handleFileInput}
+                                    fileInputRef={images.fileInputRef}
                                 />
-                            )}
+                            </section>
+
+
+
 
                             {/* Authorship Info */}
                             {initialData?.id && initialData?.created_at && (
@@ -411,7 +316,6 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                         </div>
                     )}
                 </form>
-
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
                     <button

@@ -3,6 +3,7 @@ import { TreeDeciduous, Pencil, Trash2, FileText, Loader2, ChevronLeft, ChevronR
 interface Family {
     id: string;
     familia_nome: string;
+    autoria_taxonomica?: string | null;
     imagem_referencia: string | null;
     quantidade_especies: number;
     created_by_name?: string | null;
@@ -100,9 +101,16 @@ export function FamilyTable({
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="font-medium text-gray-900 group-hover:text-emerald-700 transition-colors">
-                                            {family.familia_nome}
-                                        </span>
+                                        <div>
+                                            <span className="font-medium text-gray-900 group-hover:text-emerald-700 transition-colors">
+                                                {family.familia_nome}
+                                            </span>
+                                            {family.autoria_taxonomica && (
+                                                <span className="text-sm text-gray-500 ml-2 font-normal">
+                                                    {family.autoria_taxonomica}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -156,32 +164,34 @@ export function FamilyTable({
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                    <span className="text-sm text-gray-500">
-                        Mostrando {((page - 1) * 20) + 1} - {Math.min(page * 20, totalCount)} de {totalCount}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => onPageChange(page - 1)}
-                            disabled={page === 1}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft size={18} />
-                        </button>
-                        <span className="text-sm font-medium text-gray-700">
-                            Página {page} de {totalPages}
+            {
+                totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                        <span className="text-sm text-gray-500">
+                            Mostrando {((page - 1) * 20) + 1} - {Math.min(page * 20, totalCount)} de {totalCount}
                         </span>
-                        <button
-                            onClick={() => onPageChange(page + 1)}
-                            disabled={page === totalPages}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight size={18} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => onPageChange(page - 1)}
+                                disabled={page === 1}
+                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronLeft size={18} />
+                            </button>
+                            <span className="text-sm font-medium text-gray-700">
+                                Página {page} de {totalPages}
+                            </span>
+                            <button
+                                onClick={() => onPageChange(page + 1)}
+                                disabled={page === totalPages}
+                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

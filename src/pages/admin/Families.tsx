@@ -140,7 +140,7 @@ export default function Families() {
                         color="amber"
                         loading={loading}
                     />
-                    <StatCard title="Sem Imagem (Pág)" value={stats.missingImages} icon={ImageOff} color="purple" loading={loading} />
+                    <StatCard title="Sem Imagem" value={stats.missingImages} icon={ImageOff} color="purple" loading={loading} />
                 </div>
 
                 {/* Official Tab Content */}

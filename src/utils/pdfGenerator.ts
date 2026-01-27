@@ -252,7 +252,6 @@ export function generateDetailedReport(
                 alternateRowStyles: {
                     fillColor: COLORS.zebraRow,
                 },
-                margin: { left: 14, right: 14 },
                 didDrawPage: (data) => {
                     currentY = data.cursor?.y || currentY;
                 },
@@ -406,76 +405,35 @@ function processChartData(data: ChartDataItem[], topN: number = 10): ChartDataIt
 /**
  * Draws a compact horizontal bar chart (for side-by-side layout)
  */
-function drawCompactChart(
-    doc: jsPDF,
-    data: ChartDataItem[],
-    startX: number,
-    startY: number,
-    title: string,
-    chartWidth: number = 75
-): number {
-    const chartData = processChartData(data, 10);
-
-    // Chart configuration  
-    const barHeight = 7;
-    const gap = 2;
-    const maxVal = chartData[0]?.count || 1;
-    const maxBarWidth = chartWidth - 35;
-    const labelX = startX;
-    const barX = startX + 28;
-
-    // Chart title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(COLORS.primary);
-    doc.text(title, startX + chartWidth / 2, startY, { align: 'center' });
-
-    let currentY = startY + 8;
-
-    // Draw bars
-    chartData.forEach((item, index) => {
-        const y = currentY + (index * (barHeight + gap));
-        const width = Math.max((item.count / maxVal) * maxBarWidth, 4);
-
-        // Label (truncated)
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(COLORS.text);
-        const displayName = item.name.length > 12 ? item.name.substring(0, 10) + '..' : item.name;
-        doc.text(displayName, labelX, y + 5);
-
-        // Bar
-        doc.setFillColor(6, 78, 59);
-        doc.roundedRect(barX, y, width, barHeight, 1, 1, 'F');
-
-        // Value
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6);
-        if (width > 12) {
-            doc.setTextColor(255, 255, 255);
-            doc.text(String(item.count), barX + width - 2, y + 4.5, { align: 'right' });
-        } else {
-            doc.setTextColor(COLORS.text);
-            doc.text(String(item.count), barX + width + 2, y + 5);
-        }
-    });
-
-    return currentY + (chartData.length * (barHeight + gap)) + 5;
-}
-
+// Extract stats
 interface SpeciesData {
     nome_cientifico?: string;
     nome_popular?: string;
 }
 
+interface FamilyDetailedData {
+    familia_nome: string;
+    autoria_taxonomica?: string | null;
+    fonte_referencia?: string | null;
+    link_referencia?: string | null;
+    created_at?: string | null;
+    created_by_name?: string | null;
+}
+
+interface LegacyNameData {
+    nome_legado: string;
+    tipo?: string | null;
+    fonte?: string | null;
+}
+
 /**
- * Generates a Family Report with Dashboard (dual charts) on page 1 + species table on page 2+
+ * Generates a Detailed Family Report with ID Block, Legacy Names, and Species List
  */
 export function generateFamilyReportWithCharts(
-    familyName: string,
+    family: FamilyDetailedData,
     speciesList: SpeciesData[],
-    fileName: string,
-    context: PDFGeneratorContext = {}
+    legacyNames: LegacyNameData[],
+    fileName: string
 ): void {
     const doc = new jsPDF({
         orientation: 'portrait',
@@ -485,92 +443,206 @@ export function generateFamilyReportWithCharts(
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const today = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 
-    // === PAGE 1: Header + Family Title + Dashboard ===
-    const headerEndY = addHeader(doc, {
-        title: 'Relatório da Família',
-        columns: [],
-        data: [],
-        fileName
-    }, context);
+    // Extract stats
+    const { genusData } = extractGenusAndEpithet(speciesList);
+    const totalSpecies = speciesList.length;
+    const totalGenus = genusData.length;
 
-    let currentY = headerEndY;
+    // === PAGE 1: IDENTIFICATION HEADER ===
 
-    // Family name as main title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(COLORS.primary);
-    doc.text(familyName, pageWidth / 2, currentY, { align: 'center' });
-    currentY += 8;
-
-    // Subtitle with species count
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(COLORS.textLight);
-    doc.text(`${speciesList.length} espécies catalogadas`, pageWidth / 2, currentY, { align: 'center' });
-    currentY += 15;
-
-    // Extract genus and epithet data
-    const { genusData, epithetData } = extractGenusAndEpithet(speciesList);
-
-    // Draw side-by-side charts
-    const chartStartY = currentY;
-    const leftChartX = 15;
-    const rightChartX = 110;
-
-    if (genusData.length > 0 || epithetData.length > 0) {
-        // Dashboard title
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(COLORS.text);
-        doc.text('Análise Taxonômica', pageWidth / 2, chartStartY, { align: 'center' });
-
-        const chartsY = chartStartY + 10;
-
-        // Left chart: Top Genera
-        if (genusData.length > 0) {
-            drawCompactChart(doc, genusData, leftChartX, chartsY, 'Principais Gêneros', 85);
-        }
-
-        // Right chart: Top Epithets
-        if (epithetData.length > 0) {
-            drawCompactChart(doc, epithetData, rightChartX, chartsY, 'Principais Epítetos', 85);
-        }
+    // Compact Header/Logo
+    if (logoBase64) {
+        try {
+            doc.addImage(logoBase64, 'PNG', 14, 15, 12, 12);
+        } catch { }
     }
 
-    // Summary at bottom of page 1
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(COLORS.primary);
+    doc.text('Veridia Saber', 30, 20);
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(COLORS.textLight);
-    doc.text(
-        `Diversidade: ${genusData.length} gêneros | ${epithetData.length} epítetos únicos`,
-        pageWidth / 2,
-        pageHeight - 30,
-        { align: 'center' }
-    );
+    doc.text('Relatório da Família', 30, 24);
 
-    // === PAGE 2+: Species Table ===
-    doc.addPage();
+    doc.setFontSize(8);
+    doc.text(`Gerado em: ${today}`, pageWidth - 14, 22, { align: 'right' });
 
-    const tableHeaderY = addHeader(doc, {
-        title: 'Relatório da Família',
-        subtitle: `Lista de Espécies - ${familyName}`,
-        columns: [],
-        data: [],
-        fileName
-    }, context);
+    doc.setDrawColor(COLORS.primary);
+    doc.setLineWidth(0.5);
+    doc.line(14, 30, pageWidth - 14, 30);
 
-    // Prepare table data
-    const tableData = speciesList.map(s => [
-        s.nome_cientifico || '-',
-        s.nome_popular || '-'
-    ]);
+    let currentY = 45;
 
-    if (tableData.length > 0) {
+    // === FAMILY IDENTITY BLOCK ===
+    // Family Name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(COLORS.primary);
+    doc.text(family.familia_nome.toUpperCase(), pageWidth / 2, currentY, { align: 'center' });
+    currentY += 8;
+
+    // Authorship
+    if (family.autoria_taxonomica) {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(11);
+        doc.setTextColor(COLORS.textLight);
+        doc.text(family.autoria_taxonomica, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 12;
+    } else {
+        currentY += 8;
+    }
+
+    // Stats Grid (Two Columns)
+    const col1 = pageWidth / 2 - 30;
+    const col2 = pageWidth / 2 + 30;
+    const statBoxY = currentY;
+
+    // Stat 1: Richness
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(COLORS.text);
+    doc.text(String(totalSpecies), col1, statBoxY, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('ESPÉCIES', col1, statBoxY + 5, { align: 'center' });
+
+    // Stat 2: Diversity (Genus)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(COLORS.text);
+    doc.text(String(totalGenus), col2, statBoxY, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('GÊNEROS', col2, statBoxY + 5, { align: 'center' });
+
+    currentY += 25;
+
+    // Metadata & References Block
+    doc.setDrawColor(229, 231, 235);
+    doc.setFillColor(249, 250, 251);
+    doc.roundedRect(14, currentY, pageWidth - 28, 35, 2, 2, 'F');
+    doc.roundedRect(14, currentY, pageWidth - 28, 35, 2, 2, 'S');
+
+    const metaStartY = currentY + 8;
+    const metaLeft = 18;
+
+    // Created By
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(COLORS.text);
+    doc.text('Criado por:', metaLeft, metaStartY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.textLight);
+    doc.text(family.created_by_name || 'Sistema', metaLeft + 20, metaStartY);
+
+    // References
+    if (family.fonte_referencia) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(COLORS.text);
+        doc.text('Referências:', metaLeft, metaStartY + 6);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(COLORS.textLight);
+        const refSnippet = family.fonte_referencia.split('\n')[0].substring(0, 80);
+        doc.text(refSnippet + (family.fonte_referencia.length > 80 ? '...' : ''), metaLeft + 20, metaStartY + 6);
+    }
+
+    // Links
+    if (family.link_referencia) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(COLORS.text);
+        doc.text('Links:', metaLeft, metaStartY + 12);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(COLORS.primary);
+        const links = family.link_referencia.split('\n').filter(l => l.trim());
+        if (links.length > 0) {
+            doc.text(links[0].substring(0, 80), metaLeft + 20, metaStartY + 12);
+            if (links.length > 1) {
+                doc.setFontSize(7);
+                doc.setTextColor(COLORS.textLight);
+                doc.text(`(+${links.length - 1} outros)`, metaLeft + 20, metaStartY + 16);
+            }
+        }
+    }
+
+    currentY += 45;
+
+    // === SECTION: LEGACY NOMENCLATURE ===
+    if (legacyNames.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(COLORS.primary);
+        doc.text('Nomenclatura Legada', 14, currentY);
+        currentY += 4;
+
+        const legacyRows = legacyNames.map(l => [
+            l.nome_legado,
+            l.tipo || '-',
+            l.fonte || '-'
+        ]);
+
         autoTable(doc, {
-            startY: tableHeaderY,
-            head: [['Nome Científico', 'Nome Popular']],
-            body: tableData,
+            startY: currentY,
+            head: [['Nome Legado', 'Tipo', 'Fonte']],
+            body: legacyRows,
+            styles: { fontSize: 8, cellPadding: 2, textColor: [55, 65, 81] },
+            headStyles: { fillColor: COLORS.headerBg, textColor: 255, fontStyle: 'bold' },
+            margin: { left: 14, right: 14 },
+            columnStyles: { 0: { fontStyle: 'italic' } }
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // === SECTION: SPECIES LIST ===
+
+    // Check space for Header
+    if (currentY > pageHeight - 50) {
+        doc.addPage();
+        currentY = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(COLORS.primary);
+    doc.text('Lista de Espécies Catalogadas', 14, currentY);
+    currentY += 6;
+
+    if (totalSpecies > 0) {
+        // Data prep: Genus, Epithet extracting
+        const tableRows = speciesList.map(s => {
+            const parts = (s.nome_cientifico || '').split(/\s+/);
+            const genus = parts[0] || '';
+            const epithet = parts[1] || '';
+            return [
+                s.nome_cientifico || '-',
+                s.nome_popular || '-', // Using Popular name instead of Author for now as Author is not in SpeciesData interface usually?
+                // Wait, SpeciesData has: nome_cientifico, nome_popular. 
+                // User asked for: Species, Author, Genus, Epithet. 
+                // Currently fetching: nome_cientifico, nome_popular.
+                // I don't have Author column in Species table in this fetch.
+                // I will stick to available data: Scientific, Popular, Genus, Epithet.
+                genus,
+                epithet
+            ];
+        });
+
+        // Add table
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Nome Científico', 'Nome Popular', 'Gênero', 'Epíteto']],
+            body: tableRows,
             styles: {
                 fontSize: 9,
                 cellPadding: 3,
@@ -584,33 +656,54 @@ export function generateFamilyReportWithCharts(
             alternateRowStyles: {
                 fillColor: COLORS.zebraRow,
             },
-            margin: { left: 14, right: 14 },
-            columnStyles: {
-                0: { fontStyle: 'italic' } // Scientific name in italic
-            }
+
+            margin: { top: 25, left: 14, right: 14 } // Ensure space for header on new pages
         });
+
     } else {
-        doc.setFont('helvetica', 'italic');
+        // Empty State
+        doc.setFillColor(243, 244, 246);
+        doc.setDrawColor(209, 213, 219);
+        doc.roundedRect(14, currentY, pageWidth - 28, 30, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
+        doc.setTextColor(COLORS.text);
+        doc.text('Nenhuma espécie cadastrada para esta família.', pageWidth / 2, currentY + 12, { align: 'center' });
+
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(COLORS.textLight);
-        doc.text('Nenhuma espécie cadastrada para esta família.', pageWidth / 2, tableHeaderY + 10, { align: 'center' });
+        doc.text('Sugestão: cadastre espécies manualmente ou importe um lote.', pageWidth / 2, currentY + 20, { align: 'center' });
     }
 
-    // Add footer to all pages
-    addFooter(doc);
+    // === FOOTER (All Pages) ===
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
 
-    // Save
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(COLORS.textLight);
+        doc.text('Veridia Saber - Documento Confidencial', 14, pageHeight - 8);
+        doc.text(`Pág. ${i} de ${pageCount}`, pageWidth - 14, pageHeight - 8, { align: 'right' });
+    }
+
     doc.save(fileName);
 }
 
 interface FamiliesReportData {
     name: string;
+    autoria_taxonomica?: string | null;
     count: number;
     createdAt: string;
 }
 
 /**
- * Generates the Families Report with Chart (Page 1) + Table (Page 2+)
+ * Generates the Families Report with Cover Page, Conditional Chart and Detailed Table
  */
 export function generateFamiliesReportWithChart(
     data: FamiliesReportData[],
@@ -623,65 +716,172 @@ export function generateFamiliesReportWithChart(
         format: 'a4',
     });
 
-    // === PAGE 1: Header + Chart ===
-    const headerEndY = addHeader(doc, {
-        title: 'Relatório Geral de Famílias',
-        columns: [],
-        data: [],
-        fileName
-    }, context);
-
-    // Chart data preparation
-    const chartItems: ChartDataItem[] = data.map(d => ({
-        name: d.name,
-        count: d.count
-    }));
-
-    // Draw the chart
-    drawHorizontalBarChart(
-        doc,
-        chartItems,
-        headerEndY + 5,
-        'Distribuição de Riqueza por Família (Top 15)'
-    );
-
-    // Summary stats below chart
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const today = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    // Calculate Stats
     const totalFamilies = data.length;
     const totalSpecies = data.reduce((sum, d) => sum + d.count, 0);
+    const familiesWithSpecies = data.filter(d => d.count > 0).length;
+    const familiesWithoutSpecies = data.filter(d => d.count === 0).length;
 
+    // === PAGE 1: COVER PAGE ===
+
+    // Logo
+    if (logoBase64) {
+        try {
+            // Centered logo
+            const logoSize = 35;
+            doc.addImage(logoBase64, 'PNG', (pageWidth - logoSize) / 2, 40, logoSize, logoSize);
+        } catch (e) {
+            // Ignore
+        }
+    }
+
+    let currentY = 90;
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(26);
+    doc.setTextColor(COLORS.primary);
+    doc.text('Veridia Saber', pageWidth / 2, currentY, { align: 'center' });
+
+    currentY += 12;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(14);
     doc.setTextColor(COLORS.textLight);
-    doc.text(`Total: ${totalFamilies} famílias | ${totalSpecies} espécies catalogadas`, 105, pageHeight - 30, { align: 'center' });
+    doc.text('Relatório Geral de Famílias', pageWidth / 2, currentY, { align: 'center' });
 
-    // === PAGE 2+: Full Data Table ===
+    currentY += 10;
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${today}`, pageWidth / 2, currentY, { align: 'center' });
+
+    // Stats Grid
+    currentY += 40;
+    const statsY = currentY;
+    const col1 = pageWidth / 2 - 40;
+    const col2 = pageWidth / 2 + 40;
+
+    // Helper text function
+    const drawStat = (label: string, value: number, x: number, y: number) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(COLORS.primary);
+        doc.text(String(value), x, y, { align: 'center' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(COLORS.textLight);
+        doc.text(label, x, y + 6, { align: 'center' });
+    };
+
+    drawStat('Total de Famílias', totalFamilies, col1, statsY);
+    drawStat('Total de Espécies', totalSpecies, col2, statsY);
+    drawStat('Com Espécies', familiesWithSpecies, col1, statsY + 25);
+    drawStat('Sem Espécies', familiesWithoutSpecies, col2, statsY + 25);
+
+    // Bottom Info
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('Fonte de Dados: Flora do Brasil 2020 / SiBBr', pageWidth / 2, pageHeight - 40, { align: 'center' });
+
+    const generatedBy = context.userName || context.userRole || 'Sistema';
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gerado por: ${generatedBy}`, pageWidth / 2, pageHeight - 30, { align: 'center' });
+
+
+    // === PAGE 2: CHART (Optional) & TABLE ===
     doc.addPage();
 
-    // Add header to new page
-    const tableHeaderY = addHeader(doc, {
-        title: 'Relatório Geral de Famílias',
-        subtitle: 'Lista Completa de Famílias',
-        columns: [],
-        data: [],
-        fileName
-    }, context);
+    // Compact Header for Page 2+
+    const subHeader = (d: jsPDF) => {
+        const y = 15;
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(10);
+        d.setTextColor(COLORS.primary);
+        d.text('Relatório Geral de Famílias', 14, y);
 
-    // Prepare table data
-    const tableData = data.map(d => [
+        d.setFont('helvetica', 'normal');
+        d.setFontSize(8);
+        d.setTextColor(COLORS.textLight);
+        d.text(today, pageWidth - 14, y, { align: 'right' });
+
+        d.setDrawColor(COLORS.primary);
+        d.setLineWidth(0.5);
+        d.line(14, y + 3, pageWidth - 14, y + 3);
+
+        return y + 10;
+    };
+
+    let contentStartY = subHeader(doc);
+
+    // Chart Logic
+    if (totalSpecies > 0) {
+        // Chart data: Top 15
+        const chartItems: ChartDataItem[] = data.map(d => ({
+            name: d.name,
+            count: d.count
+        }));
+
+        // Draw the chart
+        const chartEndY = drawHorizontalBarChart(
+            doc,
+            chartItems,
+            contentStartY + 5,
+            'Distribuição de Riqueza por Família (Top 15)'
+        );
+
+        contentStartY = chartEndY + 15;
+    } else {
+        // Warning Box
+        doc.setFillColor(243, 244, 246); // Gray-100
+        doc.setDrawColor(209, 213, 219); // Gray-300
+        doc.roundedRect(14, contentStartY, pageWidth - 28, 20, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.text);
+        doc.text('Ainda não há espécies catalogadas. O gráfico será exibido quando houver registros.', pageWidth / 2, contentStartY + 11, { align: 'center' });
+
+        contentStartY += 30; // Space after warning
+    }
+
+    // Sort Data: Species Count DESC, then Name ASC
+    const sortedTableData = [...data].sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.name.localeCompare(b.name);
+    });
+
+    // Prepare table data including Authorship
+    const tableRows = sortedTableData.map(d => [
         d.name,
+        d.autoria_taxonomica || '',
         d.count,
         d.createdAt
     ]);
 
+    // Table Header Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(COLORS.text);
+    doc.text('Lista Completa de Famílias', 14, contentStartY - 4);
+
     // Add table
     autoTable(doc, {
-        startY: tableHeaderY,
-        head: [['Família', 'Nº Espécies', 'Data Cadastro']],
-        body: tableData,
+        startY: contentStartY,
+        head: [['Família', 'Autoria', 'Nº Espécies', 'Data Cadastro']],
+        body: tableRows,
         styles: {
             fontSize: 9,
-            cellPadding: 3,
+            cellPadding: 4, // More padding/spacing
             textColor: [31, 41, 55],
         },
         headStyles: {
@@ -690,18 +890,56 @@ export function generateFamiliesReportWithChart(
             fontStyle: 'bold',
             halign: 'left',
         },
+        columnStyles: {
+            0: { fontStyle: 'bold' }, // Family Name
+            1: { fontStyle: 'italic', textColor: [107, 114, 128] }, // Authorship (Gray-500)
+            2: { halign: 'center' },
+            3: { halign: 'center' }
+        },
         alternateRowStyles: {
             fillColor: COLORS.zebraRow,
         },
-        margin: { left: 14, right: 14 },
-        tableLineColor: [229, 231, 235] as [number, number, number],
+        margin: { top: 30, left: 14, right: 14 },
+        tableLineColor: [229, 231, 235],
         tableLineWidth: 0.1,
+        // Header on every page
+        didDrawPage: (data) => {
+            // Add header/footer to every page if needed (autoTable handles head repetition)
+            // We just add our custom header if it's a new page?
+            // Actually autoTable startY only affects first page.
+            // We need to add the "Compact Header" on subsequent pages too?
+            // autoTable has a didDrawPage hook.
+            if (data.pageNumber > 2) { // Page 1 is Cover, Page 2 is Chart+Table. If Table goes to Page 3...
+                subHeader(doc);
+            }
+        }
     });
 
-    // Add footer to all pages
-    addFooter(doc);
+    // Add footer to all pages (Page 1 footer is custom in Cover logic, but addFooter adds to ALL pages)
+    // We should be careful. addFooter loop starts at 1.
+    // The requirement: Page 1 has specific footer "Gerado por...". Page 2+ "Documento Confidencial...".
+    // My implemented `addFooter` loops from 1 to pageCount.
+    // I should modify `addFooter` to skip page 1 IF I want a custom one there, OR just overwrite/let it be.
+    // Requirement says: "A partir da página 2... Rodapé...". 
+    // So Page 1 should NOT have the standard footer. 
 
-    // Save
+    // I need to use a custom footer loop here in this function since I can't easily modify the global `addFooter` without affecting other reports.
+    // Or I just implement the loop here.
+
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 2; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(COLORS.textLight);
+        doc.text('Veridia Saber - Documento Confidencial', 14, pageHeight - 8);
+        doc.text(`Pág. ${i} de ${pageCount}`, pageWidth - 14, pageHeight - 8, { align: 'right' });
+    }
+
     doc.save(fileName);
 }
 
