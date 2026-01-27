@@ -146,8 +146,8 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
         setIsModalOpen(true);
     };
 
-    const handleSave = async (profileId: string, institutionId: string) => {
-        if (!projectId) return;
+    const handleSave = async (profileId: string, institutionId: string): Promise<number | null> => {
+        if (!projectId) return null;
         setActionLoading(true);
         try {
             const payload = {
@@ -167,6 +167,8 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                 habitat_ecologia: formData.habitat_ecologia || null,
             };
 
+            let savedId: number | null = null;
+
             if (editingSpecimen) {
                 // UPDATE table especie_local
                 const { error } = await supabase
@@ -174,20 +176,24 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                     .update(payload)
                     .eq('id', editingSpecimen.id);
                 if (error) throw error;
+                savedId = editingSpecimen.id;
             } else {
                 // INSERT into table especie_local
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('especie_local')
-                    .insert(payload);
+                    .insert(payload)
+                    .select('id')
+                    .single();
                 if (error) throw error;
+                savedId = data.id;
             }
 
-            setIsModalOpen(false);
-            resetForm();
             fetchSpecimens(); // Refresh list
+            return savedId;
         } catch (err: any) {
             console.error('Error saving specimen:', err);
-            throw new Error(err.message || 'Erro ao salvar espécime.');
+            // throw new Error(err.message || 'Erro ao salvar espécime.');
+            return null;
         } finally {
             setActionLoading(false);
         }
