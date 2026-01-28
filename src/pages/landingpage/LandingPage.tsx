@@ -15,7 +15,7 @@ import {
     BookOpen
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import logoIcon from '/icon.png';
+const logoIcon = '/icon.png';
 
 // ============ SECTION IDS FOR NAVIGATION ============
 const SECTIONS = [
@@ -321,7 +321,7 @@ function HeroSection({ onOpenDownloadModal }: { onOpenDownloadModal: () => void 
                                 <div className="w-full h-full rounded-[1rem] md:rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden relative">
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 sm:w-20 md:w-24 lg:w-32 h-4 md:h-5 lg:h-6 bg-black rounded-b-xl md:rounded-b-2xl lg:rounded-b-3xl z-10"></div>
                                     <img
-                                        src="/Tela Inicial.png"
+                                        src="/Tela-Inicial.png"
                                         alt="Tela inicial do Veridia Saber"
                                         className="w-full h-full object-cover object-top"
                                     />
