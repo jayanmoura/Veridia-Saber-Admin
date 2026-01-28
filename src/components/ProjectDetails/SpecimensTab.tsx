@@ -65,7 +65,7 @@ export function SpecimensTab({ projectId }: SpecimensTabProps) {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="px-6 py-3 font-semibold text-gray-700">Tombo (ID)</th>
+                                <th className="px-6 py-3 font-semibold text-gray-700">Tombo</th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Espécie</th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Coletor</th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Data</th>
@@ -75,7 +75,7 @@ export function SpecimensTab({ projectId }: SpecimensTabProps) {
                         <tbody className="divide-y divide-gray-100">
                             {specimens.map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="px-6 py-4 font-mono text-gray-500">#{item.id}</td>
+                                    <td className="px-6 py-4 font-mono text-gray-500 font-bold text-xs">{item.tombo_codigo || `#${item.id}`}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             {item.url_imagem && (
@@ -142,7 +142,10 @@ export function SpecimensTab({ projectId }: SpecimensTabProps) {
                     }
                 }}
                 title="Excluir Espécime?"
-                itemName={`Tombo #${deleteId}`}
+                itemName={(() => {
+                    const item = specimens.find(s => s.id === deleteId);
+                    return item?.tombo_codigo ? `Tombo ${item.tombo_codigo}` : `Tombo #${deleteId}`;
+                })()}
                 loading={actionLoading}
             />
         </div>

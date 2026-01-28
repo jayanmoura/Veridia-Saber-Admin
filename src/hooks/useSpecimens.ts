@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 // Interface matching the 'especime' VIEW
 export interface Specimen {
     id: number;
+    tombo_codigo?: string | null;
     especie_id: string;
     local_id: number;
     institution_id?: string | null;
@@ -79,7 +80,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
 
         setLoading(true);
         try {
-            // Read from the VIEW 'especime'
+            // Read from the TABLE 'especie_local' to get new columns like tombo_codigo
             // We join with 'especie' to get scientific name if the view doesn't expose it directly as text yet
             // Wait, standard supa-query on view works too.
             // Let's assume we need to join especie manually for the name unless view has it.
@@ -87,7 +88,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
             // So we fetch from view and join especie.
 
             const { data, error } = await supabase
-                .from('especime')
+                .from('especie_local')
                 .select(`
                     *,
                     especie:especie_id(nome_cientifico, familia:familia_id(familia_nome), imagens(url_imagem))
@@ -99,6 +100,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
 
             const formatted: Specimen[] = (data || []).map((item: any) => ({
                 ...item,
+                tombo_codigo: item.tombo_codigo, // Ensure it's mapped
                 nome_cientifico: item.especie?.nome_cientifico,
                 familia_nome: item.especie?.familia?.familia_nome,
                 url_imagem: item.especie?.imagens?.[0]?.url_imagem

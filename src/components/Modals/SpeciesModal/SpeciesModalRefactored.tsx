@@ -59,12 +59,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
         if (isOpen && initialData?.id) {
             const currentLocalId = initialData.local_id || (form.isLocalUser ? profile?.local_id : null);
             images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
-            images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
-            // form.loadLocalData called inside useSpeciesForm? Warning: check useSpeciesForm.
-            // If localData logic was moved there, we might need to remove it there too. 
-            // For now, removing the call here if it exists on the form object.
-            // form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null); 
-            // Actually, I'll just remove the line.
+            form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null);
         } else if (isOpen && !initialData) {
             images.reset();
         }
@@ -143,7 +138,57 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     .single();
 
                 if (error) throw error;
+                if (error) throw error;
                 speciesId = data.id;
+            }
+
+            // SAVE LOCAL DATA (especie_local)
+            if (effectiveLocalId && speciesId) {
+                // Buscar institution_id do projeto se não tiver no perfil
+                let targetInstitutionId = profile?.institution_id;
+
+                if (!targetInstitutionId) {
+                    try {
+                        const { data: localInfo } = await supabase
+                            .from('locais')
+                            .select('institution_id')
+                            .eq('id', effectiveLocalId)
+                            .single();
+
+                        if (localInfo?.institution_id) {
+                            targetInstitutionId = localInfo.institution_id;
+                        }
+                    } catch (err) {
+                        console.warn('Erro ao buscar institution_id do projeto:', err);
+                    }
+                }
+
+                if (!targetInstitutionId) {
+                    console.error('Erro: institution_id não encontrado');
+                    alert('Erro: Não foi possível identificar a instituição. Contate o administrador.');
+                } else {
+                    const localPayload = {
+                        especie_id: speciesId,
+                        local_id: effectiveLocalId,
+                        institution_id: targetInstitutionId, // Campo obrigatório!
+                        descricao_ocorrencia: form.localData.descricao_ocorrencia?.trim() || null,
+                        detalhes_localizacao: form.localData.detalhes_localizacao?.trim() || null,
+                        morfologia: form.localData.morfologia?.trim() || null,
+                        habitat_ecologia: form.localData.habitat_ecologia?.trim() || null
+                    };
+
+                    // We use upsert to handle both insert and update
+                    const { error: localError } = await supabase
+                        .from('especie_local')
+                        .upsert(localPayload, { onConflict: 'especie_id,local_id' });
+
+                    if (localError) {
+                        console.error("Error saving local data:", localError);
+                        if (localError.code === '42501') {
+                            alert('Erro de permissão: Verifique suas credenciais com o administrador.');
+                        }
+                    }
+                }
             }
 
 
@@ -160,9 +205,10 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
 
                 const imageRecords = uploadResults.map(result => ({
                     especie_id: speciesId,
+                    especime_id: null,           // Explícito: não é imagem de espécime
                     url_imagem: result.url,
                     creditos: result.credits || null,
-                    local_id: effectiveLocalId,
+                    local_id: effectiveLocalId || null,
                     institution_id: profile?.institution_id || null,
                 }));
 
@@ -256,6 +302,8 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                                 isProjectUser={form.isProjectUser}
                                 isSenior={form.isSenior}
                                 getUserLocalName={form.getUserLocalName}
+                                localData={form.localData}
+                                onLocalDataChange={form.setLocalData}
                             />
 
                             {/* Images Section */}

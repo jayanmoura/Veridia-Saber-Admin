@@ -1,7 +1,8 @@
-import { Leaf, FileText, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Leaf, FileText, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface SpeciesItem {
     id: string;
+    codigo_vs?: string | null;
     nome_cientifico: string;
     nome_popular: string | null;
     familia?: { familia_nome: string };
@@ -26,7 +27,7 @@ interface SpeciesTableProps {
     singleReportLoading?: string | null;
     deleteLoading?: boolean;
 
-    onViewSpecimens?: (speciesId: string) => void;
+
     // Permissions
     canGenerateReports?: boolean;
 }
@@ -46,8 +47,7 @@ export function SpeciesTable({
     onGenerateReport,
     singleReportLoading,
     deleteLoading = false,
-    canGenerateReports = false,
-    onViewSpecimens
+    canGenerateReports = false
 }: SpeciesTableProps) {
     const getCreatorName = (specie: SpeciesItem) => {
         // First try creator from join
@@ -67,6 +67,7 @@ export function SpeciesTable({
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-200">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">Foto</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Código</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Família</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Espécie</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Criado por</th>
@@ -78,6 +79,7 @@ export function SpeciesTable({
                             [...Array(5)].map((_, i) => (
                                 <tr key={i} className="animate-pulse">
                                     <td className="px-6 py-4"><div className="h-10 w-10 bg-gray-100 rounded-md"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-100 rounded"></div></td>
                                     <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-100 rounded"></div></td>
                                     <td className="px-6 py-4"><div className="h-4 w-40 bg-gray-100 rounded"></div></td>
                                     <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-100 rounded"></div></td>
@@ -99,6 +101,9 @@ export function SpeciesTable({
                                                 </div>
                                             )}
                                         </td>
+                                        <td className="px-6 py-4 text-gray-500 font-mono text-xs font-bold">
+                                            {(specie as any).codigo_vs || '-'}
+                                        </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             {specie.familia?.familia_nome || '-'}
                                         </td>
@@ -110,6 +115,8 @@ export function SpeciesTable({
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
+
+
                                                 {canGenerateReports && onGenerateReport && (
                                                     <button
                                                         onClick={() => onGenerateReport(specie.id)}
@@ -121,15 +128,7 @@ export function SpeciesTable({
                                                     </button>
                                                 )}
 
-                                                {onViewSpecimens && (
-                                                    <button
-                                                        onClick={() => onViewSpecimens(specie.id)}
-                                                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                        title="Ver Espécimes"
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                )}
+
 
 
 

@@ -7,7 +7,17 @@ import { InstallPWA } from '../InstallPWA';
 
 // TAREFA 2: Restrição de Páginas por Nível
 // Níveis: 1=Curador, 2=Coordenador, 3=TaxSênior, 4=Gestor, 5=TaxCampo, 6=Consulente
-const MENU_ITEMS = [
+interface MenuItem {
+    label: string;
+    path: string;
+    icon: any;
+    minLevel?: number;
+    exactLevel?: number;
+    requiresLocalId?: boolean;
+    excludeRoles?: string[];
+}
+
+const MENU_ITEMS: MenuItem[] = [
     {
         label: 'Visão Geral',
         path: '/',
@@ -24,13 +34,22 @@ const MENU_ITEMS = [
         label: 'Espécies',
         path: '/species',
         icon: Leaf,
-        minLevel: 5, // Curador(1), Coord(2), TaxSênior(3), Gestor(4), TaxCampo(5)
+        minLevel: 4, // Curador(1), Coord(2), TaxSênior(3), Gestor(4)
     },
     {
         label: 'Espécimes',
         path: '/specimens',
         icon: Sprout,
         minLevel: 5,
+        // Remove excludeRoles if it was blocking Gestor/others who need it, 
+        // or ensure it's correct. User wants them to see Specimens.
+        // Gestor is level 4, TaxCampo is level 5.
+        // minLevel 5 means level <= 5.
+        // Gestor(4), TaxCampo(5). 
+        // excludeRoles: ['Curador Mestre', 'Coordenador Científico'] if we want to hide it for them?
+        // But usually admins also want to see it? 
+        // User request "No painel de gestor... o botão para adicionar espécie vai sumir...".
+        // Use standard visibility.
     },
     {
         label: 'Projetos',
@@ -62,8 +81,12 @@ const MENU_ITEMS = [
 export function Sidebar() {
     const { signOut, profile } = useAuth();
 
-    // Filtrar itens por nível mínimo/exato e requisito de local_id
+    // Filtrar itens por nível mínimo/exato, requisito de local_id e excludeRoles
     const filteredItems = MENU_ITEMS.filter(item => {
+        // Verificar excludeRoles primeiro
+        if (item.excludeRoles && profile?.role && item.excludeRoles.includes(profile.role)) {
+            return false;
+        }
         // Se tem exactLevel, verifica se é exatamente esse nível
         if (item.exactLevel) {
             const roleLevel = ROLES_CONFIG[profile?.role as keyof typeof ROLES_CONFIG]?.level;

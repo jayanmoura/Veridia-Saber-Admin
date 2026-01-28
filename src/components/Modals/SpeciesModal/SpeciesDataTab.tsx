@@ -55,7 +55,9 @@ interface SpeciesDataTabProps {
     isSenior: boolean;
     getUserLocalName: () => string;
 
-
+    // Local Data
+    localData?: any;
+    onLocalDataChange?: React.Dispatch<React.SetStateAction<any>>;
 }
 
 /**
@@ -82,6 +84,8 @@ export function SpeciesDataTab({
     isProjectUser,
     isSenior,
     getUserLocalName,
+    localData,
+    onLocalDataChange
 
 }: SpeciesDataTabProps) {
     const isGlobalAdmin = userRole === 'Curador Mestre' || userRole === 'Coordenador Científico' || userRole === 'Taxonomista Sênior';
@@ -257,6 +261,46 @@ export function SpeciesDataTab({
                     readOnly={shouldLockGlobalFields}
                 />
             </section>
+
+            {/* Section 2.5: Descrição Ocorrência (Dados Locais) - Only when a local project is selected */}
+            {(isProjectUser || (isGlobalAdmin && formData.local_id)) && (
+                <section>
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Leaf size={16} className="text-emerald-600" />
+                        Descrição Ocorrência (Dados Locais)
+                    </h3>
+                    <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Notas do Projeto (ex: Onde encontrar no parque)
+                            </label>
+                            <textarea
+                                value={localData?.descricao_ocorrencia || ''}
+                                onChange={(e) => onLocalDataChange?.((prev: any) => ({ ...prev, descricao_ocorrencia: e.target.value }))}
+                                rows={3}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-white"
+                                placeholder="Descreva detalhes específicos desta espécie neste local..."
+                            />
+                        </div>
+
+                        {/* Detalhes Localização - Apenas para Gestor de Acervo */}
+                        {userRole === 'Gestor de Acervo' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Detalhes Localização (Ref. Geográfica)
+                                </label>
+                                <textarea
+                                    value={localData?.detalhes_localizacao || ''}
+                                    onChange={(e) => onLocalDataChange?.((prev: any) => ({ ...prev, detalhes_localizacao: e.target.value }))}
+                                    rows={2}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-white"
+                                    placeholder="Ex: Na entrada do P1, segue em direção ao lago..."
+                                />
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
 
 
 

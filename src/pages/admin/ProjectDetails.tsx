@@ -20,7 +20,7 @@ import {
     AlertTriangle,
     CheckCircle
 } from 'lucide-react';
-import { generateHerbariumLabels } from '../../utils/pdfGenerator';
+import { generateHerbariumLabels } from '../../utils/pdf';
 import { downloadCSV } from '../../utils/csvGenerator';
 
 // Extracted components

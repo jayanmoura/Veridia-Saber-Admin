@@ -7,7 +7,7 @@ export const specimenRepo = {
      */
     async listSpecimens(filters: SpecimenFilters = {}) {
         let query = supabase
-            .from('especime')
+            .from('especie_local')
             .select(`
                 *,
                 especie:especie_id (

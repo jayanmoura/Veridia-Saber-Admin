@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Search, Loader2, Plus, Edit2, Trash2, Tag, Filter, Leaf } from 'lucide-react';
+import { MapPin, Search, Loader2, Plus, Edit2, Trash2, Tag, Filter, Leaf, FileText } from 'lucide-react';
 import { specimenRepo } from '../../services/specimenRepo';
 import type { Specimen } from '../../services/types';
-import { generateHerbariumLabels } from '../../utils/pdfGenerator';
+import { generateHerbariumLabels } from '../../utils/pdf';
 import { SpecimenModal } from '../../components/Modals/SpecimenModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -85,8 +85,19 @@ export default function Specimens() {
             }
 
             setSelectedProject(initialFilter);
+            setSelectedProject(initialFilter);
             await loadSpecimens(initialFilter);
             setLoading(false);
+
+            // Check for action param to auto-open modal
+            if (searchParams.get('action') === 'new') {
+                openNewModal();
+                // Clean up URL
+                setSearchParams(prev => {
+                    prev.delete('action');
+                    return prev;
+                }, { replace: true });
+            }
         };
 
         init();
@@ -153,7 +164,7 @@ export default function Specimens() {
                 coordinates: (specimen.latitude && specimen.longitude)
                     ? `Lat: ${specimen.latitude} Long: ${specimen.longitude}`
                     : undefined,
-                tomboNumber: specimen.id
+                tomboNumber: specimen.tombo_codigo || specimen.id
             };
 
             generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
@@ -162,6 +173,69 @@ export default function Specimens() {
             alert('Erro ao gerar etiqueta');
         } finally {
             setLabelLoading(null);
+        }
+    };
+
+    // NEW: Generate Project Report (PDF)
+    const handleGenerateProjectReport = async () => {
+        // Determine scope: Selected Project or User's Project or "Global"
+        const targetProjectId = selectedProject ? parseInt(selectedProject) : (profile?.local_id || null);
+        const targetProjectName = projects.find(p => p.id === targetProjectId)?.nome || 'Todos os Projetos';
+
+        setActionLoading(true);
+        try {
+            // Fetch ALL matching specimens (no limit)
+            const allData = await specimenRepo.listSpecimens({
+                limit: 2000,
+                localId: targetProjectId || undefined,
+                especieId: searchParams.get('especie_id') || undefined
+            });
+
+            // Client-side filter if search is active
+            const finalData = search ? allData.filter(s =>
+                s.especie?.nome_cientifico.toLowerCase().includes(search.toLowerCase()) ||
+                s.locais?.nome.toLowerCase().includes(search.toLowerCase()) ||
+                s.coletor?.toLowerCase().includes(search.toLowerCase()) ||
+                s.numero_coletor?.includes(search)
+            ) : allData;
+
+            if (finalData.length === 0) {
+                alert('Nenhum dado encontrado para gerar o relatório.');
+                return;
+            }
+
+            // Map to Report Data
+            const reportData = finalData.map(s => ({
+                id: s.id.toString(),
+                tombo: s.tombo_codigo || s.id.toString(),
+                especie_nome_cientifico: s.especie?.nome_cientifico || 'Indeterminada',
+                familia_nome: s.especie?.familia?.familia_nome || 'Indeterminada',
+                coletor_nome: s.coletor || 'Sem Coletor',
+                data_coleta: s.created_at,
+                coords_lat: s.latitude ? parseFloat(s.latitude as unknown as string) : undefined,
+                coords_lng: s.longitude ? parseFloat(s.longitude as unknown as string) : undefined
+            }));
+
+            // Generate PDF
+            const { generateProjectSpecimensReport } = await import('../../utils/pdf');
+            generateProjectSpecimensReport(
+                reportData,
+                `Relatorio_Especimes_${targetProjectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                {
+                    projectName: targetProjectName,
+                    isGlobalReport: !targetProjectId
+                },
+                {
+                    userName: profile?.full_name,
+                    userRole: profile?.role
+                }
+            );
+
+        } catch (error) {
+            console.error('Report error:', error);
+            alert('Erro ao gerar relatório PDF.');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -200,7 +274,7 @@ export default function Specimens() {
             const payload = {
                 especie_id: formData.especie_id,
                 local_id: parseInt(formData.local_id), // Cast to number
-                // institution_id should ideally come from the selected Project or current user's org. 
+                // institution_id should ideally come from the selected Project or current user's org.
                 // For now, let's use profile's institution_id or fallback.
                 // A specimen belongs to the project's institution usually.
                 institution_id: formData.institution_id || profile?.institution_id || null,
@@ -269,16 +343,28 @@ export default function Specimens() {
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Espécimes</h1>
-                    <p className="text-gray-500">Gestão global de ocorrências georreferenciadas</p>
+                    <h1 className="text-2xl font-bold text-gray-800">Espécimes</h1>
+                    <p className="text-gray-500">Gerenciamento e catalogação do acervo</p>
                 </div>
-                <button
-                    onClick={openNewModal}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm font-medium"
-                >
-                    <Plus size={18} />
-                    Novo Espécime
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleGenerateProjectReport}
+                        disabled={actionLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
+                        title="Baixar Relatório PDF"
+                    >
+                        {actionLoading ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
+                        <span className="hidden sm:inline">Relatório PDF</span>
+                    </button>
+
+                    <button
+                        onClick={() => openNewModal()}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                        <Plus size={20} />
+                        <span className="hidden sm:inline">Novo Espécime</span>
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -333,6 +419,7 @@ export default function Specimens() {
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-3 font-semibold text-gray-700 w-20">Foto</th>
+                                    <th className="px-6 py-3 font-semibold text-gray-700">Tombo</th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Espécie</th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Projeto (Local)</th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Coletor</th>
@@ -356,6 +443,9 @@ export default function Specimens() {
                                                     <Leaf size={18} />
                                                 </div>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-4 font-mono text-gray-500 font-bold text-xs">
+                                            {item.tombo_codigo || `#${item.id}`}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -440,7 +530,10 @@ export default function Specimens() {
                 onClose={() => { setIsDeleteOpen(false); setDeleteId(null); }}
                 onConfirm={handleDelete}
                 title="Excluir Espécime?"
-                itemName={`Tombo #${deleteId}`}
+                itemName={(() => {
+                    const item = specimens.find(s => s.id === deleteId);
+                    return item?.tombo_codigo ? `Tombo ${item.tombo_codigo}` : `Tombo #${deleteId}`;
+                })()}
                 loading={actionLoading}
             />
         </div>

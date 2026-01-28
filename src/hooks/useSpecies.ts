@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 // ============ TYPES ============
 export interface Species {
     id: string;
+    codigo_vs?: string | null;
     nome_cientifico: string;
     autor?: string | null;
     nome_popular: string | null;

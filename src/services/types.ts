@@ -16,6 +16,7 @@ export interface Species {
 
 export interface Specimen {
     id: number;
+    tombo_codigo?: string | null;
     // Foreign Keys
     especie_id: string;
     local_id: number;

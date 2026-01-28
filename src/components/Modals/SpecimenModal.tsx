@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { X, Search, Loader2, MapPin, User, FileText } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+import { X, Search, Loader2, MapPin, User, FileText, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ImageUploadZone } from '../Forms/ImageUploadZone';
 import { useSpecimenImages } from '../../hooks/useSpecimenImages';
-import { ImageIcon } from 'lucide-react';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 
 interface SpecimenModalProps {
@@ -55,6 +55,7 @@ export function SpecimenModal({
 
     // Images Hook
     const images = useSpecimenImages();
+    const [advancedOpen, setAdvancedOpen] = useState(false);
 
     // Setup initial state
     // Setup initial state
@@ -71,8 +72,39 @@ export function SpecimenModal({
                 setProjectSearch('');
                 // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails)
                 if (!formData.especie_id) setSelectedSpeciesName('');
-                if (!formData.local_id) setSelectedProjectName('');
-                else if (initialProjectName) setSelectedProjectName(initialProjectName); // If passed from parent even in new mode
+
+                // Auto-fill project for users with local_id
+                if (profile?.local_id) {
+                    // Fetch project details to get name and institution
+                    // We define this as an async IIFE to process inside the effect
+                    (async () => {
+                        try {
+                            const { data: localData } = await supabase
+                                .from('locais')
+                                .select('id, nome, institution_id')
+                                .eq('id', profile.local_id)
+                                .single();
+
+                            if (localData) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    local_id: localData.id.toString(),
+                                    institution_id: localData.institution_id
+                                }));
+                                setSelectedProjectName(localData.nome);
+                            }
+                        } catch (err) {
+                            console.error("Error fetching user project:", err);
+                        }
+                    })();
+                } else {
+                    if (!formData.local_id) {
+                        setSelectedProjectName('');
+                        setProjectOptions([]);
+                    } else if (initialProjectName) {
+                        setSelectedProjectName(initialProjectName);
+                    }
+                }
 
                 // Sets Defaults
                 setFormData(prev => ({
@@ -84,7 +116,7 @@ export function SpecimenModal({
                 images.reset();
             }
         }
-    }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.local_id, formData.especie_id, profile, specimenId]);
+    }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId]);
 
     // Species Search Effect
     useEffect(() => {
@@ -129,6 +161,8 @@ export function SpecimenModal({
         return () => clearTimeout(timeoutId);
     }, [projectSearch]);
 
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -170,6 +204,7 @@ export function SpecimenModal({
                 if (uploadResults.length > 0) {
                     const imageRecords = uploadResults.map(result => ({
                         especime_id: savedId,
+                        especie_id: null,           // Explícito: não é imagem de espécie global
                         url_imagem: result.url,
                         creditos: result.credits || null,
                         local_id: parseInt(formData.local_id || '0'),
@@ -245,13 +280,15 @@ export function SpecimenModal({
                                     {selectedProjectName ? (
                                         <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
                                             <span className="font-medium text-blue-900">{selectedProjectName}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => { setSelectedProjectName(''); setFormData(prev => ({ ...prev, local_id: '' })); }}
-                                                className="text-xs text-blue-600 hover:text-blue-800 underline"
-                                            >
-                                                Alterar
-                                            </button>
+                                            {!profile?.local_id && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSelectedProjectName(''); setFormData(prev => ({ ...prev, local_id: '' })); }}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                                >
+                                                    Alterar
+                                                </button>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="relative">
@@ -292,11 +329,19 @@ export function SpecimenModal({
                                     )}
                                 </div>
 
-                                {/* Institution Fallback */}
+                                {/* Institution Warning with CTA */}
                                 {formData.local_id && !formData.institution_id && (
-                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                                        <p className="font-bold">Aviso: Instituição não vinculada ao Projeto.</p>
-                                        <p>Este banco de dados requer uma instituição. Por favor, solicite a vinculação no cadastro do Projeto.</p>
+                                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+                                        <p className="font-bold text-amber-800 mb-1">⚠️ Instituição não vinculada ao Projeto</p>
+                                        <p className="text-amber-700 text-xs mb-3">
+                                            Este projeto precisa ter uma instituição vinculada para registrar espécimes.
+                                        </p>
+                                        <a
+                                            href="/projetos"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                                        >
+                                            Ir para Projetos e Corrigir
+                                        </a>
                                     </div>
                                 )}
 
@@ -415,60 +460,53 @@ export function SpecimenModal({
                             </div>
                         </section>
 
-                        {/* Section 3: Notas e Observações */}
-                        <section>
-                            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                <FileText size={16} className="text-emerald-600" />
-                                Notas e Observações
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Detalhes Localização (Ref. Geográfica)</label>
-                                    <textarea
-                                        name="detalhes_localizacao"
-                                        value={formData.detalhes_localizacao}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
-                                        placeholder="Ex: Próximo à cachoeira, na trilha principal..."
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Morfologia</label>
-                                    <textarea
-                                        name="morfologia"
-                                        value={formData.morfologia}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
-                                        placeholder="Descrição morfológica do espécime..."
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Habitat e Ecologia</label>
-                                    <textarea
-                                        name="habitat_ecologia"
-                                        value={formData.habitat_ecologia}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
-                                        placeholder="Descrição do ambiente..."
-                                    />
-                                </div>
 
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Descrição Ocorrência / Notas</label>
-                                    <textarea
-                                        name="descricao_ocorrencia"
-                                        value={formData.descricao_ocorrencia}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
-                                        placeholder="Outras observações importantes..."
-                                    />
+
+                        {/* Section 3: Dados Avançados (Colapsável) */}
+                        <section className="border rounded-lg overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setAdvancedOpen(!advancedOpen)}
+                                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                            >
+                                <div className="flex items-center gap-2 font-semibold text-gray-700 uppercase tracking-wider text-sm">
+                                    <FileText size={16} className="text-emerald-600" />
+                                    Dados para Etiquetas de Herbário
                                 </div>
-                            </div>
+                                {advancedOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </button>
+
+                            {advancedOpen && (
+                                <div className="p-4 space-y-4 border-t border-gray-100">
+                                    <div className="space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700">Morfologia</label>
+                                        <textarea
+                                            name="morfologia"
+                                            value={formData.morfologia}
+                                            onChange={handleChange}
+                                            rows={2}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
+                                            placeholder="Descrição morfológica do espécime..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700">Habitat e Ecologia</label>
+                                        <textarea
+                                            name="habitat_ecologia"
+                                            value={formData.habitat_ecologia}
+                                            onChange={handleChange}
+                                            rows={2}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
+                                            placeholder="Descrição do ambiente..."
+                                        />
+                                    </div>
+
+
+                                </div>
+                            )}
                         </section>
+
+
 
                         {/* Section 4: Galeria de Imagens (Only in Edit Mode or if Saved) */}
                         <section>
@@ -511,10 +549,10 @@ export function SpecimenModal({
                         Cancelar
                     </button>
                     <button
-                        type="submit"
+                        type="button"
                         onClick={handleSubmit}
                         disabled={loading || !formData.especie_id || !formData.local_id || !formData.institution_id}
-                        title={!formData.institution_id ? "Selecione um projeto com Instituição vinculada" : ""}
+                        title={!formData.institution_id ? "Projeto sem instituição vinculada - veja acima" : ""}
                         className="px-5 py-2.5 bg-[#064E3B] text-white rounded-lg hover:bg-[#053829] transition-colors flex items-center justify-center gap-2 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? <Loader2 className="animate-spin" size={20} /> : (isEdit ? 'Salvar Alterações' : 'Criar Espécime')}

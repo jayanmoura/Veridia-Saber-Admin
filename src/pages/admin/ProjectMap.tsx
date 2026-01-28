@@ -46,6 +46,7 @@ interface TaxonomistData {
 
 interface SpeciesLocation {
     id: string;
+    tombo_codigo?: string | null;
     latitude: number | null;
     longitude: number | null;
     descricao_ocorrencia: string | null;
@@ -132,6 +133,7 @@ export default function ProjectMap() {
                 // Map to correct structure
                 const mappedSpecies: SpeciesLocation[] = (speciesData || []).map((sp: any) => ({
                     id: sp.id,
+                    tombo_codigo: sp.tombo_codigo, // Map tombo
                     latitude: sp.latitude,
                     longitude: sp.longitude,
                     descricao_ocorrencia: sp.descricao_ocorrencia,
@@ -417,6 +419,14 @@ export default function ProjectMap() {
                                         <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Espécie: </span><span className="text-emerald-600 italic">{sp.especie?.nome_cientifico || 'Desconhecida'}</span></p>
                                         {/* Localização */}
                                         <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Local: </span><span className="text-emerald-600">{sp.latitude?.toFixed(5)}, {sp.longitude?.toFixed(5)}</span></p>
+
+                                        {/* Tombo */}
+                                        {sp.tombo_codigo && (
+                                            <p style={{ margin: 0, marginTop: '2px' }} className="pt-1 border-t border-gray-100 mt-1">
+                                                <span className="text-gray-900 font-bold text-[10px] uppercase">Tombo: </span>
+                                                <span className="font-mono font-bold text-gray-700 text-[10px]">{sp.tombo_codigo}</span>
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </Popup>

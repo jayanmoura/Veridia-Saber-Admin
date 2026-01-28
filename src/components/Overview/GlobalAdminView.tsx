@@ -17,7 +17,8 @@ import {
     Globe,
     Plus,
     BarChart3,
-    Map as MapIcon
+    Map as MapIcon,
+    Eye
 } from 'lucide-react';
 import type { AuditLog, GlobalStats } from '../../hooks';
 
@@ -135,6 +136,17 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                                     </div>
                                     <h4 className="font-semibold text-gray-800">Mapa dos Projetos</h4>
                                     <p className="text-xs text-center text-gray-500 mt-1">Visualizar acervos</p>
+                                </NavLink>
+
+                                <NavLink
+                                    to="/specimens-inspection"
+                                    className="flex flex-col items-center justify-center p-6 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition-all group"
+                                >
+                                    <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                        <Eye className="text-amber-600" size={24} />
+                                    </div>
+                                    <h4 className="font-semibold text-gray-800">Inspecionar Espécimes</h4>
+                                    <p className="text-xs text-center text-gray-500 mt-1">Revisar ocorrências e emitir relatórios</p>
                                 </NavLink>
 
                                 <button

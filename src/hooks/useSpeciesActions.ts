@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { generateSingleSpeciesReport, generateHerbariumLabels, generateSpeciesReport } from '../utils/pdfGenerator';
+import { generateSingleSpeciesReport, generateHerbariumLabels, generateSpeciesReport } from '../utils/pdf';
 import { getRoleLevel } from '../types/auth';
 
 interface Profile {
@@ -182,7 +182,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                         nome_cientifico, autor, nome_popular, created_at,
                         familia(familia_nome),
                         especie_local!inner (
-                            id, detalhes_localizacao, local_id,
+                            id, tombo_codigo, detalhes_localizacao, local_id,
                             determinador, data_determinacao,
                             coletor, numero_coletor, morfologia, habitat_ecologia
                         ),
@@ -229,7 +229,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                     habitat: details?.habitat_ecologia,
                     determinant: details?.determinador || 'Sistema Veridia',
                     determinationDate: formatDate(details?.data_determinacao),
-                    tomboNumber: details?.id
+                    tomboNumber: details?.tombo_codigo || details?.id
                 };
             });
 
@@ -272,7 +272,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
             let query = supabase
                 .from('especie_local')
                 .select(`
-                    id, detalhes_localizacao, created_at,
+                    id, tombo_codigo, detalhes_localizacao, created_at,
                     determinador, data_determinacao,
                     coletor, numero_coletor, morfologia, habitat_ecologia
                 `)
@@ -299,7 +299,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 habitat: details?.habitat_ecologia,
                 determinant: details?.determinador || 'Sistema Veridia',
                 determinationDate: formatDate(details?.data_determinacao),
-                tomboNumber: details?.id
+                tomboNumber: details?.tombo_codigo || details?.id
             };
 
             generateHerbariumLabels([label], `Etiqueta_${(species.nome_cientifico || 'especie').replace(/\s+/g, '_')}.pdf`);

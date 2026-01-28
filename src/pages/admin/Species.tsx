@@ -25,7 +25,7 @@ import {
     Loader2,
     AlertTriangle
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+
 
 // Types for component
 interface Species {
@@ -51,7 +51,8 @@ export default function SpeciesPage() {
     const [search, setSearch] = useState('');
     const [selectedFamily, setSelectedFamily] = useState('');
     const [page, setPage] = useState(1);
-    const navigate = useNavigate();
+
+
 
     // Data fetching hook
     const { species, families, loading, totalCount, stats, refetch } = useSpecies({
@@ -296,13 +297,23 @@ export default function SpeciesPage() {
                             </button>
                         </>
                     )}
-                    <button
-                        onClick={handleNewSpecies}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
-                    >
-                        <Plus size={18} />
-                        <span className="whitespace-nowrap">Nova Espécie</span>
-                    </button>
+                    {hasMinLevel(profile?.role as any, 4) ? (
+                        <button
+                            onClick={handleNewSpecies}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
+                        >
+                            <Plus size={18} />
+                            <span className="whitespace-nowrap">Nova Espécie</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => window.location.href = '/specimens?action=new'} // Or simpler navigation logic
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
+                        >
+                            <Plus size={18} />
+                            <span className="whitespace-nowrap">Adicionar Espécime</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -320,7 +331,6 @@ export default function SpeciesPage() {
                 singleReportLoading={actions.singleReportLoading}
                 deleteLoading={deleteLoading}
                 canGenerateReports={actions.canGenerateReports}
-                onViewSpecimens={(speciesId) => navigate(`/admin/specimens?especie_id=${speciesId}`)}
             />
 
             {/* Modals */}

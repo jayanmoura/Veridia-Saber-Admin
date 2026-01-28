@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Upload, Loader2, MapPin } from 'lucide-react';
 
 interface ProjectFormData {
     nome: string;
+    sigla: string;
     tipo: string;
     cidade: string;
     estado: string;
@@ -50,6 +52,21 @@ export function ProjectFormModal({
     users = [],
     loadingUsers = false
 }: ProjectFormModalProps) {
+    const [emailSearch, setEmailSearch] = useState('');
+
+    // Sincronizar emailSearch com gestor_id selecionado
+    useEffect(() => {
+        if (formData.gestor_id) {
+            const user = users.find(u => u.id === formData.gestor_id);
+            if (user?.email) setEmailSearch(user.email);
+        } else {
+            setEmailSearch('');
+        }
+    }, [formData.gestor_id, users]);
+
+    // Suprimir warning de loadingUsers (prop opcional, usada para controle externo)
+    void loadingUsers;
+
     if (!isOpen) return null;
 
     return createPortal(
@@ -104,6 +121,30 @@ export function ProjectFormModal({
                         />
                     </div>
 
+                    {/* Sigla */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Sigla do Projeto *
+                            <span className="text-xs text-gray-500 font-normal ml-2">(identificador único para tombos)</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.sigla}
+                            onChange={(e) => {
+                                // Uppercase, replace spaces with underscores, remove special chars
+                                const value = e.target.value
+                                    .toUpperCase()
+                                    .replace(/\s+/g, '_')
+                                    .replace(/[^A-Z0-9_]/g, '');
+                                setFormData(prev => ({ ...prev, sigla: value }));
+                            }}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-mono tracking-wide"
+                            placeholder="Ex: JB_UFRRJ"
+                            maxLength={20}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Será usado como prefixo do tombo (ex: JB_UFRRJ-00001)</p>
+                    </div>
+
                     {/* Tipo */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
@@ -119,22 +160,40 @@ export function ProjectFormModal({
                         </select>
                     </div>
 
-                    {/* Gestor do Projeto */}
+                    {/* Gestor do Projeto - Campo de Email */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Gestor do Projeto</label>
-                        <select
-                            value={formData.gestor_id}
-                            onChange={(e) => setFormData(prev => ({ ...prev, gestor_id: e.target.value }))}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none appearance-none bg-white"
-                            disabled={loadingUsers}
-                        >
-                            <option value="">{loadingUsers ? 'Carregando usuários...' : 'Selecione um gestor (opcional)'}</option>
-                            {users.map(user => (
-                                <option key={user.id} value={user.id}>
-                                    {user.full_name || user.email || 'Usuário sem nome'}
-                                </option>
-                            ))}
-                        </select>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email do Gestor</label>
+                        <input
+                            type="email"
+                            value={emailSearch}
+                            onChange={(e) => {
+                                const email = e.target.value;
+                                setEmailSearch(email);
+                                // Buscar usuário pelo email exato
+                                const matchingUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+                                setFormData(prev => ({ ...prev, gestor_id: matchingUser?.id || '' }));
+                            }}
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${emailSearch && formData.gestor_id
+                                ? 'border-emerald-300 bg-emerald-50/50'
+                                : emailSearch && !formData.gestor_id
+                                    ? 'border-amber-300 bg-amber-50/30'
+                                    : 'border-gray-200'
+                                }`}
+                            placeholder="email@exemplo.com (opcional)"
+                        />
+                        {/* Feedback de validação */}
+                        {emailSearch && (
+                            <div className={`mt-2 text-sm flex items-center gap-2 ${formData.gestor_id ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                <span className={`w-2 h-2 rounded-full ${formData.gestor_id ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
+                                {formData.gestor_id ? (
+                                    <span>
+                                        ✓ Usuário encontrado: {users.find(u => u.id === formData.gestor_id)?.full_name || 'Sem nome'}
+                                    </span>
+                                ) : (
+                                    <span>Usuário não encontrado no sistema</span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Cidade / Estado */}

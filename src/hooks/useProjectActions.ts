@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { generateHerbariumLabels } from '../utils/pdfGenerator';
+import { generateHerbariumLabels } from '../utils/pdf';
+import { getDefaultInstitutionId } from '../config/institution';
 
 interface Profile {
     id: string;
@@ -19,6 +20,7 @@ interface Project {
 
 interface ProjectFormData {
     nome: string;
+    sigla: string;
     tipo: string;
     cidade: string;
     estado: string;
@@ -30,6 +32,7 @@ interface ProjectFormData {
 
 const INITIAL_FORM: ProjectFormData = {
     nome: '',
+    sigla: '',
     tipo: '',
     cidade: '',
     estado: '',
@@ -135,19 +138,11 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
             setLoadingUsers(true);
             try {
-                // Build query - filter by role 'Gestor de Acervo'
-                let query = supabase
+                // Buscar todos os usuários do sistema
+                const { data, error } = await supabase
                     .from('profiles')
-                    .select('id, full_name, email, local_id')
-                    .eq('role', 'Gestor de Acervo')
+                    .select('id, full_name, email, role')
                     .order('full_name', { ascending: true });
-
-                // For edit mode, also filter by the project's local_id
-                if (isEditModalOpen && selectedProject) {
-                    query = query.eq('local_id', selectedProject.id);
-                }
-
-                const { data, error } = await query;
 
                 if (error) throw error;
                 setUsers(data || []);
@@ -217,24 +212,39 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
     // Create project
     const handleCreateProject = useCallback(async () => {
-        if (!formData.nome.trim() || !formData.tipo) {
-            showToast('Nome e tipo são obrigatórios.', 'error');
+        if (!formData.nome.trim() || !formData.tipo || !formData.sigla.trim()) {
+            showToast('Nome, Sigla e Tipo são obrigatórios.', 'error');
             return;
         }
 
         setNewProjectLoading(true);
         try {
+            // Get institution_id: prefer profile's, fallback to default
+            let projectInstitutionId: string | null = profile?.institution_id || null;
+
+            if (!projectInstitutionId) {
+                // Try to get default institution
+                projectInstitutionId = await getDefaultInstitutionId(supabase);
+
+                if (!projectInstitutionId) {
+                    showToast('Erro: Nenhuma instituição disponível. Execute o script de migração no Supabase.', 'error');
+                    setNewProjectLoading(false);
+                    return;
+                }
+            }
+
             const { data: newProject, error: insertError } = await supabase
                 .from('locais')
                 .insert({
                     nome: formData.nome.trim(),
+                    sigla: formData.sigla.trim().toUpperCase(),
                     descricao: formData.descricao.trim() || null,
                     tipo: formData.tipo,
                     cidade: formData.cidade.trim() || null,
                     estado: formData.estado.trim() || null,
                     latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                     longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-                    institution_id: profile?.institution_id || null,
+                    institution_id: projectInstitutionId,  // Always from creator's profile
                     gestor_id: formData.gestor_id || null,
                 })
                 .select()
@@ -242,10 +252,29 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
             if (insertError) throw insertError;
 
+            // Upload image if provided
             if (imageFile && newProject) {
                 const imageUrl = await uploadProjectImage(imageFile, newProject.id);
                 if (imageUrl) {
                     await supabase.from('locais').update({ imagem_capa: imageUrl }).eq('id', newProject.id);
+                }
+            }
+
+            // Vincular gestor ao projeto (atualizar local_id, role e institution_id)
+            // Usa o institution_id do PROJETO criado, não do perfil do criador
+            if (formData.gestor_id && newProject) {
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({
+                        local_id: newProject.id,
+                        role: 'Gestor de Acervo',
+                        institution_id: projectInstitutionId  // Sync with project's institution
+                    })
+                    .eq('id', formData.gestor_id);
+
+                if (updateError) {
+                    console.error('Error linking manager:', updateError);
+                    // Não falha a criação do projeto, apenas loga o erro
                 }
             }
 
@@ -255,7 +284,11 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             onSuccess();
         } catch (error: any) {
             console.error('Create project error:', error);
-            showToast(error.message || 'Erro ao criar projeto.', 'error');
+            if (error.code === '23505') { // Unique violation
+                showToast('A Sigla do Projeto já está em uso. Por favor, escolha outra.', 'error');
+            } else {
+                showToast(error.message || 'Erro ao criar projeto.', 'error');
+            }
         } finally {
             setNewProjectLoading(false);
         }
@@ -266,11 +299,12 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         setSelectedProject(project);
         setEditFormData({
             nome: project.nome,
+            sigla: (project as any).sigla || '', // Cast as any because Project type might not have sigla yet
             tipo: project.tipo || '',
             cidade: (project as any).cidade || '',
             estado: (project as any).estado || '',
-            latitude: (project as any).latitude?.toString() || '',
-            longitude: (project as any).longitude?.toString() || '',
+            latitude: (project as any).latitude ? String((project as any).latitude) : '',
+            longitude: (project as any).longitude ? String((project as any).longitude) : '',
             descricao: project.descricao || '',
             gestor_id: (project as any).gestor_id || ''
         });
@@ -280,7 +314,10 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
     }, []);
 
     const handleSaveEdit = useCallback(async () => {
-        if (!selectedProject) return;
+        if (!selectedProject || !editFormData.nome.trim() || !editFormData.tipo || !editFormData.sigla.trim()) {
+            showToast('Nome, Sigla e Tipo são obrigatórios.', 'error');
+            return;
+        }
 
         setEditLoading(true);
         try {
@@ -316,6 +353,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 .from('locais')
                 .update({
                     nome: editFormData.nome.trim(),
+                    sigla: editFormData.sigla.trim().toUpperCase(),
                     descricao: editFormData.descricao.trim() || null,
                     tipo: editFormData.tipo,
                     cidade: editFormData.cidade.trim() || null,
@@ -412,17 +450,45 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 await supabase.from('etiquetas').delete().in('especie_local_id', ids);
             }
 
-            await supabase.from('especie_local').delete().eq('local_id', projectToDelete.id);
+            // Delete especimes (especie_local)
+            const { error: elError } = await supabase.from('especie_local').delete().eq('local_id', projectToDelete.id);
+            if (elError) throw new Error(`Não foi possível excluir espécimes: ${elError.message}`);
+
+            // Desvincular espécies do projeto
             await supabase.from('especie').update({ local_id: null }).eq('local_id', projectToDelete.id);
 
-            const { error } = await supabase.from('locais').delete().eq('id', projectToDelete.id);
-            if (error) throw error;
+            // Desvincular usuários do projeto e rebaixar para Consulente
+            await supabase
+                .from('profiles')
+                .update({
+                    local_id: null,
+                    role: 'Consulente'
+                })
+                .eq('local_id', projectToDelete.id);
+
+            // Deletar o projeto
+            const { error } = await supabase
+                .from('locais')
+                .delete()
+                .eq('id', projectToDelete.id);
+
+            if (error) throw new Error(`Não foi possível excluir o projeto: ${error.message}`);
+
+            // Verificar se foi realmente deletado
+            const { data: stillExists } = await supabase
+                .from('locais')
+                .select('id')
+                .eq('id', projectToDelete.id)
+                .maybeSingle();
+
+            if (stillExists) {
+                throw new Error('Não foi possível excluir o projeto. Verifique suas permissões.');
+            }
 
             showToast('Projeto excluído com sucesso!');
             closeDeleteModal();
             onSuccess();
         } catch (error: any) {
-            console.error('Delete error:', error);
             showToast(error.message || 'Erro ao excluir projeto.', 'error');
         } finally {
             setDeleteLoading(false);

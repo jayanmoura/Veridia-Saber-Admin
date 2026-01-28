@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdfGenerator';
+import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdf';
 
 interface Profile {
     id: string;
