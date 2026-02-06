@@ -18,15 +18,41 @@ export default function Login() {
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            // USANDO PROXY PARA EVITAR ERRO 400 NO CONSOLE
+            // Invocamos nossa Edge Function 'login-proxy'
+            const { data, error: functionError } = await supabase.functions.invoke('login-proxy', {
+                body: { email, password }
             });
 
-            if (error) throw error;
-            navigate('/');
+            // Erro de rede na chamada da function (ex: internet caiu)
+            if (functionError) throw functionError;
+
+            // Logica do Proxy: Ele retorna 200 OK mesmo se falhar o login,
+            // mas manda um objeto { error: 'mensagem' } no corpo.
+            if (data.error) {
+                // Lançamos o erro para cair no catch abaixo e exibir a msg amigável
+                throw new Error(data.error);
+            }
+
+            // Se chegou aqui, login foi sucesso!
+            // Precisamos setar a sessão manualmente no cliente
+            if (data.data?.session) {
+                const { error: sessionError } = await supabase.auth.setSession(data.data.session);
+                if (sessionError) throw sessionError;
+                navigate('/');
+            } else {
+                throw new Error('Erro inesperado ao criar sessão');
+            }
+
         } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login');
+            // Verifica mensagens específicas do Supabase para tradução e segurança
+            if (err.message === 'Invalid login credentials' || err.message?.includes('Invalid login')) {
+                setError('E-mail ou senha incorretos.');
+            } else {
+                // Log para debug em dev, mas usuario vê msg generica
+                console.error('Login Error:', err);
+                setError('Ocorreu um erro ao fazer login. Tente novamente.');
+            }
         } finally {
             setLoading(false);
         }
