@@ -13,6 +13,9 @@ export default defineConfig({
       devOptions: {
         enabled: true // Habilita o SW em modo de desenvolvimento
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB
+      },
       manifest: {
         name: 'Veridia Admin',
         short_name: 'Veridia',
