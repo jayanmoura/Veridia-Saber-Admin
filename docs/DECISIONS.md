@@ -169,15 +169,13 @@ Isso separa queries Supabase dos hooks, embora nem todas as entidades tenham rep
 
 ### Refatoração: Páginas < 500 linhas
 
-Foi aplicada uma refatoração documentada em `REFACTORING_CHECKLIST.md` com meta de manter **toda página abaixo de 500 linhas**. A estratégia foi extrair:
+Esta refatoração foi concluída em janeiro de 2026. Os resultados foram reduções de 58% a 93% no tamanho das páginas principais. A estratégia foi extrair:
 
 - Lógica de estado → hooks
 - Formulários → componentes de formulário
 - Tabelas → componentes de tabela
 - Modais → componentes de modal
 - Visões por role → componentes Overview específicos
-
-Resultados: reduções de 58% a 93% nas páginas principais.
 
 ---
 

@@ -25,8 +25,6 @@
 ├── eslint.config.js              # Configuração do ESLint com plugins react-hooks e react-refresh
 ├── README.md                     # Documentação principal: visão geral, instalação, RBAC e stack
 ├── SUPABASE_SCHEMA.md            # Schema completo do banco Supabase (tabelas, views, RLS, storage)
-├── REFACTORING_CHECKLIST.md      # Checklist de pendências técnicas e refatorações planejadas
-├── pdf.md                        # Especificação de templates para geração de relatórios PDF
 ```
 
 ---
