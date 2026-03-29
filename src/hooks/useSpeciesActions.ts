@@ -45,7 +45,27 @@ interface UseSpeciesActionsReturn {
 }
 
 /**
- * Hook for species PDF generation, export, and label actions.
+ * @description Hook que isola ações de negócio de espécies, como geração de PDFs de relatórios e etiquetas de herbário.
+ *
+ * @param {UseSpeciesActionsOptions} options - Parâmetros que definem o contexto da ação
+ * @param {Profile | null} [options.profile] - Perfil do usuário logado contendo role e local
+ * @param {string} [options.search] - Termo de busca usado para filtro global
+ * @param {string} [options.selectedFamily] - ID da família atual do filtro
+ *
+ * @returns {UseSpeciesActionsReturn} Funções e loaders de exportação e permissões:
+ *   - `exportLoading` — true durante o download do PDF geral
+ *   - `singleReportLoading` — ID da espécie carregando a ficha
+ *   - `genLabelsLoading` — true exportando bulk labels
+ *   - `singleLabelLoading` — ID gerando label singular
+ *   - `isGlobalAdmin` — flag de acesso admin amplo
+ *   - `canGenerateReports` — flag de permissão de relatórios
+ *   - `handleExportSpecies` — start export massivo
+ *   - `handleGenerateSingleReport` — start export único PDF
+ *   - `handleGenerateLabels` — gerador massivo etiquetas
+ *   - `handleGenerateSingleLabel` — formato folha singular
+ *
+ * @example
+ * const { handleExportSpecies, exportLoading } = useSpeciesActions({ profile, search })
  */
 export function useSpeciesActions({ profile, search, selectedFamily }: UseSpeciesActionsOptions): UseSpeciesActionsReturn {
     const [exportLoading, setExportLoading] = useState(false);

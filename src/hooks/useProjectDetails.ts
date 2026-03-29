@@ -92,7 +92,21 @@ export interface UseProjectDetailsReturn {
 }
 
 /**
- * Hook for managing ProjectDetails page state: project data, tabs, pagination, and modal.
+ * @description Hook isolado na página única de Projeto detalhado. Controla a visualização via abas e carrossel de estatísticas, dividindo responsabilidade com paginação custom.
+ *
+ * @param {UseProjectDetailsOptions} options - Options
+ * @param {string | undefined} options.projectId - ID do local_id a detalhar
+ * @param {number} [options.itemsPerPage] - Controla o chunk das consultas por aba (padrão 15)
+ *
+ * @returns {UseProjectDetailsReturn} Conjunto denso de view options:
+ *   - `project` — dados mestres do local extraídos do DB
+ *   - Abas e Listas: `activeTab`, `linkedUsers`, `linkedSpecies`, `linkedFamilies`, e controllers de Tab page load
+ *   - Counters: `usersCount`, `speciesCountTotal`, `familiesCount`
+ *   - Paginator: `currentPage`, `totalPages`
+ *   - Handlers modais da família: `openFamilyModal` / `modalSpecies`
+ *
+ * @example
+ * const { project, activeTab, setActiveTab, linkedUsers } = useProjectDetails({ projectId: '50' })
  */
 export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDetailsOptions): UseProjectDetailsReturn {
     const { profile } = useAuth();

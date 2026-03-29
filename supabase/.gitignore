@@ -1,0 +1,2 @@
+# Ignorar scripts legados de fix (histórico sensível)
+fix_*.sql

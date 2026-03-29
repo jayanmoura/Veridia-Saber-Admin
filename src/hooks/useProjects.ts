@@ -33,7 +33,18 @@ export interface UseProjectsReturn {
 }
 
 /**
- * Hook for fetching and managing project data.
+ * @description Hook leve para consultar a malha inicial de projetos (locais). Usado pela visão global da aplicação.
+ *
+ * @param {UseProjectsOptions} [options] - Objeto opcional contendo switch enable/disable.
+ *
+ * @returns {UseProjectsReturn} Locais com array count manual:
+ *   - `projects` — lista completa dos locais cadastrados
+ *   - `loading` — flag wait fetch
+ *   - `stats` — count basicos (top project, total) pra header global
+ *   - `refetch` — action
+ *
+ * @example
+ * const { projects, loading } = useProjects()
  */
 export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn {
     const { enabled = true } = options;

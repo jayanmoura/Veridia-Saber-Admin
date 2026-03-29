@@ -126,7 +126,24 @@ const INITIAL_FORM_DATA: Species = {
 };
 
 /**
- * Hook for managing species form state, autocomplete, permissions, and auxiliary data.
+ * @description Hook complexo para gestão do formulário de espécies, abas, autocomplete no banco global, geolocalização e permissões.
+ *
+ * @param {UseSpeciesFormOptions} options - Contexto de abertura
+ * @param {Species | null} [options.initialData] - Inicializador do formulário (vazio para Create)
+ * @param {boolean} options.isOpen - Indica se modal está ativo (liga os queries iniciais)
+ *
+ * @returns {UseSpeciesFormReturn} Estado farto do form unificado
+ *   - `formData`, `setFormData` — state global da Form de espécie
+ *   - `localData`, `setLocalData` — state da aba de Local (Especie_Local)
+ *   - `families`, `locais` — tabelas base de options selects
+ *   - `dataLoading` — block spinner central
+ *   - `activeTab`, `setActiveTab` — navegação entre tab base / herbário
+ *   - `searchSpecies`, `handleNameChange`, `handleSelectGlobalSpecies` — lógica de autocompletar nomes científicos do acervo do banco
+ *   - `handleGetLocation` — helper GPS do browser
+ *   - `userRole`, `isGlobalAdmin`, `isProjectUser` — info roles
+ *
+ * @example
+ * const { formData, handleNameChange, shouldLockGlobalFields } = useSpeciesForm({ isOpen: true })
  */
 export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): UseSpeciesFormReturn {
     const { profile } = useAuth();

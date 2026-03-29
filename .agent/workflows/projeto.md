@@ -1,90 +1,74 @@
 ---
-description: Leitura inicial do projeto Painel Admin Veridia Saber para contextualização
+description: description: Carrega o contexto completo do Veridia Saber Admin para iniciar qualquer trabalho
 ---
 
 # Workflow: Contextualização do Projeto
-
-Este workflow carrega o contexto completo do projeto **Painel Admin Veridia Saber** para iniciar os trabalhos.
 
 ## Passos
 
 ### 1. Leia a estrutura do projeto
 // turbo
-Leia o arquivo `PROJECT_STRUCTURE Painel admin.md` na raiz do projeto para entender a arquitetura completa.
-
 ```
-view_file u:\Projetos\Painel-admin-veridiasaber\PROJECT_STRUCTURE Painel admin.md
+view_file PROJECT_STRUCTURE Painel admin.md
 ```
 
 ### 2. Leia o schema do banco de dados
 // turbo
-Leia o arquivo `SUPABASE_SCHEMA.md` para entender as tabelas, relacionamentos e views do Supabase.
-
 ```
-view_file u:\Projetos\Painel-admin-veridiasaber\SUPABASE_SCHEMA.md
+view_file SUPABASE_SCHEMA.md
 ```
 
-### 3. Leia o README do projeto
+### 3. Leia o README
 // turbo
-Leia o `README.md` para ter uma visão geral das funcionalidades e scripts disponíveis.
-
 ```
-view_file u:\Projetos\Painel-admin-veridiasaber\README.md
+view_file README.md
 ```
 
-### 4. Verifique o checklist de refatoração
+### 4. Liste os diretórios principais
 // turbo
-Leia o `REFACTORING_CHECKLIST.md` para ver pendências de refatoração.
-
 ```
-view_file u:\Projetos\Painel-admin-veridiasaber\REFACTORING_CHECKLIST.md
-```
-
-### 5. Liste a estrutura atual do projeto
-// turbo
-Liste os diretórios principais para ter uma visão atual do projeto.
-
-```
-list_dir u:\Projetos\Painel-admin-veridiasaber
-list_dir u:\Projetos\Painel-admin-veridiasaber\src
+list_dir src
+list_dir src/pages
+list_dir src/components
+list_dir supabase
 ```
 
 ---
 
-## 📋 Resumo do Projeto
+## Contexto do Projeto
 
-**Veridia Saber - Painel Administrativo**
+**Veridia Saber — Painel Administrativo**
+Sistema B2B de gestão de coleções botânicas para herbários e jardins botânicos institucionais.
 
-Sistema de gestão de herbário e catalogação de espécies botânicas, desenvolvido com:
-- **React 18** + **TypeScript** + **Vite**
-- **TailwindCSS** para estilização
-- **Supabase** como backend (Auth, Database, Storage)
-- **Leaflet** para mapas interativos
-- **jsPDF** para geração de relatórios
+### Stack
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| React | 19 | Framework UI |
+| TypeScript | — | Tipagem estática |
+| Vite | — | Bundler e dev server |
+| Tailwind CSS | v4 | Estilização utilitária |
+| Supabase | — | Auth, Database, Storage |
+| TipTap | v3 | Editor rich text no painel de conteúdo |
+| React Router | — | Roteamento SPA |
+| jszip + file-saver | — | Download em lote no modal de Arquivos |
 
-### Conceitos Importantes
-
+### Conceitos de Domínio
 | Conceito | Descrição |
-|----------|-----------|
-| **Espécie** | Dados taxonômicos globais (gênero, nome científico, classificação) |
-| **Espécime** | Ocorrência específica (localização, data de coleta, imagens, etiquetas) |
+|---|---|
+| **Espécie** | Entidade taxonômica global: nome científico, família, classificação |
+| **Espécime** | Ocorrência georreferenciada de uma espécie (tabela `especie_local`, alias view `especime`) |
+| **Local** | Instituição ou jardim botânico gerenciado no sistema |
+| **Conteúdo Educativo** | Textos por órgão botânico salvos como HTML para compatibilidade com o app mobile |
 
-### Roles de Usuário
+### Roles de Usuário (RBAC)
+| Role Técnica | Nome de Exibição | Escopo |
+|---|---|---|
+| `super_admin` | Curador Mestre | Global — acesso total |
+| `admin` (local_id = NULL) | Coordenador Científico | Global — sem auditoria |
+| `admin` (local_id ≠ NULL) | Gestor de Acervo | Local — apenas seu local |
+| `catalogador` (local_id = NULL) | Taxonomista Sênior | Global — leitura + contribuição |
+| `catalogador` (local_id ≠ NULL) | Taxonomista de Campo | Local — coleta e registros |
+| Consulente | Consulente | Read-only |
 
-1. **Global Admin** (super_admin) - Curador Mestre
-2. **Local Admin** (admin) - Coordenador Científico / Gestor de Acervo
-3. **Taxonomista Sênior** (catalogador, local_id = NULL)
-4. **Taxonomista de Campo** (catalogador, local_id ≠ NULL)
-5. **Consulente** - Apenas visualização
-
----
-
-## ✅ Após executar este workflow
-
-A IA estará preparada para:
-- Implementar novas funcionalidades
-- Corrigir bugs no código existente
-- Refatorar componentes
-- Criar novos componentes seguindo o padrão do projeto
-- Trabalhar com o banco de dados Supabase
-- Gerar relatórios PDF
+### Pendências Conhecidas
+- `is_staff()` usa roles em lowercase (`'curador'`, `'super_admin'`), mas `profiles.role` armazena nomes de exibição — requer atualização da função

@@ -44,8 +44,18 @@ export interface UploadOptions {
 }
 
 /**
- * Hook for managing species images - upload, delete, and preview.
- * Supports both global bucket (imagens-plantas) and project bucket (arquivos-gerais).
+ * @description Hook para manipulação de arquivos de imagens de espécies com drag & drop e suporte multi-bucket (global e projetos).
+ *
+ * @returns {UseSpeciesImagesReturn} Estado e controle do filepicker:
+ *   - `imageFiles`, `imagePreviews` — UI lists client-side
+ *   - `existingImages` — array do Supabase db mapping bucket paths
+ *   - `editedCredits`, `newImageCredits` — input tracking para campos de foto
+ *   - Handlers visuais: `handleDrag`, `handleDrop`, `removeNewImage`
+ *   - Actions API: `uploadImages`, `handleDeleteExistingImage`, `loadExistingImages`
+ *   - Utils: `reset`, `setEditedCredits`
+ *
+ * @example
+ * const { imagePreviews, handleFileInput, uploadImages } = useSpeciesImages()
  */
 export function useSpeciesImages(): UseSpeciesImagesReturn {
     const [imageFiles, setImageFiles] = useState<File[]>([]);

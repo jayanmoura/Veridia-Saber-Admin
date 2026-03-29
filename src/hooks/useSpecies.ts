@@ -48,8 +48,20 @@ export interface UseSpeciesReturn {
 const DEFAULT_ITEMS_PER_PAGE = 20;
 
 /**
- * Hook for fetching and managing species data with pagination and filtering.
- * Handles role-based access control for local vs global admins.
+ * @description Hook para buscar e gerenciar dados de espécies com paginação, filtros e cálculo de estatísticas (com controle de acesso baseado em role).
+ *
+ * @param {UseSpeciesOptions} [options] - Opções de paginação, busca e filtro por família.
+ *
+ * @returns {UseSpeciesReturn} Estado e funções para listagem de espécies:
+ *   - `species` — lista de espécies carregadas
+ *   - `families` — opções de famílias para filtro
+ *   - `loading` — true enquanto a requisição principal está em andamento
+ *   - `totalCount` — número total de espécies encontradas
+ *   - `stats` — estatísticas gerais (total, top epíteto, imagens faltantes)
+ *   - `refetch` — função para forçar o recarregamento dos dados
+ *
+ * @example
+ * const { species, loading, totalCount, stats, refetch } = useSpecies({ page: 1, search: 'ficus' })
  */
 export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
     const { profile } = useAuth();

@@ -55,6 +55,22 @@ interface UseFamilyActionsReturn {
     canGenerateReports: boolean;
 }
 
+/**
+ * @description Hook que gerencia lógicas de negócios fechadas para Famílias, como geração de PDFs e exclusão de registro com validação FK.
+ *
+ * @param {UseFamilyActionsOptions} options - Contexto da ação
+ * @param {Profile | null} options.profile - Para tracking de Audit Log e RLS UI
+ * @param {Function} options.onSuccess - Callback de refresh
+ *
+ * @returns {UseFamilyActionsReturn} Exporters e Modais da família
+ *   - `exportLoading` / `reportLoading` — states de loading pra PDF
+ *   - `handleExportAll`, `generateFamilyReport` — PDF creators
+ *   - `handleApproveFamily` — transforma "pending" num registro oficial de família
+ *   - `confirmDelete` — verifica FK cascade e remove
+ *
+ * @example
+ * const { confirmDelete, isDeleteModalOpen } = useFamilyActions({ profile, onSuccess })
+ */
 export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFamilyActionsOptions): UseFamilyActionsReturn {
     // Loading states
     const [exportLoading, setExportLoading] = useState(false);

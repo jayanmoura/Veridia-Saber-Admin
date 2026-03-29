@@ -21,6 +21,19 @@ interface UseFamilyLegacyNamesReturn {
     refetch: () => Promise<void>;
 }
 
+/**
+ * @description Hook responsável pelo CRUD de nomenclaturas históricas/legadas (sinônimos) vinculadas a uma família em específico.
+ *
+ * @param {string | undefined} familiaId - ID canônico da família para o qual buscar/salvar as nomenclaturas.
+ *
+ * @returns {UseFamilyLegacyNamesReturn} Retorna os nomes e métodos manipuladores:
+ *   - `legacyNames` — arrays dos sinônimos ativos
+ *   - `loading` / `error` — estados da tabela
+ *   - `addLegacyName`, `updateLegacyName`, `removeLegacyName` — mutadores diretos com validação custom unique
+ *
+ * @example
+ * const { legacyNames, addLegacyName } = useFamilyLegacyNames('uuid-familia')
+ */
 export function useFamilyLegacyNames(familiaId: string | undefined): UseFamilyLegacyNamesReturn {
     const [legacyNames, setLegacyNames] = useState<FamilyLegacyName[]>([]);
     const [loading, setLoading] = useState(false);

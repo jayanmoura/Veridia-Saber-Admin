@@ -47,8 +47,21 @@ export interface UseFamiliesReturn {
 const DEFAULT_ITEMS_PER_PAGE = 20;
 
 /**
- * Hook for fetching and managing family data with pagination and filtering.
- * Also handles pending families (unregistered family names from plant collection).
+ * @description Hook de paginação e filtragem para Famílias Botânicas, lidando também com sugestões pendentes do banco referencial.
+ *
+ * @param {UseFamiliesOptions} [options] - Objeto de configuração de query
+ * @param {number} [options.page] - Página atual
+ * @param {string} [options.search] - Texto para filtar família por nome
+ *
+ * @returns {UseFamiliesReturn} Lista de famílias e aprovações
+ *   - `families` — dados das famílias ativas
+ *   - `loading` — booleano de loader
+ *   - `pendingFamilies` — sugestões provindas de plantas ainda não associadas
+ *   - `stats` — countings e a família mais rica em espécies
+ *   - `refetch` — atualizador manual
+ *
+ * @example
+ * const { families, pendingFamilies } = useFamilies({ page: 1 })
  */
 export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn {
     const {

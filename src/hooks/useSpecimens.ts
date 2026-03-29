@@ -64,6 +64,25 @@ interface UseSpecimensOptions {
     enabled?: boolean;
 }
 
+/**
+ * @description Hook para gerenciamento e busca de espécimes, operando operações atreladas especificamente a um projeto (local_id).
+ *
+ * @param {UseSpecimensOptions} options - Objeto de config
+ * @param {string} [options.projectId] - Escopo base de projeto (obriga eq(local_id, projectId))
+ * @param {boolean} [options.enabled] - Gate central para pausar query automático
+ *
+ * @returns {object} Controladores do espécime:
+ *   - `specimens` — rows populadas da query view
+ *   - `loading` — booleano fetch view
+ *   - `error` — mensagens query
+ *   - `refetch` — manual pull call
+ *   - Form & Modais: `isModalOpen`, `setIsModalOpen`, `editingSpecimen`, `formData`
+ *   - Handlers CRUD: `openNewModal`, `openEditModal`, `handleSave`, `handleDelete`
+ *   - `actionLoading` — bool de wait de submit e deletes
+ *
+ * @example
+ * const { specimens, handleSave, openNewModal } = useSpecimens({ projectId: '50', enabled: true })
+ */
 export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions) {
     const [specimens, setSpecimens] = useState<Specimen[]>([]);
     const [loading, setLoading] = useState(true);

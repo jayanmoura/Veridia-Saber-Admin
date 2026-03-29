@@ -105,7 +105,16 @@ export interface UseOverviewStatsReturn {
 }
 
 /**
- * Hook for fetching and managing Overview page statistics based on user role.
+ * @description Hook central do dashboard (Overview) que muda drasticamente a query e retorno baseado na Hierarchy Role do usuário.
+ *
+ * @returns {UseOverviewStatsReturn} Permissões computadas e blocos de dados de dashboard:
+ *   - Roles: `isGlobalAdmin`, `isLocalAdmin`, `isSenior`, `isFieldTaxonomist`, `isCataloger`
+ *   - Stats: `stats` gerais/projetos
+ *   - Senior/Global: `recentLogs` e `recentWork`
+ *   - Específicos Locais: `projectData`, `localStats`, `recentLocalSpecies`
+ *
+ * @example
+ * const { stats, recentWork, isGlobalAdmin } = useOverviewStats()
  */
 export function useOverviewStats(): UseOverviewStatsReturn {
     const { profile } = useAuth();

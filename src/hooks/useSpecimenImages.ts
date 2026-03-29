@@ -38,8 +38,18 @@ export interface UploadOptions {
 }
 
 /**
- * Hook for managing specimen images - upload, delete, and preview.
- * Uses only project bucket (arquivos-gerais).
+ * @description Hook focado em gerenciar imagens exclusivas de espécimes, operando apenas no bucket de arquivos-gerais dos projetos.
+ *
+ * @returns {UseSpecimenImagesReturn} Gerente filepicker para espécimes:
+ *   - `imageFiles`, `imagePreviews` — arquivos em fila client
+ *   - `existingImages` — registros vivos de imagens do espécime
+ *   - `newImageCredits` — form items de créditos adicionados na foto
+ *   - `dragActive` — true se o user der hover de file
+ *   - UI Handlers: `handleDrag`, `handleDrop`, `removeNewImage`
+ *   - Actions: `uploadImages` (path do specimem), `handleDeleteExistingImage`, `loadExistingImages`
+ *
+ * @example
+ * const { imagePreviews, handleDrop, existingImages } = useSpecimenImages()
  */
 export function useSpecimenImages(): UseSpecimenImagesReturn {
     const [imageFiles, setImageFiles] = useState<File[]>([]);

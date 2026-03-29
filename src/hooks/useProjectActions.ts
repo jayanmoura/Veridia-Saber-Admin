@@ -97,6 +97,21 @@ interface UseProjectActionsReturn {
     loadingUsers: boolean;
 }
 
+/**
+ * @description Hook massivo contendo a lógica de negócio CRUD para projetos (locais), upload de capas, vinculação de gestores, etc.
+ *
+ * @param {UseProjectActionsOptions} options - Options
+ * @param {Profile | null} options.profile - Role para permissions no CRUD de Locais (Global Admin auth)
+ *
+ * @returns {UseProjectActionsReturn} Arrays e Modais
+ *   - Form/Upload: `formData`, `imageFile`, `handleImageChange`, `handleCreateProject`
+ *   - Edit: `editFormData`, `handleEditProject`
+ *   - Delete: `confirmDelete` com deleção em cascata agressiva (arquivos no storage, etiquetas, logs, espécimes e finally local)
+ *   - Listagem para o Form de usuários aptos a Gestor: `users`
+ *
+ * @example
+ * const { openDeleteModal, handleGenerateReport } = useProjectActions({ profile, onSuccess })
+ */
 export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptions): UseProjectActionsReturn {
     // Toast
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
