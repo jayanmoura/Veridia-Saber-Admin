@@ -53,7 +53,7 @@ interface UserStats {
 const GLOBAL_ROLES: UserRole[] = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
 
 // Helper para verificar se um cargo é global
-const isGlobalRole = (role: UserRole | ''): boolean => {
+export const isGlobalRole = (role: UserRole | ''): boolean => {
     if (!role) return false;
     return GLOBAL_ROLES.includes(role as UserRole);
 };
@@ -563,10 +563,11 @@ export default function Users() {
                         <div className="space-y-4">
                             {/* Role Select */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-1">
                                     Cargo
                                 </label>
                                 <select
+                                    id="role-select"
                                     value={editRole}
                                     onChange={(e) => setEditRole(e.target.value as UserRole)}
                                     disabled={isReadOnly}

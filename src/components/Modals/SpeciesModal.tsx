@@ -39,6 +39,130 @@ interface SpeciesModalProps {
     initialData?: Species | null;
 }
 
+/**
+ * Upload images with hybrid bucket strategy:
+ * - NEW global species (crowdsourcing) -> 'imagens-plantas' bucket (persists globally)
+ * - Project context (occurrences/field notes) -> 'arquivos-gerais' bucket (tied to project lifecycle)
+ * 
+ * Path structure for project images: locais/{projectId}/imagens/{speciesName}/{file}
+ */
+export const uploadImages = async (
+    files: File[],
+    speciesId: string,
+    options: {
+        isCreatingNewGlobalSpecies: boolean;
+        projectId: string | null;
+        speciesName: string;
+    }
+): Promise<string[]> => {
+    const urls: string[] = [];
+
+    // Sanitize species name for folder path (consistent with user request)
+    const sanitizedSpeciesName = options.speciesName
+        ? options.speciesName.trim().replace(/\s+/g, '_').toLowerCase()
+        : 'sem_nome';
+
+    for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(7);
+
+        let bucket: string;
+        let filePath: string;
+
+        if (options.isCreatingNewGlobalSpecies || !options.projectId) {
+            // GLOBAL SPECIES CONTEXT: Upload to 'imagens-plantas' bucket
+            bucket = 'imagens-plantas';
+            filePath = `especies/${speciesId}/${timestamp}_${randomSuffix}.${fileExt}`;
+        } else {
+            // PROJECT CONTEXT: Upload to 'arquivos-gerais' bucket
+            bucket = 'arquivos-gerais';
+            // Path: locais/{projectId}/imagens/{sanitizedSpeciesName}/{file}
+            filePath = `locais/${options.projectId}/imagens/${sanitizedSpeciesName}/${timestamp}_${randomSuffix}.${fileExt}`;
+        }
+
+        const { error } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, file);
+
+        if (error) {
+            continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+
+        urls.push(publicUrl);
+    }
+
+    return urls;
+};
+
+/**
+ * Extract storage path and bucket from full URL
+ * Supports both 'imagens-plantas' (global) and 'arquivos-gerais' (project) buckets
+ */
+export const extractStorageInfo = (url: string): { bucket: string; path: string } | null => {
+    try {
+        // Check for imagens-plantas bucket
+        const imagensMatch = url.match(/\/imagens-plantas\/(.+)$/);
+        if (imagensMatch) {
+            return { bucket: 'imagens-plantas', path: imagensMatch[1] };
+        }
+
+        // Check for arquivos-gerais bucket
+        const arquivosMatch = url.match(/\/arquivos-gerais\/(.+)$/);
+        if (arquivosMatch) {
+            return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+// Delete existing image from storage and database
+export const handleDeleteExistingImage = async (
+    imageId: string, 
+    imageUrl: string,
+    setExistingImages: React.Dispatch<React.SetStateAction<{ id: string; url_imagem: string; creditos: string | null }[]>>,
+    setEditedCredits: React.Dispatch<React.SetStateAction<{ [id: string]: string }>>
+) => {
+    try {
+        // 1. Remove from storage (detect bucket from URL)
+        const storageInfo = extractStorageInfo(imageUrl);
+        if (storageInfo) {
+            await supabase.storage
+                .from(storageInfo.bucket)
+                .remove([storageInfo.path]);
+        }
+
+        // 2. Remove from database
+        const { error: dbError } = await supabase
+            .from('imagens')
+            .delete()
+            .eq('id', imageId);
+
+        if (dbError) {
+            throw dbError;
+        }
+
+        // 3. Update local state
+        setExistingImages(prev => prev.filter(img => img.id !== imageId));
+        setEditedCredits(prev => {
+            const updated = { ...prev };
+            delete updated[imageId];
+            return updated;
+        });
+
+    } catch (error: any) {
+        console.error('Erro ao excluir imagem:', error);
+        alert('Erro ao excluir imagem: ' + (error.message || 'Erro desconhecido'));
+    }
+};
+
 export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesModalProps) {
     const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -443,124 +567,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         });
     };
 
-    /**
-     * Extract storage path and bucket from full URL
-     * Supports both 'imagens-plantas' (global) and 'arquivos-gerais' (project) buckets
-     */
-    const extractStorageInfo = (url: string): { bucket: string; path: string } | null => {
-        try {
-            // Check for imagens-plantas bucket
-            const imagensMatch = url.match(/\/imagens-plantas\/(.+)$/);
-            if (imagensMatch) {
-                return { bucket: 'imagens-plantas', path: imagensMatch[1] };
-            }
-
-            // Check for arquivos-gerais bucket
-            const arquivosMatch = url.match(/\/arquivos-gerais\/(.+)$/);
-            if (arquivosMatch) {
-                return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
-            }
-
-            return null;
-        } catch {
-            return null;
-        }
-    };
-
-    // Delete existing image from storage and database
-    const handleDeleteExistingImage = async (imageId: string, imageUrl: string) => {
-        try {
-            // 1. Remove from storage (detect bucket from URL)
-            const storageInfo = extractStorageInfo(imageUrl);
-            if (storageInfo) {
-                await supabase.storage
-                    .from(storageInfo.bucket)
-                    .remove([storageInfo.path]);
-            }
-
-            // 2. Remove from database
-            const { error: dbError } = await supabase
-                .from('imagens')
-                .delete()
-                .eq('id', imageId);
-
-            if (dbError) {
-                throw dbError;
-            }
-
-            // 3. Update local state
-            setExistingImages(prev => prev.filter(img => img.id !== imageId));
-            setEditedCredits(prev => {
-                const updated = { ...prev };
-                delete updated[imageId];
-                return updated;
-            });
-
-        } catch (error: any) {
-            console.error('Erro ao excluir imagem:', error);
-            alert('Erro ao excluir imagem: ' + (error.message || 'Erro desconhecido'));
-        }
-    };
-
-    /**
-     * Upload images with hybrid bucket strategy:
-     * - NEW global species (crowdsourcing) -> 'imagens-plantas' bucket (persists globally)
-     * - Project context (occurrences/field notes) -> 'arquivos-gerais' bucket (tied to project lifecycle)
-     * 
-     * Path structure for project images: locais/{projectId}/imagens/{speciesName}/{file}
-     */
-    const uploadImages = async (
-        speciesId: string,
-        options: {
-            isCreatingNewGlobalSpecies: boolean;
-            projectId: string | null;
-            speciesName: string;
-        }
-    ): Promise<string[]> => {
-        const urls: string[] = [];
-
-        // Sanitize species name for folder path (consistent with user request)
-        const sanitizedSpeciesName = options.speciesName
-            ? options.speciesName.trim().replace(/\s+/g, '_').toLowerCase()
-            : 'sem_nome';
-
-        for (const file of imageFiles) {
-            const fileExt = file.name.split('.').pop();
-            const timestamp = Date.now();
-            const randomSuffix = Math.random().toString(36).substring(7);
-
-            let bucket: string;
-            let filePath: string;
-
-            if (options.isCreatingNewGlobalSpecies || !options.projectId) {
-                // GLOBAL SPECIES CONTEXT: Upload to 'imagens-plantas' bucket
-                bucket = 'imagens-plantas';
-                filePath = `especies/${speciesId}/${timestamp}_${randomSuffix}.${fileExt}`;
-            } else {
-                // PROJECT CONTEXT: Upload to 'arquivos-gerais' bucket
-                bucket = 'arquivos-gerais';
-                // Path: locais/{projectId}/imagens/{sanitizedSpeciesName}/{file}
-                filePath = `locais/${options.projectId}/imagens/${sanitizedSpeciesName}/${timestamp}_${randomSuffix}.${fileExt}`;
-            }
-
-            const { error } = await supabase.storage
-                .from(bucket)
-                .upload(filePath, file);
-
-            if (error) {
-                continue;
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
-
-            urls.push(publicUrl);
-        }
-
-        return urls;
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -709,7 +715,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 // Uma espécie só é "global" se NÃO tiver projectId associado
                 const isCreatingNewGlobalSpecies = !isGlobalSpecies && !isEditingExisting && !effectiveLocalId;
 
-                const imageUrls = await uploadImages(speciesId, {
+                const imageUrls = await uploadImages(imageFiles, speciesId, {
                     isCreatingNewGlobalSpecies,
                     projectId: effectiveLocalId,
                     speciesName: formData.nome_cientifico
@@ -1162,7 +1168,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                             {/* Delete button */}
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleDeleteExistingImage(img.id, img.url_imagem)}
+                                                                onClick={() => handleDeleteExistingImage(img.id, img.url_imagem, setExistingImages, setEditedCredits)}
                                                                 className="absolute -top-2 -right-2 z-10 p-1.5 bg-red-500 text-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                                                                 title="Excluir imagem"
                                                             >

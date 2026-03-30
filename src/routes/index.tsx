@@ -22,7 +22,7 @@ import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import React from 'react';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+export function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { session, loading, profile } = useAuth();
 
     if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50 text-emerald-600 font-medium animate-pulse">Carregando...</div>;
@@ -43,7 +43,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
-function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
+export function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
     const { profile, loading } = useAuth(); // Reuse hook
 
     if (loading) return null; // Or spinner
