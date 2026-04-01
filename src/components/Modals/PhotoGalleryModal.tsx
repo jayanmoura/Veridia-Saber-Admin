@@ -26,6 +26,11 @@ interface ImageData {
     especie: {
         nome_cientifico: string;
     } | null;
+    especime?: {
+        especie: {
+            nome_cientifico: string;
+        } | null;
+    } | null;
 }
 
 interface GroupedImages {
@@ -88,26 +93,39 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
         try {
             const { data, error } = await supabase
                 .from('imagens')
-                .select('id, url_imagem, creditos, created_at, especie:especie_id(nome_cientifico)')
+                .select(`
+                    id, 
+                    url_imagem, 
+                    creditos, 
+                    created_at, 
+                    especie:especie_id(nome_cientifico),
+                    especime:especime_id(
+                        especie:especie_id(nome_cientifico)
+                    )
+                `)
                 .eq('local_id', localId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            // Normalize data: Supabase may return especie as array due to relation syntax
             const imageList: ImageData[] = (data || []).map((item: any) => ({
                 id: item.id,
                 url_imagem: item.url_imagem,
                 creditos: item.creditos,
                 created_at: item.created_at,
-                especie: Array.isArray(item.especie) ? item.especie[0] || null : item.especie
+                especie: item.especie,
+                especime: item.especime
             }));
             setImages(imageList);
 
-            // Group by species name
             const grouped: GroupedImages = {};
             imageList.forEach(img => {
-                const speciesName = img.especie?.nome_cientifico || 'Sem Espécie';
+                // Prioritize species direct link, fallback to specimen's species link
+                const speciesName = 
+                    img.especie?.nome_cientifico || 
+                    (img as any).especime?.especie?.nome_cientifico || 
+                    'Sem Espécie';
+                
                 if (!grouped[speciesName]) {
                     grouped[speciesName] = [];
                 }
@@ -209,7 +227,12 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             selectedImages.forEach(imageId => {
                 const img = images.find(i => i.id === imageId);
                 if (img) {
-                    const speciesName = (img.especie?.nome_cientifico || 'Sem_Especie').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+                    const speciesName = (
+                        img.especie?.nome_cientifico || 
+                        img.especime?.especie?.nome_cientifico || 
+                        'Sem_Especie'
+                    ).replace(/[^a-zA-Z0-9\s]/g, '').trim();
+                    
                     const ext = img.url_imagem.split('.').pop()?.split('?')[0] || 'jpg';
                     imagesToDownload.push({
                         url: img.url_imagem,

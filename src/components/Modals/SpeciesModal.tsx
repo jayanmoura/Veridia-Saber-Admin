@@ -59,7 +59,13 @@ export const uploadImages = async (
 
     // Sanitize species name for folder path (consistent with user request)
     const sanitizedSpeciesName = options.speciesName
-        ? options.speciesName.trim().replace(/\s+/g, '_').toLowerCase()
+        ? options.speciesName
+            .trim()
+            .normalize('NFD')                    // decompõe acentos (ê → e + ̂)
+            .replace(/[\u0300-\u036f]/g, '')     // remove os diacríticos
+            .replace(/[^a-zA-Z0-9\s_-]/g, '')   // remove outros caracteres especiais
+            .replace(/\s+/g, '_')               // substitui espaços por _
+            .toLowerCase()
         : 'sem_nome';
 
     for (const file of files) {
@@ -103,22 +109,24 @@ export const uploadImages = async (
  * Extract storage path and bucket from full URL
  * Supports both 'imagens-plantas' (global) and 'arquivos-gerais' (project) buckets
  */
-export const extractStorageInfo = (url: string): { bucket: string; path: string } | null => {
+export const extractStorageInfo = (urlStr: string): { bucket: string; path: string } | null => {
     try {
-        // Check for imagens-plantas bucket
-        const imagensMatch = url.match(/\/imagens-plantas\/(.+)$/);
-        if (imagensMatch) {
-            return { bucket: 'imagens-plantas', path: imagensMatch[1] };
-        }
+        const url = new URL(urlStr);
 
-        // Check for arquivos-gerais bucket
-        const arquivosMatch = url.match(/\/arquivos-gerais\/(.+)$/);
-        if (arquivosMatch) {
-            return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
-        }
+        const imagensMatch = url.pathname.match(/\/imagens-plantas\/(.+)$/);
+        if (imagensMatch) return { bucket: 'imagens-plantas', path: imagensMatch[1] };
+
+        const arquivosMatch = url.pathname.match(/\/arquivos-gerais\/(.+)$/);
+        if (arquivosMatch) return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
 
         return null;
     } catch {
+        const imagensMatch = urlStr.match(/\/imagens-plantas\/(.+?)(?:\?.*)?$/);
+        if (imagensMatch) return { bucket: 'imagens-plantas', path: imagensMatch[1] };
+
+        const arquivosMatch = urlStr.match(/\/arquivos-gerais\/(.+?)(?:\?.*)?$/);
+        if (arquivosMatch) return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
+
         return null;
     }
 };
@@ -178,6 +186,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     const [existingImages, setExistingImages] = useState<{ id: string; url_imagem: string; creditos: string | null }[]>([]);
     const [editedCredits, setEditedCredits] = useState<{ [id: string]: string }>({});
     const [dragActive, setDragActive] = useState(false);
+    const isSubmitting = useRef(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form state (global species data)
@@ -199,7 +208,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     const [localData, setLocalData] = useState<{
         id?: number; // Tombo Number
         descricao_ocorrencia: string;
-        detalhes_localizacao: string;
         latitude: string;
         longitude: string;
         // New Herbarium Fields
@@ -211,7 +219,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         habitat_ecologia: string;
     }>({
         descricao_ocorrencia: '',
-        detalhes_localizacao: '',
         latitude: '',
         longitude: '',
         determinador: '',
@@ -398,7 +405,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 });
                 setLocalData({
                     descricao_ocorrencia: '',
-                    detalhes_localizacao: '',
                     latitude: '',
                     longitude: '',
                     determinador: '',
@@ -473,7 +479,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         if (!localId) {
             setLocalData({
                 descricao_ocorrencia: '',
-                detalhes_localizacao: '',
                 latitude: '',
                 longitude: '',
                 determinador: '',
@@ -489,14 +494,14 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         try {
             const { data, error } = await supabase
                 .from('especie_local')
-                .select('id, descricao_ocorrencia, details_localizacao:detalhes_localizacao, latitude, longitude, determinador, data_determinacao, coletor, numero_coletor, morfologia, habitat_ecologia')
+                .select('id, descricao_ocorrencia, latitude, longitude, determinador, data_determinacao, coletor, numero_coletor, morfologia, habitat_ecologia')
                 .eq('especie_id', speciesId)
                 .eq('local_id', localId)
                 .maybeSingle();
 
             if (error && error.code !== 'PGRST116') { // PGRST116 is "relation does not exist" or similar, which we handle by setting empty data
                 console.error('Error fetching local data:', error);
-                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
+                setLocalData({ descricao_ocorrencia: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
                 return;
             }
 
@@ -504,7 +509,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 setLocalData({
                     id: data.id,
                     descricao_ocorrencia: data.descricao_ocorrencia || '',
-                    detalhes_localizacao: data.details_localizacao || '',
                     latitude: data.latitude ? String(data.latitude) : '',
                     longitude: data.longitude ? String(data.longitude) : '',
                     determinador: data.determinador || '',
@@ -515,11 +519,11 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                     habitat_ecologia: data.habitat_ecologia || ''
                 });
             } else {
-                setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
+                setLocalData({ descricao_ocorrencia: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
             }
         } catch (err) {
             console.error('Erro ao carregar dados locais:', err);
-            setLocalData({ descricao_ocorrencia: '', detalhes_localizacao: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
+            setLocalData({ descricao_ocorrencia: '', latitude: '', longitude: '', determinador: '', data_determinacao: '', coletor: '', numero_coletor: '', morfologia: '', habitat_ecologia: '' });
         }
     };
 
@@ -569,13 +573,17 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
 
         if (!formData.nome_cientifico.trim()) {
             alert('O nome científico é obrigatório.');
+            isSubmitting.current = false;
             return;
         }
         if (!formData.familia_id) {
             alert('Selecione uma família.');
+            isSubmitting.current = false;
             return;
         }
 
@@ -682,7 +690,6 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                             especie_id: speciesId,
                             local_id: effectiveLocalId,
                             descricao_ocorrencia: localData.descricao_ocorrencia?.trim() || null,
-                            detalhes_localizacao: localData.detalhes_localizacao?.trim() || null,
                             latitude: localData.latitude ? parseFloat(localData.latitude) : null,
                             longitude: localData.longitude ? parseFloat(localData.longitude) : null,
                             determinador: localData.determinador?.trim() || null,
@@ -759,6 +766,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
             alert(error.message || 'Erro ao salvar espécie.');
         } finally {
             setLoading(false);
+            isSubmitting.current = false;
         }
     };
 
@@ -1196,32 +1204,48 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                         )}
 
                                         {/* Upload area */}
-                                        <div
-                                            className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragActive
-                                                ? 'border-emerald-500 bg-emerald-50'
-                                                : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
-                                                }`}
-                                            onDragEnter={handleDrag}
-                                            onDragLeave={handleDrag}
-                                            onDragOver={handleDrag}
-                                            onDrop={handleDrop}
-                                            onClick={() => fileInputRef.current?.click()}
-                                        >
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                multiple
-                                                onChange={handleFileInput}
-                                                className="hidden"
-                                            />
-
-                                            <div className="flex flex-col items-center gap-2 text-gray-500">
-                                                <Upload size={24} className="text-emerald-600" />
-                                                <p className="text-sm font-medium">Arraste imagens ou clique para selecionar</p>
-                                                <p className="text-xs text-gray-400">PNG, JPG - Múltiplos arquivos permitidos</p>
-                                            </div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs text-gray-500">Adicionar novas imagens:</p>
+                                            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                {existingImages.length + imageFiles.length}/3 fotos
+                                            </span>
                                         </div>
+
+                                        {(existingImages.length + imageFiles.length) >= 3 ? (
+                                            <div className="p-4 border-2 border-dashed border-amber-200 bg-amber-50 rounded-xl text-center">
+                                                <p className="text-sm font-medium text-amber-700 flex items-center justify-center gap-2">
+                                                    ⚠️ Máximo de 3 fotos atingido
+                                                </p>
+                                                <p className="text-xs text-amber-600 mt-1">Remova uma foto para poder adicionar novas.</p>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragActive
+                                                    ? 'border-emerald-500 bg-emerald-50'
+                                                    : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
+                                                    }`}
+                                                onDragEnter={handleDrag}
+                                                onDragLeave={handleDrag}
+                                                onDragOver={handleDrag}
+                                                onDrop={handleDrop}
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleFileInput}
+                                                    className="hidden"
+                                                />
+
+                                                <div className="flex flex-col items-center gap-2 text-gray-500">
+                                                    <Upload size={24} className="text-emerald-600" />
+                                                    <p className="text-sm font-medium">Arraste imagens ou clique para selecionar</p>
+                                                    <p className="text-xs text-gray-400">PNG, JPG (Máx. 3 no total)</p>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* New image previews */}
                                         {imagePreviews.length > 0 && (

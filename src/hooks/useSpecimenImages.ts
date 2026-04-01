@@ -139,15 +139,20 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
     }, []);
 
     // Extract storage info from URL
-    const extractStorageInfo = (url: string): { bucket: string; path: string } | null => {
+    const extractStorageInfo = (urlStr: string): { bucket: string; path: string } | null => {
         try {
-            // Specimen images are always in archives-gerais
-            const arquivosMatch = url.match(/\/arquivos-gerais\/(.+)$/);
-            if (arquivosMatch) {
-                return { bucket: 'arquivos-gerais', path: arquivosMatch[1] };
+            const url = new URL(urlStr);
+            const match = url.pathname.match(/\/arquivos-gerais\/(.+)$/);
+            if (match) {
+                return { bucket: 'arquivos-gerais', path: match[1] };
             }
             return null;
         } catch {
+            // fallback para URL relativa ou malformada
+            const match = urlStr.match(/\/arquivos-gerais\/(.+?)(?:\?.*)?$/);
+            if (match) {
+                return { bucket: 'arquivos-gerais', path: match[1] };
+            }
             return null;
         }
     };

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Search, Loader2, MapPin, User, FileText, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
@@ -56,6 +56,7 @@ export function SpecimenModal({
     // Images Hook
     const images = useSpecimenImages();
     const [advancedOpen, setAdvancedOpen] = useState(false);
+    const isSubmitting = useRef(false);
 
     // Setup initial state
     // Setup initial state
@@ -165,74 +166,78 @@ export function SpecimenModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
 
-        if (formData.coletor && formData.numero_coletor && formData.local_id) {
-            try {
-                const { count } = await supabase
-                    .from('especie_local')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('coletor', formData.coletor)
-                    .eq('numero_coletor', formData.numero_coletor)
-                    .eq('local_id', formData.local_id)
-                    .neq('id', specimenId || -1);
+        try {
+            if (formData.coletor && formData.numero_coletor && formData.local_id) {
+                try {
+                    const { count } = await supabase
+                        .from('especie_local')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('coletor', formData.coletor)
+                        .eq('numero_coletor', formData.numero_coletor)
+                        .eq('local_id', formData.local_id)
+                        .neq('id', specimenId || -1);
 
-                if (count && count > 0) {
-                    if (!window.confirm(`Atenção: Já existe um espécime com Coletor "${formData.coletor}" e Número "${formData.numero_coletor}" neste local. Deseja salvar mesmo assim?`)) {
-                        return;
+                    if (count && count > 0) {
+                        if (!window.confirm(`Atenção: Já existe um espécime com Coletor "${formData.coletor}" e Número "${formData.numero_coletor}" neste local. Deseja salvar mesmo assim?`)) {
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error checking duplicates", err);
+                }
+            }
+
+            // 1. Save Specimen Data
+            const savedId = await onSave(null);
+            if (!savedId) return;
+
+            // 2. Upload Images (if new images exist)
+            if (formData.local_id) {
+                // Upload new images
+                if (images.imageFiles.length > 0) {
+                    const uploadResults = await images.uploadImages(savedId, {
+                        localId: parseInt(formData.local_id || '0'),
+                        institutionId: formData.institution_id || null
+                    });
+
+                    if (uploadResults.length > 0) {
+                        const imageRecords = uploadResults.map(result => ({
+                            especime_id: savedId,
+                            especie_id: null,           // Explícito: não é imagem de espécie global
+                            url_imagem: result.url,
+                            creditos: result.credits || null,
+                            local_id: parseInt(formData.local_id || '0'),
+                            institution_id: formData.institution_id || null,
+                        }));
+
+                        await supabase.from('imagens').insert(imageRecords);
                     }
                 }
-            } catch (err) {
-                console.error("Error checking duplicates", err);
-            }
-        }
 
-        // 1. Save Specimen Data
-        const savedId = await onSave(null);
-        if (!savedId) return;
+                // Update credits for existing images
+                const creditUpdates = Object.entries(images.editedCredits)
+                    .filter(([imgId, newCredits]) => {
+                        const original = images.existingImages.find(img => img.id === imgId);
+                        return original && (original.creditos || '') !== newCredits;
+                    })
+                    .map(([imgId, newCredits]) =>
+                        supabase
+                            .from('imagens')
+                            .update({ creditos: newCredits || null })
+                            .eq('id', imgId)
+                    );
 
-        // 2. Upload Images (if new images exist)
-
-
-        if (formData.local_id) {
-            // Upload new images
-            if (images.imageFiles.length > 0) {
-                const uploadResults = await images.uploadImages(savedId, {
-                    localId: parseInt(formData.local_id || '0'),
-                    institutionId: formData.institution_id || null
-                });
-
-                if (uploadResults.length > 0) {
-                    const imageRecords = uploadResults.map(result => ({
-                        especime_id: savedId,
-                        especie_id: null,           // Explícito: não é imagem de espécie global
-                        url_imagem: result.url,
-                        creditos: result.credits || null,
-                        local_id: parseInt(formData.local_id || '0'),
-                        institution_id: formData.institution_id || null,
-                    }));
-
-                    await supabase.from('imagens').insert(imageRecords);
+                if (creditUpdates.length > 0) {
+                    await Promise.all(creditUpdates);
                 }
             }
-
-            // Update credits for existing images
-            const creditUpdates = Object.entries(images.editedCredits)
-                .filter(([imgId, newCredits]) => {
-                    const original = images.existingImages.find(img => img.id === imgId);
-                    return original && (original.creditos || '') !== newCredits;
-                })
-                .map(([imgId, newCredits]) =>
-                    supabase
-                        .from('imagens')
-                        .update({ creditos: newCredits || null })
-                        .eq('id', imgId)
-                );
-
-            if (creditUpdates.length > 0) {
-                await Promise.all(creditUpdates);
-            }
+            onClose();
+        } finally {
+            isSubmitting.current = false;
         }
-        onClose();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -394,7 +399,7 @@ export function SpecimenModal({
                                     )}
                                 </div>
 
-                                {/* Coordinates - Inside Section 1 */}
+                                {/* Coordinates and Location details */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="block text-sm font-medium text-gray-700">Latitude</label>
@@ -418,6 +423,17 @@ export function SpecimenModal({
                                             onChange={handleChange}
                                             placeholder="-45.678901"
                                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1 md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700">Detalhes de Localização</label>
+                                        <textarea
+                                            name="detalhes_localizacao"
+                                            value={formData.detalhes_localizacao}
+                                            onChange={handleChange}
+                                            rows={2}
+                                            placeholder="Ex: Próximo à trilha principal, lado norte do rio..."
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
                                         />
                                     </div>
                                 </div>

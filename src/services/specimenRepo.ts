@@ -96,8 +96,15 @@ export const specimenRepo = {
                 // URL format example: .../arquivos-gerais/locais/123/especimes/456/image.jpg
                 const pathsToDelete = images
                     .map(img => {
-                        const match = img.url_imagem.match(/\/arquivos-gerais\/(.+)$/);
-                        return match ? match[1] : null;
+                        try {
+                            const url = new URL(img.url_imagem);
+                            const match = url.pathname.match(/\/arquivos-gerais\/(.+)$/);
+                            return match ? match[1] : null;
+                        } catch {
+                            // fallback para URL relativa ou malformada
+                            const match = img.url_imagem.match(/\/arquivos-gerais\/(.+?)(?:\?.*)?$/);
+                            return match ? match[1] : null;
+                        }
                     })
                     .filter((path): path is string => path !== null);
 

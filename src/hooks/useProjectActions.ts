@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
@@ -145,6 +145,8 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
     // Users for Gestor select
     const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
+    const isSubmittingCreate = useRef(false);
+    const isSubmittingEdit = useRef(false);
 
     // Fetch users when modal opens
     useEffect(() => {
@@ -232,6 +234,9 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             return;
         }
 
+        if (isSubmittingCreate.current) return;
+        isSubmittingCreate.current = true;
+
         setNewProjectLoading(true);
         try {
             // Get institution_id: prefer profile's, fallback to default
@@ -306,6 +311,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             }
         } finally {
             setNewProjectLoading(false);
+            isSubmittingCreate.current = false;
         }
     }, [formData, imageFile, profile, showToast, resetNewForm, onSuccess]);
 
@@ -333,6 +339,9 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             showToast('Nome, Sigla e Tipo são obrigatórios.', 'error');
             return;
         }
+
+        if (isSubmittingEdit.current) return;
+        isSubmittingEdit.current = true;
 
         setEditLoading(true);
         try {
@@ -408,6 +417,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             showToast(error.message || 'Erro ao atualizar projeto.', 'error');
         } finally {
             setEditLoading(false);
+            isSubmittingEdit.current = false;
         }
     }, [selectedProject, editFormData, editImageFile, showToast, onSuccess]);
 

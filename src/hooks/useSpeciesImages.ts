@@ -132,14 +132,27 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
     }, []);
 
     const handleFiles = useCallback((files: File[]) => {
-        const imageFilesOnly = files.filter(f => f.type.startsWith('image/'));
+        const currentTotal = existingImages.length + imageFiles.length;
+        const availableSlots = 3 - currentTotal;
+
+        if (availableSlots <= 0) {
+            alert('Atenção: Limite máximo de 3 fotos de capa atingido para esta espécie.');
+            return;
+        }
+
+        const imageFilesOnly = files.filter(f => f.type.startsWith('image/')).slice(0, availableSlots);
+
+        if (files.length > availableSlots) {
+            alert(`Apenas as primeiras ${availableSlots} imagens foram adicionadas (limite de 3).`);
+        }
+
         const newPreviews = imageFilesOnly.map(file => URL.createObjectURL(file));
         const defaultCredits = imageFilesOnly.map(() => 'Fotografado por ');
 
         setImageFiles(prev => [...prev, ...imageFilesOnly]);
         setImagePreviews(prev => [...prev, ...newPreviews]);
         setNewImageCredits(prev => [...prev, ...defaultCredits]);
-    }, []);
+    }, [existingImages.length, imageFiles.length]);
 
     const removeNewImage = useCallback((index: number) => {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
@@ -206,7 +219,13 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         const results: { url: string; credits: string }[] = [];
 
         const sanitizedSpeciesName = options.speciesName
-            ? options.speciesName.trim().replace(/\s+/g, '_').toLowerCase()
+            ? options.speciesName
+                .trim()
+                .normalize('NFD')                    // decompõe acentos (ê → e + ̂)
+                .replace(/[\u0300-\u036f]/g, '')     // remove os diacríticos
+                .replace(/[^a-zA-Z0-9\s_-]/g, '')   // remove outros caracteres especiais
+                .replace(/\s+/g, '_')               // substitui espaços por _
+                .toLowerCase()
             : 'sem_nome';
 
         for (let i = 0; i < imageFiles.length; i++) {

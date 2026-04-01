@@ -283,21 +283,7 @@ export function SpeciesDataTab({
                             />
                         </div>
 
-                        {/* Detalhes Localização - Apenas para Gestor de Acervo */}
-                        {userRole === 'Gestor de Acervo' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Detalhes Localização (Ref. Geográfica)
-                                </label>
-                                <textarea
-                                    value={localData?.detalhes_localizacao || ''}
-                                    onChange={(e) => onLocalDataChange?.((prev: any) => ({ ...prev, detalhes_localizacao: e.target.value }))}
-                                    rows={2}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-white"
-                                    placeholder="Ex: Na entrada do P1, segue em direção ao lago..."
-                                />
-                            </div>
-                        )}
+
                     </div>
                 </section>
             )}

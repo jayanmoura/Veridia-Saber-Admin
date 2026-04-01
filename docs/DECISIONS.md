@@ -195,12 +195,63 @@ A tela `Overview.tsx` renderiza **visões diferentes por role**, implementando u
 
 ### RLS com Funções SECURITY DEFINER
 
-As políticas RLS utilizam funções auxiliares `is_staff()` e `is_admin()` com `SECURITY DEFINER`, o que significa que executam com privilégios do owner (não do caller), evitando recursão em policies.
+As políticas RLS utilizam funções auxiliares `is_staff()` e `is_admin()` com
+`SECURITY DEFINER`, executando com privilégios do owner para evitar recursão.
 
-Padrão obrigatório do projeto:
+**Padrão obrigatório do projeto:**
 - Sempre `DROP POLICY IF EXISTS` antes de `CREATE POLICY`
 - Nunca usar `FOR ALL` — separar em `SELECT`, `INSERT`, `UPDATE`, `DELETE`
-- Usar `(SELECT auth.uid())` ao invés de `auth.uid()` diretamente (evita re-execução)
+- Usar `(SELECT auth.uid())` em vez de `auth.uid()` diretamente (evita re-execução via initplan)
+
+---
+
+#### ⚠️ Bug Conhecido: Inconsistência de Roles nas Funções RLS
+
+**Problema:** A coluna `profiles.role` armazena **nomes de exibição**
+(ex: `'Curador Mestre'`, `'Gestor de Acervo'`), mas as funções `is_admin()` e
+`is_staff()` originais checavam os identificadores técnicos em lowercase
+(ex: `'super_admin'`, `'admin'`). Isso fazia com que as funções **sempre
+retornassem false** para todos os usuários, bloqueando operações de escrita e
+exclusão com erro 403.
+
+**Causa raiz:** Divergência entre o schema técnico planejado e o que foi
+efetivamente armazenado no banco durante o desenvolvimento inicial.
+
+**Correção aplicada em `is_staff()`** (migration anterior): a função foi
+atualizada para incluir os nomes de exibição:
+```sql
+role IN (
+  'super_admin', 'admin', 'catalogador', 'curador', 'coordenador',
+  'Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'
+)
+```
+
+**Pendência — `is_admin()`:** ainda usa apenas os identificadores técnicos
+(`'super_admin'`, `'admin'`), continuando quebrada. A correção está pendente
+na próxima migration (`003_fix_especie_local_delete.sql`), que também corrige
+a policy de DELETE da tabela `especie_local` para usar `is_staff()`.
+
+---
+
+#### Regras de Exclusão e Escopo por `local_id` (pendência de implementação)
+
+As regras de negócio para exclusão estão definidas (ver README), mas a RLS
+atual **não valida o escopo por `local_id`**. Hoje a policy de DELETE de
+`especie_local` usa apenas:
+```sql
+USING ( (SELECT is_admin()) OR (created_by = (SELECT auth.uid())) )
+```
+
+O que está incorreto por dois motivos:
+1. `is_admin()` está quebrada (retorna sempre false)
+2. Não valida se um `admin` com `local_id NOT NULL` (Gestor de Acervo) pertence
+   ao mesmo projeto que o registro sendo deletado
+
+**Implementação completa do escopo por `local_id` está planejada para a
+migration `003_fix_especie_local_delete.sql`**, que deverá incluir:
+- Correção de `is_admin()` para reconhecer nomes de exibição
+- Policy de DELETE com validação de `local_id` para Gestores de Acervo
+- Policy de DELETE restrita a `created_by` para Taxonomistas
 
 ---
 

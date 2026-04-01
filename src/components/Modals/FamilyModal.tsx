@@ -48,6 +48,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
     const [isChecking, setIsChecking] = useState(false);
     const [duplicateError, setDuplicateError] = useState<string | null>(null);
     const [similarFamilies, setSimilarFamilies] = useState<string[]>([]);
+    const isSubmitting = useRef(false);
     const checkTimeout = useRef<any>(null);
 
     // Tab Interface
@@ -196,14 +197,18 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
 
         if (!formData.familia_nome.trim()) {
             alert('O nome da família é obrigatório.');
+            isSubmitting.current = false;
             return;
         }
 
         if (duplicateError) {
             alert("Corrija o erro de nome duplicado antes de salvar.");
+            isSubmitting.current = false;
             return;
         }
 
@@ -251,6 +256,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             alert(error.message || 'Erro ao salvar família.');
         } finally {
             setLoading(false);
+            isSubmitting.current = false;
         }
     };
 
@@ -340,7 +346,10 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                                 alt="Preview"
                                                 className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
                                             />
-                                            <p className="text-sm text-gray-500">Clique ou arraste para substituir</p>
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-sm font-medium text-emerald-600">Imagem selecionada</p>
+                                                <p className="text-xs text-gray-400">Clique ou arraste para substituir</p>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -348,7 +357,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                                 <Upload size={28} />
                                             </div>
                                             <p className="text-sm font-medium">Arraste uma imagem ou clique para selecionar</p>
-                                            <p className="text-xs text-gray-400">PNG, JPG até 5MB</p>
+                                            <p className="text-xs text-gray-400">PNG, JPG até 5MB (Capa única)</p>
                                         </div>
                                     )}
                                 </div>

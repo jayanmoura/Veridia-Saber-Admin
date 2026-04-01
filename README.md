@@ -98,7 +98,13 @@ src/
 
 ## Papéis de Usuário (RBAC)
 
-O sistema utiliza controle de acesso baseado em papéis (Role-Based Access Control). A combinação entre a coluna `role` e a presença ou ausência de `local_id` na tabela de perfis determina o escopo de atuação do usuário.
+O sistema utiliza controle de acesso baseado em papéis (Role-Based Access Control).
+A combinação entre a coluna `role` e a presença ou ausência de `local_id` na tabela
+de perfis determina o escopo de atuação do usuário.
+
+> ⚠️ Os valores de `role` armazenados no banco são os **nomes de exibição**
+> (ex: `'Curador Mestre'`), não os identificadores técnicos (ex: `'super_admin'`).
+> As funções RLS `is_staff()` e `is_admin()` devem sempre refletir isso.
 
 | Role Técnica | Nome de Exibição | Escopo | Permissões |
 |---|---|---|---|
@@ -109,7 +115,24 @@ O sistema utiliza controle de acesso baseado em papéis (Role-Based Access Contr
 | `catalogador` (`local_id NOT NULL`) | Taxonomista de Campo | Local (projeto) | Cadastro e edição de espécies e espécimes no projeto vinculado |
 | — | Consulente | Somente leitura | Visualização de espécies, espécimes e relatórios públicos |
 
-> ⚠️ A coluna `local_id` referencia a tabela `locais` (projetos). Quando `NULL`, o usuário tem acesso global; quando preenchida, o acesso é restrito ao projeto correspondente.
+> ⚠️ A coluna `local_id` referencia a tabela `locais` (projetos). Quando `NULL`,
+> o usuário tem acesso global; quando preenchida, o acesso é restrito ao projeto
+> correspondente.
+
+### Regras de Exclusão (DELETE)
+
+As permissões de exclusão de espécies e espécimes seguem o escopo de cada role.
+A aplicação dessas regras no banco depende das políticas RLS nas tabelas `especie`
+e `especie_local`.
+
+| Role | Nome de Exibição | Exclui espécies? | Exclui espécimes? | Restrição |
+|---|---|---|---|---|
+| `super_admin` | Curador Mestre | ✅ Sim | ✅ Sim | Nenhuma — escopo global |
+| `admin` (`local_id = NULL`) | Coordenador Científico | ✅ Sim | ✅ Sim | Apenas dados do banco global do Veridia Saber |
+| `admin` (`local_id NOT NULL`) | Gestor de Acervo | ✅ Sim | ✅ Sim | Apenas dados do projeto vinculado (`local_id`) |
+| `catalogador` (`local_id = NULL`) | Taxonomista Sênior | ✅ Próprias | ✅ Próprios | Somente registros que ele mesmo criou (`created_by`) |
+| `catalogador` (`local_id NOT NULL`) | Taxonomista de Campo | ✅ Próprias | ✅ Próprios | Somente registros que ele mesmo criou (`created_by`), dentro do projeto vinculado |
+| — | Consulente | ❌ Não | ❌ Não | Sem permissão de exclusão |
 
 ## Conceitos de Domínio
 
