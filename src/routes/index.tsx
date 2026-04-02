@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import React, { Suspense, lazy } from 'react';
+import React, { lazy } from 'react';
 import LandingPage from '../pages/landingpage/LandingPage';
 import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
