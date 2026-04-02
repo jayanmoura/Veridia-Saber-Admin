@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       devOptions: {
-        enabled: true // Habilita o SW em modo de desenvolvimento
+        enabled: false // Desabilitado em dev para evitar latência de interceptação de requests
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB

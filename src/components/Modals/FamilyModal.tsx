@@ -266,7 +266,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50"
                 onClick={onClose}
             />
 
@@ -377,7 +377,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                             setFormData(prev => ({ ...prev, familia_nome: newName }));
                                             checkFamilyName(newName);
                                         }}
-                                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${duplicateError
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-colors ${duplicateError
                                             ? 'border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50'
                                             : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
                                             }`}
@@ -417,7 +417,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                         type="text"
                                         value={formData.autoria_taxonomica || ''}
                                         onChange={(e) => setFormData(prev => ({ ...prev, autoria_taxonomica: e.target.value }))}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                                         placeholder="Ex: Juss., R.Br."
                                     />
                                     <p className="mt-1 text-xs text-gray-500">
@@ -435,7 +435,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                     value={formData.caracteristicas || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, caracteristicas: e.target.value }))}
                                     rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none"
                                     placeholder="Descreva as características principais..."
                                 />
                             </div>
@@ -449,7 +449,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                     value={formData.descricao_familia || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, descricao_familia: e.target.value }))}
                                     rows={4}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none"
                                     placeholder="Informações detalhadas sobre a família..."
                                 />
                             </div>
@@ -463,7 +463,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                     value={formData.fonte_referencia || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, fonte_referencia: e.target.value }))}
                                     rows={3}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none"
                                     placeholder="Ex: Flora do Brasil 2020&#10;Lorenzi, H. - Árvores Brasileiras&#10;APG IV (2016)"
                                 />
                             </div>
@@ -477,7 +477,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                                     value={formData.link_referencia || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, link_referencia: e.target.value }))}
                                     rows={2}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none font-mono text-sm"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none font-mono text-sm"
                                     placeholder="Insira um link por linha..."
                                 />
                             </div>

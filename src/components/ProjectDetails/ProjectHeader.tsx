@@ -90,7 +90,7 @@ export function ProjectHeader({
                         </div>
                     )}
                     {project.tipo && (
-                        <div className="absolute top-3 right-3 px-3 py-1.5 bg-white/90 backdrop-blur-sm shadow-sm rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                        <div className="absolute top-3 right-3 px-3 py-1.5 bg-white shadow-sm rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5">
                             {isInstituicao(project.tipo) ? <Building2 size={14} /> : <Trees size={14} />}
                             {formatTipo(project.tipo)}
                         </div>

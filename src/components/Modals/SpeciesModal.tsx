@@ -1,3 +1,4 @@
+import { compressImage, compressForListing } from '../../utils/imageCompressor';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
@@ -54,8 +55,8 @@ export const uploadImages = async (
         projectId: string | null;
         speciesName: string;
     }
-): Promise<string[]> => {
-    const urls: string[] = [];
+): Promise<{ url: string; thumbnailUrl: string | null; microUrl: string | null }[]> => {
+    const results: { url: string; thumbnailUrl: string | null; microUrl: string | null }[] = [];
 
     // Sanitize species name for folder path (consistent with user request)
     const sanitizedSpeciesName = options.speciesName
@@ -99,10 +100,37 @@ export const uploadImages = async (
             .from(bucket)
             .getPublicUrl(filePath);
 
-        urls.push(publicUrl);
+        // Generate and upload thumbnails (non-critical)
+        let thumbnailUrl: string | null = null;
+        let microUrl: string | null = null;
+        try {
+            const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+            const base = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.[^.]+$/, '.jpg');
+
+            const [thumbFile, microFile] = await Promise.all([
+                compressImage(file),
+                compressForListing(file),
+            ]);
+
+            const [thumbResult, microResult] = await Promise.all([
+                supabase.storage.from(bucket).upload(`${dir}/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
+                supabase.storage.from(bucket).upload(`${dir}/micro/${base}`, microFile, { contentType: 'image/jpeg' }),
+            ]);
+
+            if (!thumbResult.error) {
+                thumbnailUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/thumbs/${base}`).data.publicUrl;
+            }
+            if (!microResult.error) {
+                microUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/micro/${base}`).data.publicUrl;
+            }
+        } catch {
+            // Thumbnails are non-critical; original is safely uploaded
+        }
+
+        results.push({ url: publicUrl, thumbnailUrl, microUrl });
     }
 
-    return urls;
+    return results;
 };
 
 /**
@@ -729,9 +757,11 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 });
 
                 // Insert image references WITH local_id for project scope
-                const imageRecords = imageUrls.map(url => ({
+                const imageRecords = imageUrls.map(result => ({
                     especie_id: speciesId,
-                    url_imagem: url,
+                    url_imagem: result.url,
+                    url_thumbnail: result.thumbnailUrl || null,
+                    url_micro: result.microUrl || null,
                     local_id: effectiveLocalId, // Required for project images!
                     institution_id: profile?.institution_id || null,
                 }));
@@ -776,7 +806,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50"
                 onClick={onClose}
             />
 
@@ -831,7 +861,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                 <select
                                                     value={formData.familia_id}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, familia_id: e.target.value }))}
-                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
                                                     required
                                                     disabled={shouldLockGlobalFields}
                                                 >
@@ -850,7 +880,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         <select
                                                             value={formData.local_id || ''}
                                                             onChange={(e) => setFormData(prev => ({ ...prev, local_id: e.target.value }))}
-                                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
+                                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors bg-white"
                                                         >
                                                             <option value="">Veridia Saber BD (Global)</option>
                                                             {locais.map(loc => (
@@ -880,7 +910,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         onChange={(e) => !shouldLockGlobalFields && handleNameChange(e.target.value)}
                                                         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                                                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                                        className={`flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder={isProjectUser ? "Digite para buscar ou criar nova..." : "Ex: Justicia brandegeeana"}
                                                         required
                                                         readOnly={shouldLockGlobalFields}
@@ -945,7 +975,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                     type="text"
                                                     value={formData.nome_popular || ''}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, nome_popular: e.target.value }))}
-                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                     placeholder="Ex: Camarão-vermelho"
                                                     readOnly={shouldLockGlobalFields}
                                                 />
@@ -958,7 +988,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                     type="text"
                                                     value={formData.autor || ''}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, autor: e.target.value }))}
-                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-serif italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors font-serif italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                     placeholder="Ex: L., Vell., Mart."
                                                     readOnly={shouldLockGlobalFields}
                                                 />
@@ -978,7 +1008,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                             value={formData.descricao_especie || ''}
                                             onChange={(e) => setFormData(prev => ({ ...prev, descricao_especie: e.target.value }))}
                                             rows={4}
-                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             placeholder="Descreva as características morfológicas, habitat natural, curiosidades..."
                                             readOnly={shouldLockGlobalFields}
                                         />
@@ -999,7 +1029,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                     value={localData.descricao_ocorrencia}
                                                     onChange={(e) => setLocalData(prev => ({ ...prev, descricao_ocorrencia: e.target.value }))}
                                                     rows={3}
-                                                    className="w-full px-4 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none bg-emerald-50/30"
+                                                    className="w-full px-4 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none bg-emerald-50/30"
                                                     placeholder="Texto descritivo sobre como a espécie ocorre neste local específico. Esta informação será exibida no aplicativo."
                                                 />
                                             </div>
@@ -1058,7 +1088,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                             type="text"
                                                             value={localData.latitude}
                                                             onChange={(e) => setLocalData(prev => ({ ...prev, latitude: e.target.value }))}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors text-sm"
                                                             placeholder="-23.550520"
                                                         />
                                                     </div>
@@ -1070,7 +1100,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                             type="text"
                                                             value={localData.longitude}
                                                             onChange={(e) => setLocalData(prev => ({ ...prev, longitude: e.target.value }))}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors text-sm"
                                                             placeholder="-46.633308"
                                                         />
                                                     </div>
@@ -1098,7 +1128,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         value={formData.cuidados_luz || ''}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, cuidados_luz: e.target.value }))}
                                                         rows={3}
-                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder="Ex: Meia-sombra a sol pleno. Evitar luz direta intensa nas horas mais quentes do dia."
                                                         readOnly={shouldLockGlobalFields}
                                                     />
@@ -1111,7 +1141,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         value={formData.cuidados_agua || ''}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, cuidados_agua: e.target.value }))}
                                                         rows={3}
-                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder="Ex: Moderada. Manter o solo úmido mas não encharcado. Reduzir no inverno."
                                                         readOnly={shouldLockGlobalFields}
                                                     />
@@ -1124,7 +1154,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         value={formData.cuidados_temperatura || ''}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, cuidados_temperatura: e.target.value }))}
                                                         rows={3}
-                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder="Ex: 18°C a 28°C. Sensível a geadas. Proteger em invernos rigorosos."
                                                         readOnly={shouldLockGlobalFields}
                                                     />
@@ -1137,7 +1167,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         value={formData.cuidados_substrato || ''}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, cuidados_substrato: e.target.value }))}
                                                         rows={3}
-                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder="Ex: Rico em matéria orgânica, bem drenado."
                                                         readOnly={shouldLockGlobalFields}
                                                     />
@@ -1150,7 +1180,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                                                         value={formData.cuidados_nutrientes || ''}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, cuidados_nutrientes: e.target.value }))}
                                                         rows={3}
-                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                                         placeholder="Ex: Adubar na primavera e verão com NPK balanceado."
                                                         readOnly={shouldLockGlobalFields}
                                                     />

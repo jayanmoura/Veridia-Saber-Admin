@@ -291,7 +291,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50">
@@ -313,7 +313,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
                                 <button
                                     key={p}
                                     onClick={() => setPeriod(p)}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${period === p
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${period === p
                                         ? 'bg-cyan-600 text-white'
                                         : 'text-gray-600 hover:bg-gray-100'
                                         }`}
@@ -398,7 +398,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
                                                     </span>
                                                     <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
+                                                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-colors duration-500"
                                                             style={{ width: `${(day.active_users / maxActiveUsers) * 100}%` }}
                                                         />
                                                     </div>

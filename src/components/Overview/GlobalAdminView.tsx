@@ -72,7 +72,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                 <div className="relative">
                     <button
                         onClick={() => setIsBetaTestersModalOpen(true)}
-                        className="absolute -top-8 right-0 text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 hover:underline transition-all"
+                        className="absolute -top-8 right-0 text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 hover:underline transition-colors"
                     >
                         <Plus size={14} /> Adicionar Beta Tester
                     </button>
@@ -91,7 +91,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                         {profile?.role === 'Curador Mestre' && (
                             <NavLink
                                 to="/conteudo-didatico"
-                                className="flex flex-col items-center justify-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-all group"
+                                className="flex flex-col items-center justify-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-colors group"
                             >
                                 <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                     <BookOpen className="text-emerald-600" size={24} />
@@ -104,7 +104,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                         {profile?.role === 'Curador Mestre' && (
                             <div
                                 onClick={handleAuditClick}
-                                className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-all group cursor-pointer"
+                                className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-colors group cursor-pointer"
                             >
                                 <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                     <Shield className="text-indigo-600" size={24} />
@@ -118,7 +118,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                             <>
                                 <NavLink
                                     to="/mapa-global"
-                                    className="flex flex-col items-center justify-center p-6 bg-teal-50 border border-teal-100 rounded-xl hover:shadow-md transition-all group"
+                                    className="flex flex-col items-center justify-center p-6 bg-teal-50 border border-teal-100 rounded-xl hover:shadow-md transition-colors group"
                                 >
                                     <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                         <Globe className="text-teal-600" size={24} />
@@ -129,7 +129,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
 
                                 <NavLink
                                     to="/mapa-projetos"
-                                    className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-all group"
+                                    className="flex flex-col items-center justify-center p-6 bg-indigo-50 border border-indigo-100 rounded-xl hover:shadow-md transition-colors group"
                                 >
                                     <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                         <MapIcon className="text-indigo-600" size={24} />
@@ -140,7 +140,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
 
                                 <NavLink
                                     to="/specimens-inspection"
-                                    className="flex flex-col items-center justify-center p-6 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition-all group"
+                                    className="flex flex-col items-center justify-center p-6 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition-colors group"
                                 >
                                     <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                         <Eye className="text-amber-600" size={24} />
@@ -151,7 +151,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
 
                                 <button
                                     onClick={() => setIsAnalyticsModalOpen(true)}
-                                    className="flex flex-col items-center justify-center p-6 bg-cyan-50 border border-cyan-100 rounded-xl hover:shadow-md transition-all group"
+                                    className="flex flex-col items-center justify-center p-6 bg-cyan-50 border border-cyan-100 rounded-xl hover:shadow-md transition-colors group"
                                 >
                                     <div className="p-3 bg-white rounded-full mb-3 group-hover:scale-110 transition-transform">
                                         <BarChart3 className="text-cyan-600" size={24} />
@@ -204,7 +204,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
 
             {/* Access Denied Modal */}
             {showAccessDeniedModal && createPortal(
-                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <div className="flex flex-col items-center text-center">
                             <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-4">

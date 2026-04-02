@@ -434,7 +434,7 @@ export default function Specimens() {
                                         <td className="px-6 py-4">
                                             {item.imagens && item.imagens.length > 0 ? (
                                                 <img
-                                                    src={item.imagens[0].url_imagem}
+                                                    src={item.imagens[0].url_micro || item.imagens[0].url_thumbnail || item.imagens[0].url_imagem}
                                                     alt={item.especie?.nome_cientifico}
                                                     className="w-10 h-10 rounded-lg object-cover border border-gray-200"
                                                 />

@@ -356,6 +356,32 @@ O produto é apresentado institucionalmente como uma **ferramenta de botânica s
 
 ---
 
+## 11. Sistema de Thumbnails para Imagens Botânicas
+
+O sistema preserva a imagem original em resolução completa (dado científico) e gera versões otimizadas para exibição:
+
+| Versão | Resolução | Qualidade | Campo DB | Uso |
+|--------|-----------|-----------|----------|-----|
+| Original | Resolução completa da câmera | Sem compressão | `url_imagem` | Inspeção científica (PhotoGalleryModal) |
+| Thumbnail | 1200px max width | JPEG 85% | `url_thumbnail` | Modais e visualizações médias |
+| Micro | 300px max width | JPEG 70% | `url_micro` | Listagens em tabela (SpeciesTable, Specimens) |
+
+A compressão é feita no frontend via Canvas API (`src/utils/imageCompressor.ts`) antes do upload. Os três arquivos são salvos no mesmo bucket, com thumbnails em subpasta `thumbs/` e micros em `micro/`.
+
+Componentes de listagem usam fallback: `url_micro || url_thumbnail || url_imagem` para compatibilidade com imagens antigas.
+
+---
+
+## 12. Otimizações de Performance do Painel Admin (Abril 2026)
+
+1. **React.lazy + Suspense**: 13 páginas admin convertidas para lazy loading. Leaflet, TipTap, jsPDF e Framer Motion só carregam quando a rota é acessada.
+2. **Remoção de backdrop-blur**: Substituído por fundos opacos em ~30 componentes para reduzir jank de GPU.
+3. **transition-all → propriedades específicas**: Trocado por transition-colors, transition-[transform,colors,box-shadow] conforme o contexto em ~15 arquivos.
+4. **Service Worker desabilitado em dev**: `devOptions: { enabled: false }` no vite.config.ts.
+5. **Feedback de upload com etapas**: Modal mostra "Comprimindo..." → "Enviando..." → "Salvando..." com spinner, botões escondidos e modal bloqueado durante o processo.
+
+---
+
 ## Como manter este documento
 
 - Atualizar sempre que uma decisão arquitetural ou de negócio relevante for tomada

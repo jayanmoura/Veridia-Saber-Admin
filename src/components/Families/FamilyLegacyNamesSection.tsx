@@ -223,7 +223,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
                     {legacyNames.map((item) => (
                         <div
                             key={item.id}
-                            className={`flex items-start justify-between p-3 bg-white border rounded-lg transition-all hover:shadow-sm ${editingId === item.id ? 'border-emerald-500 ring-1 ring-emerald-100' : 'border-gray-100'
+                            className={`flex items-start justify-between p-3 bg-white border rounded-lg transition-colors hover:shadow-sm ${editingId === item.id ? 'border-emerald-500 ring-1 ring-emerald-100' : 'border-gray-100'
                                 }`}
                         >
                             <div className="space-y-1">

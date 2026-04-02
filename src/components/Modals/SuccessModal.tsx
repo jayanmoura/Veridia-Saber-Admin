@@ -36,7 +36,7 @@ export function SuccessModal({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-all duration-300"
+                className="absolute inset-0 bg-gray-900/60 transition-opacity duration-300"
                 onClick={onClose}
             />
 
@@ -69,7 +69,7 @@ export function SuccessModal({
                     {/* Action */}
                     <button
                         onClick={onClose}
-                        className={`w-full py-3.5 text-white rounded-2xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl ${buttonBg}`}
+                        className={`w-full py-3.5 text-white rounded-2xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-[transform,colors,box-shadow] shadow-xl ${buttonBg}`}
                     >
                         {buttonText || defaultButtonText}
                     </button>

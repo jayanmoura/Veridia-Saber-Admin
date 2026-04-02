@@ -87,7 +87,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
     if (!isOpen || !specimen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50">
@@ -373,7 +373,7 @@ function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRo
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50">

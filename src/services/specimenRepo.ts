@@ -16,7 +16,7 @@ export const specimenRepo = {
                     autor,
                     nome_popular,
                     familia:familia_id(id, familia_nome),
-                    imagens(url_imagem)
+                    imagens(url_imagem, url_thumbnail)
                 ),
                 locais:local_id (
                     id,
@@ -25,8 +25,9 @@ export const specimenRepo = {
                     longitude,
                     institution_id
                 ),
-                imagens:imagens!imagens_especime_id_fkey(url_imagem)
-            `);
+                imagens:imagens!imagens_especime_id_fkey(url_micro, url_thumbnail, url_imagem)
+            `)
+            .limit(1, { foreignTable: 'imagens' });
 
         if (filters.localId) {
             query = query.eq('local_id', filters.localId);

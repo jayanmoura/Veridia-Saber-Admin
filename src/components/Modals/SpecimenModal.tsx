@@ -56,66 +56,69 @@ export function SpecimenModal({
     // Images Hook
     const images = useSpecimenImages();
     const [advancedOpen, setAdvancedOpen] = useState(false);
+    const [uploadStage, setUploadStage] = useState<'idle' | 'compressing' | 'uploading' | 'saving'>('idle');
     const isSubmitting = useRef(false);
 
-    // Setup initial state
-    // Setup initial state
+    // Setup initial state; reset when modal closes
     useEffect(() => {
-        if (isOpen) {
-            if (specimenId) {
-                // Edit mode
-                images.loadExistingImages(specimenId);
-                if (initialSpeciesName) setSelectedSpeciesName(initialSpeciesName);
-                if (initialProjectName) setSelectedProjectName(initialProjectName);
-            } else {
-                // New mode
-                setSpeciesSearch('');
-                setProjectSearch('');
-                // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails)
-                if (!formData.especie_id) setSelectedSpeciesName('');
+        if (!isOpen) {
+            images.reset();
+            return;
+        }
 
-                // Auto-fill project for users with local_id
-                if (profile?.local_id) {
-                    // Fetch project details to get name and institution
-                    // We define this as an async IIFE to process inside the effect
-                    (async () => {
-                        try {
-                            const { data: localData } = await supabase
-                                .from('locais')
-                                .select('id, nome, institution_id')
-                                .eq('id', profile.local_id)
-                                .single();
+        if (specimenId) {
+            // Edit mode
+            images.loadExistingImages(specimenId);
+            if (initialSpeciesName) setSelectedSpeciesName(initialSpeciesName);
+            if (initialProjectName) setSelectedProjectName(initialProjectName);
+        } else {
+            // New mode
+            setSpeciesSearch('');
+            setProjectSearch('');
+            // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails)
+            if (!formData.especie_id) setSelectedSpeciesName('');
 
-                            if (localData) {
-                                setFormData(prev => ({
-                                    ...prev,
-                                    local_id: localData.id.toString(),
-                                    institution_id: localData.institution_id
-                                }));
-                                setSelectedProjectName(localData.nome);
-                            }
-                        } catch (err) {
-                            console.error("Error fetching user project:", err);
+            // Auto-fill project for users with local_id
+            if (profile?.local_id) {
+                // Fetch project details to get name and institution
+                // We define this as an async IIFE to process inside the effect
+                (async () => {
+                    try {
+                        const { data: localData } = await supabase
+                            .from('locais')
+                            .select('id, nome, institution_id')
+                            .eq('id', profile.local_id)
+                            .single();
+
+                        if (localData) {
+                            setFormData(prev => ({
+                                ...prev,
+                                local_id: localData.id.toString(),
+                                institution_id: localData.institution_id
+                            }));
+                            setSelectedProjectName(localData.nome);
                         }
-                    })();
-                } else {
-                    if (!formData.local_id) {
-                        setSelectedProjectName('');
-                        setProjectOptions([]);
-                    } else if (initialProjectName) {
-                        setSelectedProjectName(initialProjectName);
+                    } catch (err) {
+                        console.error("Error fetching user project:", err);
                     }
+                })();
+            } else {
+                if (!formData.local_id) {
+                    setSelectedProjectName('');
+                    setProjectOptions([]);
+                } else if (initialProjectName) {
+                    setSelectedProjectName(initialProjectName);
                 }
-
-                // Sets Defaults
-                setFormData(prev => ({
-                    ...prev,
-                    coletor: prev.coletor || profile?.full_name || '',
-                    determinador: prev.determinador || profile?.full_name || '',
-                    data_determinacao: prev.data_determinacao || new Date().toISOString().split('T')[0]
-                }));
-                images.reset();
             }
+
+            // Sets Defaults
+            setFormData(prev => ({
+                ...prev,
+                coletor: prev.coletor || profile?.full_name || '',
+                determinador: prev.determinador || profile?.full_name || '',
+                data_determinacao: prev.data_determinacao || new Date().toISOString().split('T')[0]
+            }));
+            images.reset();
         }
     }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId]);
 
@@ -198,16 +201,21 @@ export function SpecimenModal({
             if (formData.local_id) {
                 // Upload new images
                 if (images.imageFiles.length > 0) {
+                    setUploadStage('uploading');
                     const uploadResults = await images.uploadImages(savedId, {
                         localId: parseInt(formData.local_id || '0'),
-                        institutionId: formData.institution_id || null
+                        institutionId: formData.institution_id || null,
+                        onStageChange: setUploadStage,
                     });
 
                     if (uploadResults.length > 0) {
+                        setUploadStage('saving');
                         const imageRecords = uploadResults.map(result => ({
                             especime_id: savedId,
                             especie_id: null,           // Explícito: não é imagem de espécie global
                             url_imagem: result.url,
+                            url_thumbnail: result.thumbnailUrl || null,
+                            url_micro: result.microUrl || null,
                             creditos: result.credits || null,
                             local_id: parseInt(formData.local_id || '0'),
                             institution_id: formData.institution_id || null,
@@ -237,6 +245,7 @@ export function SpecimenModal({
             onClose();
         } finally {
             isSubmitting.current = false;
+            setUploadStage('idle');
         }
     };
 
@@ -249,7 +258,7 @@ export function SpecimenModal({
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/50" onClick={uploadStage === 'idle' && !loading ? onClose : undefined} />
 
             {/* Modal Container */}
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -264,7 +273,11 @@ export function SpecimenModal({
                             {isEdit ? 'Atualize os dados da exsicata' : 'Registre uma nova ocorrência no acervo'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/80 rounded-lg transition-colors">
+                    <button
+                        onClick={onClose}
+                        disabled={uploadStage !== 'idle' || loading}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/80 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
                         <X size={20} />
                     </button>
                 </div>
@@ -410,7 +423,7 @@ export function SpecimenModal({
                                             value={formData.latitude}
                                             onChange={handleChange}
                                             placeholder="-12.345678"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -422,7 +435,7 @@ export function SpecimenModal({
                                             value={formData.longitude}
                                             onChange={handleChange}
                                             placeholder="-45.678901"
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
                                         />
                                     </div>
                                     <div className="space-y-1 md:col-span-2">
@@ -433,7 +446,7 @@ export function SpecimenModal({
                                             onChange={handleChange}
                                             rows={2}
                                             placeholder="Ex: Próximo à trilha principal, lado norte do rio..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors resize-none"
                                         />
                                     </div>
                                 </div>
@@ -449,11 +462,11 @@ export function SpecimenModal({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="block text-sm font-medium text-gray-700">Coletor</label>
-                                    <input type="text" name="coletor" value={formData.coletor} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+                                    <input type="text" name="coletor" value={formData.coletor} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-sm font-medium text-gray-700">Número Coletor</label>
-                                    <input type="text" name="numero_coletor" value={formData.numero_coletor} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+                                    <input type="text" name="numero_coletor" value={formData.numero_coletor} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-sm font-medium text-gray-700">Determinador</label>
@@ -463,13 +476,13 @@ export function SpecimenModal({
                                         value={formData.determinador}
                                         onChange={handleChange}
                                         readOnly={!isAdmin}
-                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${!isAdmin ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                                        className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors ${!isAdmin ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-sm font-medium text-gray-700">Data Determinação</label>
                                     <div className="relative">
-                                        <input type="date" name="data_determinacao" value={formData.data_determinacao} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+                                        <input type="date" name="data_determinacao" value={formData.data_determinacao} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" />
                                         {/* Optional: could add calendar icon absolute right */}
                                     </div>
                                 </div>
@@ -501,7 +514,7 @@ export function SpecimenModal({
                                             value={formData.morfologia}
                                             onChange={handleChange}
                                             rows={2}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors resize-none"
                                             placeholder="Descrição morfológica do espécime..."
                                         />
                                     </div>
@@ -512,7 +525,7 @@ export function SpecimenModal({
                                             value={formData.habitat_ecologia}
                                             onChange={handleChange}
                                             rows={2}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors resize-none"
                                             placeholder="Descrição do ambiente..."
                                         />
                                     </div>
@@ -556,23 +569,37 @@ export function SpecimenModal({
                 </form>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={loading || !formData.especie_id || !formData.local_id || !formData.institution_id}
-                        title={!formData.institution_id ? "Projeto sem instituição vinculada - veja acima" : ""}
-                        className="px-5 py-2.5 bg-[#064E3B] text-white rounded-lg hover:bg-[#053829] transition-colors flex items-center justify-center gap-2 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : (isEdit ? 'Salvar Alterações' : 'Criar Espécime')}
-                    </button>
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50 min-h-[76px]">
+                    {uploadStage !== 'idle' ? (
+                        <div className="flex items-center gap-2.5 text-emerald-700">
+                            <Loader2 size={18} className="animate-spin text-emerald-600 shrink-0" />
+                            <span className="text-sm font-medium">
+                                {uploadStage === 'compressing' ? 'Comprimindo imagens...' :
+                                 uploadStage === 'uploading' ? 'Enviando imagens...' :
+                                 'Salvando dados...'}
+                            </span>
+                        </div>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={loading}
+                                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={loading || !formData.especie_id || !formData.local_id || !formData.institution_id}
+                                title={!formData.institution_id ? "Projeto sem instituição vinculada - veja acima" : ""}
+                                className="px-5 py-2.5 bg-[#064E3B] text-white rounded-lg hover:bg-[#053829] transition-colors flex items-center justify-center gap-2 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : (isEdit ? 'Salvar Alterações' : 'Criar Espécime')}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>,

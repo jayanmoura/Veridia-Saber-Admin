@@ -148,7 +148,7 @@ export function LocalAdminView({
                 <div className="relative z-10 p-8 flex flex-col justify-end min-h-[200px]">
                     <div className="max-w-2xl">
                         {projectData?.tipo && (
-                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full mb-3 uppercase tracking-wider">
+                            <span className="inline-block px-3 py-1 bg-white/20 text-white text-xs font-medium rounded-full mb-3 uppercase tracking-wider">
                                 {projectData.tipo === 'instituicao' ? '🏛️ Instituição' : '🌳 Lugar Público'}
                             </span>
                         )}
@@ -178,7 +178,7 @@ export function LocalAdminView({
                     Ações Rápidas
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <NavLink to="/species" className="flex items-center gap-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-all group">
+                    <NavLink to="/species" className="flex items-center gap-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition-colors group">
                         <div className="p-3 bg-white rounded-full group-hover:scale-110 transition-transform">
                             <Plus className="text-emerald-600" size={20} />
                         </div>
@@ -190,7 +190,7 @@ export function LocalAdminView({
 
                     <button
                         onClick={() => { fetchLocalFamilies(); setIsLocalFamiliesModalOpen(true); }}
-                        className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition-all group text-left"
+                        className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition-colors group text-left"
                     >
                         <div className="p-3 bg-white rounded-full group-hover:scale-110 transition-transform">
                             <TreeDeciduous className="text-amber-600" size={20} />
@@ -203,7 +203,7 @@ export function LocalAdminView({
 
                     <button
                         onClick={openEditProjectModal}
-                        className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl hover:shadow-md transition-all group text-left"
+                        className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl hover:shadow-md transition-colors group text-left"
                     >
                         <div className="p-3 bg-white rounded-full group-hover:scale-110 transition-transform">
                             <Pencil className="text-blue-600" size={20} />
@@ -295,7 +295,7 @@ export function LocalAdminView({
 
             {/* Local Families Modal */}
             {isLocalFamiliesModalOpen && createPortal(
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <h3 className="font-bold text-gray-800">Famílias do Projeto</h3>
@@ -330,7 +330,7 @@ export function LocalAdminView({
 
             {/* Edit Project Modal */}
             {isEditProjectModalOpen && createPortal(
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-fade-in-up">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <h3 className="font-bold text-gray-800">Editar Projeto</h3>
@@ -378,7 +378,7 @@ export function LocalAdminView({
                                             onChange={(e) => setEditDescription(e.target.value)}
                                             rows={4}
                                             placeholder="Descreva seu projeto, instituição ou local..."
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none"
                                         />
                                     </div>
                                 </div>

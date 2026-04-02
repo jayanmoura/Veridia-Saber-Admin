@@ -9,6 +9,8 @@ export interface Species {
     } | null;
     imagens?: {
         url_imagem: string;
+        url_thumbnail?: string | null;
+        url_micro?: string | null;
     }[] | null;
     created_at?: string;
     // Add other fields as needed mainly for reading
@@ -58,6 +60,8 @@ export interface Specimen {
     // Joined Data (from Images)
     imagens?: {
         url_imagem: string;
+        url_thumbnail?: string | null;
+        url_micro?: string | null;
     }[];
 }
 

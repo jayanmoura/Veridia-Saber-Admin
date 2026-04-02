@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,8 +16,8 @@ export function DashboardLayout() {
             <Sidebar />
 
             {/* Main Content Wrapper - Added margin-left to account for fixed sidebar */}
-            <div className="flex-1 ml-64 flex flex-col min-h-screen transition-all duration-300">
-                <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-40 flex items-center justify-between px-8 shadow-sm/50 backdrop-blur-sm bg-white/90">
+            <div className="flex-1 ml-64 flex flex-col min-h-screen transition-[margin-left] duration-300">
+                <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-40 flex items-center justify-between px-8 shadow-sm">
                     <div className="flex items-center gap-2">
                         <span className="text-gray-400 font-light">/</span>
                         <h2 className="text-sm font-medium text-gray-700">Visão Geral</h2>
@@ -40,7 +40,13 @@ export function DashboardLayout() {
 
                 <main className="flex-1 p-8">
                     <div className="max-w-7xl mx-auto animate-fade-in-up">
-                        <Outlet />
+                        <Suspense fallback={
+                            <div className="h-96 flex items-center justify-center">
+                                <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        }>
+                            <Outlet />
+                        </Suspense>
                     </div>
                 </main>
             </div>

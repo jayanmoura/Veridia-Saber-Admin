@@ -66,7 +66,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, onGenerateRepo
 
                 {/* Tipo Badge */}
                 {project.tipo && (
-                    <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 flex items-center gap-1.5 shadow-sm">
+                    <div className="absolute top-3 left-3 px-2.5 py-1 bg-white rounded-full text-xs font-medium text-gray-700 flex items-center gap-1.5 shadow-sm">
                         {isInstituicao(project.tipo) ? <Building2 size={12} /> : <Trees size={12} />}
                         {formatTipo(project.tipo)}
                     </div>
@@ -82,21 +82,21 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, onGenerateRepo
                 <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                         onClick={onGenerateReport}
-                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-gray-600 hover:text-blue-600 transition-colors"
+                        className="p-2 bg-white rounded-lg shadow-sm text-gray-600 hover:text-blue-600 transition-colors"
                         title="Gerar Relatório"
                     >
                         <FileText size={14} />
                     </button>
                     <button
                         onClick={onEdit}
-                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-gray-600 hover:text-indigo-600 transition-colors"
+                        className="p-2 bg-white rounded-lg shadow-sm text-gray-600 hover:text-indigo-600 transition-colors"
                         title="Editar"
                     >
                         <Pencil size={14} />
                     </button>
                     <button
                         onClick={onDelete}
-                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-gray-600 hover:text-red-600 transition-colors"
+                        className="p-2 bg-white rounded-lg shadow-sm text-gray-600 hover:text-red-600 transition-colors"
                         title="Excluir"
                     >
                         <Trash2 size={14} />

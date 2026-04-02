@@ -1,18 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import Login from '../pages/admin/Login';
-import Overview from '../pages/admin/Overview';
-import Users from '../pages/admin/Users';
-import Families from '../pages/admin/Families';
-import Species from '../pages/admin/Species';
-import Projects from '../pages/admin/Projects';
-import Specimens from '../pages/admin/Specimens';
-import SpecimensInspection from '../pages/admin/SpecimensInspection';
-import ProjectDetails from '../pages/admin/ProjectDetails';
-import EducationalContent from '../pages/admin/EducationalContent';
-import AuditLogs from '../pages/admin/AuditLogs';
-import ProjectMap from '../pages/admin/ProjectMap';
-import GlobalMap from '../pages/admin/GlobalMap';
-import { ProjectMapViz } from '../components/Maps/ProjectMapViz';
+import React, { Suspense, lazy } from 'react';
 import LandingPage from '../pages/landingpage/LandingPage';
 import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
@@ -20,7 +7,21 @@ import Disclaimer from '../pages/landingpage/Disclaimer';
 import EmailConfirmed from '../pages/landingpage/EmailConfirmed';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
-import React from 'react';
+
+const Login = lazy(() => import('../pages/admin/Login'));
+const Overview = lazy(() => import('../pages/admin/Overview'));
+const Users = lazy(() => import('../pages/admin/Users'));
+const Families = lazy(() => import('../pages/admin/Families'));
+const Species = lazy(() => import('../pages/admin/Species'));
+const Projects = lazy(() => import('../pages/admin/Projects'));
+const Specimens = lazy(() => import('../pages/admin/Specimens'));
+const SpecimensInspection = lazy(() => import('../pages/admin/SpecimensInspection'));
+const ProjectDetails = lazy(() => import('../pages/admin/ProjectDetails'));
+const EducationalContent = lazy(() => import('../pages/admin/EducationalContent'));
+const AuditLogs = lazy(() => import('../pages/admin/AuditLogs'));
+const ProjectMap = lazy(() => import('../pages/admin/ProjectMap'));
+const GlobalMap = lazy(() => import('../pages/admin/GlobalMap'));
+const ProjectMapViz = lazy(() => import('../components/Maps/ProjectMapViz').then(m => ({ default: m.ProjectMapViz })));
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { session, loading, profile } = useAuth();

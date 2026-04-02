@@ -414,7 +414,7 @@ export default function EducationalContent() {
             </div>
 
             {isModalOpen && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-bold text-gray-900">
@@ -495,7 +495,7 @@ export default function EducationalContent() {
 
             {isDeleteModalOpen && itemToDelete && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeDeleteModal} />
+                    <div className="absolute inset-0 bg-black/50" onClick={closeDeleteModal} />
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
                         <div className="flex justify-center mb-4">
                             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
@@ -541,7 +541,7 @@ export default function EducationalContent() {
             )}
 
             {isFilesModalOpen && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <div className="flex items-center gap-3">
@@ -575,7 +575,7 @@ export default function EducationalContent() {
                                         <button
                                             key={pasta}
                                             onClick={() => openFolder(pasta)}
-                                            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-all group"
+                                            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-colors group"
                                         >
                                             <Folder size={40} className="text-gray-300 group-hover:text-emerald-500 mb-3 transition-colors" />
                                             <span className="font-semibold text-gray-700">{pasta}</span>
@@ -607,11 +607,11 @@ export default function EducationalContent() {
                                                 <div 
                                                     key={file.id} 
                                                     onClick={() => toggleFileSelection(file.name)}
-                                                    className={`bg-white rounded-lg overflow-hidden group relative aspect-square cursor-pointer transition-all border-2 ${
+                                                    className={`bg-white rounded-lg overflow-hidden group relative aspect-square cursor-pointer transition-colors border-2 ${
                                                         selectedFiles.has(file.name) ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500 ring-offset-1' : 'border-gray-200 hover:border-emerald-300'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-2 left-2 z-10 w-6 h-6 rounded flex items-center justify-center transition-all ${
+                                                    <div className={`absolute top-2 left-2 z-10 w-6 h-6 rounded flex items-center justify-center transition-colors ${
                                                         selectedFiles.has(file.name) ? 'bg-emerald-500 border-none' : 'bg-white/80 border border-gray-300 opacity-0 group-hover:opacity-100'
                                                     }`}>
                                                         {selectedFiles.has(file.name) && <Check size={14} className="text-white" />}

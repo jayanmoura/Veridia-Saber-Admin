@@ -23,7 +23,7 @@ export function PendingCuratorshipModal({ isOpen, onClose, items, onFix }: Pendi
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Overlay */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-black/50 transition-opacity"
                 onClick={onClose}
             />
 
@@ -98,7 +98,7 @@ export function PendingCuratorshipModal({ isOpen, onClose, items, onFix }: Pendi
                                         {/* Ação (Direita) */}
                                         <button
                                             onClick={() => onFix(item)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all font-semibold text-sm ml-4"
+                                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors font-semibold text-sm ml-4"
                                             title="Corrigir Registro"
                                         >
                                             <Pencil size={16} /> <span className="hidden sm:inline">Corrigir</span>

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { compressImage, compressForListing } from '../utils/imageCompressor';
 
 // ============ TYPES ============
 export interface ExistingImage {
@@ -30,7 +31,7 @@ export interface UseSpeciesImagesReturn {
     handleFiles: (files: File[]) => void;
     removeNewImage: (index: number) => void;
     handleDeleteExistingImage: (imageId: string, imageUrl: string) => Promise<void>;
-    uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string }[]>;
+    uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null }[]>;
     loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
     setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     setNewImageCredits: React.Dispatch<React.SetStateAction<string[]>>;
@@ -41,6 +42,7 @@ export interface UploadOptions {
     isCreatingNewGlobalSpecies: boolean;
     projectId: string | null;
     speciesName: string;
+    onStageChange?: (stage: 'compressing' | 'uploading') => void;
 }
 
 /**
@@ -79,6 +81,10 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
 
     // Load existing images for a species
     const loadExistingImages = useCallback(async (speciesId: string, localId: string | null) => {
+        // Clear stale images immediately so previous species' images don't flash
+        setExistingImages([]);
+        setEditedCredits({});
+
         let query = supabase
             .from('imagens')
             .select('id, url_imagem, creditos')
@@ -215,8 +221,8 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
     const uploadImages = useCallback(async (
         speciesId: string,
         options: UploadOptions
-    ): Promise<{ url: string; credits: string }[]> => {
-        const results: { url: string; credits: string }[] = [];
+    ): Promise<{ url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null }[]> => {
+        const results: { url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null }[] = [];
 
         const sanitizedSpeciesName = options.speciesName
             ? options.speciesName
@@ -245,6 +251,7 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
                 filePath = `locais/${options.projectId}/imagens/${sanitizedSpeciesName}/${timestamp}_${randomSuffix}.${fileExt}`;
             }
 
+            options.onStageChange?.('uploading');
             const { error } = await supabase.storage
                 .from(bucket)
                 .upload(filePath, file);
@@ -255,10 +262,42 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
                 .from(bucket)
                 .getPublicUrl(filePath);
 
+            // Generate and upload thumbnails (non-critical — failure does not abort the upload)
+            let thumbnailUrl: string | null = null;
+            let microUrl: string | null = null;
+            try {
+                options.onStageChange?.('compressing');
+                const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+                const base = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.[^.]+$/, '.jpg');
+
+                const [thumbFile, microFile] = await Promise.all([
+                    compressImage(file),
+                    compressForListing(file),
+                ]);
+
+                options.onStageChange?.('uploading');
+
+                const [thumbResult, microResult] = await Promise.all([
+                    supabase.storage.from(bucket).upload(`${dir}/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
+                    supabase.storage.from(bucket).upload(`${dir}/micro/${base}`, microFile, { contentType: 'image/jpeg' }),
+                ]);
+
+                if (!thumbResult.error) {
+                    thumbnailUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/thumbs/${base}`).data.publicUrl;
+                }
+                if (!microResult.error) {
+                    microUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/micro/${base}`).data.publicUrl;
+                }
+            } catch {
+                // Thumbnails are non-critical; original is safely uploaded
+            }
+
             results.push({
                 url: publicUrl,
-                credits: newImageCredits[i]?.trim() || null
-            } as { url: string; credits: string });
+                credits: newImageCredits[i]?.trim() || null,
+                thumbnailUrl,
+                microUrl,
+            } as { url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null });
         }
 
         return results;

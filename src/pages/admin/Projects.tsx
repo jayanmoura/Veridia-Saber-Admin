@@ -90,7 +90,7 @@ export default function Projects() {
                     <input
                         type="text"
                         placeholder="Buscar projeto..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />

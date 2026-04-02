@@ -55,7 +55,7 @@ interface SpeciesLocation {
         nome_cientifico: string;
         nome_popular: string | null;
         familia?: { familia_nome: string } | null;
-        imagens?: { url_imagem: string }[] | null;
+        imagens?: { url_imagem: string; url_thumbnail?: string | null }[] | null;
         created_by?: string | null; // Who created the species
     } | null;
 }
@@ -280,14 +280,14 @@ export default function ProjectMap() {
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => setMapStyle('light')}
-                            className={`p-1.5 rounded-md transition-all ${mapStyle === 'light' ? 'bg-white shadow' : ''}`}
+                            className={`p-1.5 rounded-md transition-colors ${mapStyle === 'light' ? 'bg-white shadow' : ''}`}
                             title="Claro"
                         >
                             <Layers size={14} />
                         </button>
                         <button
                             onClick={() => setMapStyle('satellite')}
-                            className={`p-1.5 rounded-md transition-all ${mapStyle === 'satellite' ? 'bg-emerald-600 text-white shadow' : ''}`}
+                            className={`p-1.5 rounded-md transition-colors ${mapStyle === 'satellite' ? 'bg-emerald-600 text-white shadow' : ''}`}
                             title="Satélite"
                         >
                             <Layers size={14} />
@@ -335,14 +335,14 @@ export default function ProjectMap() {
             {/* Map */}
             <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0">
                 {loading && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/90">
                         <Loader2 className="animate-spin text-emerald-600" size={40} />
                     </div>
                 )}
 
                 {/* Legend - Only show if user is logged in */}
                 {currentUserId && (
-                    <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+                    <div className="absolute bottom-3 left-3 z-[1000] bg-white rounded-lg shadow-md px-3 py-2 border border-gray-200">
                         <p className="text-xs font-semibold text-gray-700 mb-1.5">Legenda</p>
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
@@ -399,10 +399,10 @@ export default function ProjectMap() {
                             <Popup>
                                 <div className="w-[180px]">
                                     {/* Image on top */}
-                                    {sp.especie?.imagens?.[0]?.url_imagem && (
+                                    {(sp.especie?.imagens?.[0]?.url_thumbnail || sp.especie?.imagens?.[0]?.url_imagem) && (
                                         <div className="w-full aspect-square rounded-t overflow-hidden">
                                             <img
-                                                src={sp.especie.imagens[0].url_imagem}
+                                                src={sp.especie.imagens[0].url_thumbnail || sp.especie.imagens[0].url_imagem}
                                                 alt={sp.especie.nome_cientifico}
                                                 className="w-full h-full object-cover"
                                             />

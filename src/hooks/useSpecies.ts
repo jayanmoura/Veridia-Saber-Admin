@@ -11,7 +11,7 @@ export interface Species {
     nome_popular: string | null;
     familia_id: string;
     familia?: { familia_nome: string };
-    imagens?: { url_imagem: string; local_id?: string | number | null }[];
+    imagens?: { url_imagem: string; url_thumbnail?: string | null; local_id?: string | number | null }[];
     created_at?: string | null;
     created_by?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
@@ -142,7 +142,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     .select(`
                         *,
                         familia (familia_nome),
-                        imagens (url_imagem, local_id),
+                        imagens (url_imagem, url_thumbnail, local_id),
                         especie_local!inner (local_id, descricao_ocorrencia)
                     `, { count: 'exact' })
                     .eq('especie_local.local_id', userLocalId)
@@ -154,7 +154,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     .select(`
                         *,
                         familia (familia_nome),
-                        imagens (url_imagem, local_id),
+                        imagens (url_imagem, url_thumbnail, local_id),
                         especie_local (local_id, descricao_ocorrencia)
                     `, { count: 'exact' })
                     .order('nome_cientifico')

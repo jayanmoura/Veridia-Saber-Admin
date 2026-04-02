@@ -46,21 +46,34 @@ interface SpeciesModalProps {
     initialData?: Species | null;
 }
 
+type UploadStage = 'idle' | 'compressing' | 'uploading' | 'saving';
+
+const STAGE_LABEL: Record<Exclude<UploadStage, 'idle'>, string> = {
+    compressing: 'Comprimindo imagens...',
+    uploading: 'Enviando imagens...',
+    saving: 'Salvando dados...',
+};
+
 export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }: SpeciesModalProps) {
     const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [uploadStage, setUploadStage] = useState<UploadStage>('idle');
 
     // Use extracted hooks
     const form = useSpeciesForm({ initialData, isOpen });
     const images = useSpeciesImages();
 
-    // Load images when editing
+    // Load images when editing; reset when modal closes or species changes
     useEffect(() => {
-        if (isOpen && initialData?.id) {
+        if (!isOpen) {
+            images.reset();
+            return;
+        }
+        if (initialData?.id) {
             const currentLocalId = initialData.local_id || (form.isLocalUser ? profile?.local_id : null);
             images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
             form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null);
-        } else if (isOpen && !initialData) {
+        } else {
             images.reset();
         }
     }, [isOpen, initialData?.id]);
@@ -78,7 +91,10 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
             return;
         }
 
+        const hasNewImages = images.imageFiles.length > 0;
+
         setLoading(true);
+        if (hasNewImages) setUploadStage('saving');
 
         try {
             let speciesId = initialData?.id || (form.isGlobalSpecies ? form.selectedGlobalSpecies?.id : undefined);
@@ -194,19 +210,24 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
 
 
             // Upload new images
-            if (images.imageFiles.length > 0 && speciesId) {
+            if (hasNewImages && speciesId) {
                 const isCreatingNewGlobalSpecies = !form.isGlobalSpecies && !form.isEditingExisting && !effectiveLocalId;
 
+                setUploadStage('uploading');
                 const uploadResults = await images.uploadImages(speciesId, {
                     isCreatingNewGlobalSpecies,
                     projectId: effectiveLocalId,
-                    speciesName: form.formData.nome_cientifico
+                    speciesName: form.formData.nome_cientifico,
+                    onStageChange: setUploadStage,
                 });
 
+                setUploadStage('saving');
                 const imageRecords = uploadResults.map(result => ({
                     especie_id: speciesId,
-                    especime_id: null,           // Explícito: não é imagem de espécime
+                    especime_id: null,
                     url_imagem: result.url,
+                    url_thumbnail: result.thumbnailUrl || null,
+                    url_micro: result.microUrl || null,
                     creditos: result.credits || null,
                     local_id: effectiveLocalId || null,
                     institution_id: profile?.institution_id || null,
@@ -241,6 +262,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
             alert(error.message || 'Erro ao salvar espécie.');
         } finally {
             setLoading(false);
+            setUploadStage('idle');
         }
     };
 
@@ -248,10 +270,10 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            {/* Backdrop */}
+            {/* Backdrop — blocked during upload */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
+                className="absolute inset-0 bg-black/50"
+                onClick={uploadStage === 'idle' && !loading ? onClose : undefined}
             />
 
             {/* Modal */}
@@ -266,7 +288,8 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/80 rounded-lg transition-colors"
+                        disabled={uploadStage !== 'idle' || loading}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/80 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         <X size={20} />
                     </button>
@@ -365,30 +388,39 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     )}
                 </form>
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={loading}
-                        className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        onClick={handleSubmit}
-                        disabled={loading || form.dataLoading}
-                        className="px-5 py-2.5 bg-[#064E3B] text-white rounded-lg hover:bg-[#053829] transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 size={18} className="animate-spin" />
-                                <span>Salvando...</span>
-                            </>
-                        ) : (
-                            <span>{form.isGlobalSpecies ? '🔗 Vincular ao Projeto' : initialData ? 'Salvar Alterações' : 'Criar Espécie'}</span>
-                        )}
-                    </button>
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 min-h-[68px]">
+                    {uploadStage !== 'idle' ? (
+                        <div className="flex items-center gap-2.5 text-emerald-700">
+                            <Loader2 size={18} className="animate-spin text-emerald-600 shrink-0" />
+                            <span className="text-sm font-medium">{STAGE_LABEL[uploadStage]}</span>
+                        </div>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={loading}
+                                className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                onClick={handleSubmit}
+                                disabled={loading || form.dataLoading}
+                                className="px-5 py-2.5 bg-[#064E3B] text-white rounded-lg hover:bg-[#053829] transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        <span>Salvando...</span>
+                                    </>
+                                ) : (
+                                    <span>{form.isGlobalSpecies ? '🔗 Vincular ao Projeto' : initialData ? 'Salvar Alterações' : 'Criar Espécie'}</span>
+                                )}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>,

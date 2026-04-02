@@ -105,7 +105,7 @@ export function ProjectMapViz() {
                 project_name: item.locais?.nome || 'Projeto Desconhecido',
                 project_lat: item.locais?.latitude ? Number(item.locais.latitude) : undefined,
                 project_lng: item.locais?.longitude ? Number(item.locais.longitude) : undefined,
-                image: item.especie?.imagens?.[0]?.url_imagem
+                image: item.especie?.imagens?.[0]?.url_thumbnail || item.especie?.imagens?.[0]?.url_imagem
             }));
 
             setProjects(projectsData || []);
@@ -223,13 +223,13 @@ export function ProjectMapViz() {
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => { setViewMode('projects'); setFocussedProject(null); setMapTarget({ lat: -14.2350, lng: -51.9253, zoom: 4 }); }}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'projects' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'projects' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                             Projetos
                         </button>
                         <button
                             onClick={() => { setViewMode('plants'); setFocussedProject(null); }}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'plants' && !focussedProject ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'plants' && !focussedProject ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                             Todos os Espécimes
                         </button>
@@ -257,7 +257,7 @@ export function ProjectMapViz() {
             {/* Map */}
             <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0">
                 {loading && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/90">
                         <Loader2 className="animate-spin text-emerald-600" size={40} />
                     </div>
                 )}

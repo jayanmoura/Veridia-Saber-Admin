@@ -23,7 +23,7 @@ export function StatCard({ title, value, icon: Icon, color = "emerald", loading 
     return (
         <div
             onClick={onClick}
-            className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between transition-all hover:shadow-md ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
+            className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between transition-[transform,colors,box-shadow] hover:shadow-md ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
         >
             <div>
                 <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>

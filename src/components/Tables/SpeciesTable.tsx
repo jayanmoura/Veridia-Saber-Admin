@@ -6,7 +6,7 @@ export interface SpeciesItem {
     nome_cientifico: string;
     nome_popular: string | null;
     familia?: { familia_nome: string };
-    imagens?: { url_imagem: string }[];
+    imagens?: { url_imagem: string; url_thumbnail?: string | null }[];
     created_by_name?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
@@ -88,7 +88,7 @@ export function SpeciesTable({
                             ))
                         ) : species.length > 0 ? (
                             species.map((specie) => {
-                                const imageUrl = specie.imagens?.[0]?.url_imagem;
+                                const imageUrl = specie.imagens?.[0]?.url_thumbnail || specie.imagens?.[0]?.url_imagem;
 
                                 return (
                                     <tr key={specie.id} className="group hover:bg-gray-50/80 transition-colors">

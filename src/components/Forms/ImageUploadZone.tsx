@@ -54,7 +54,7 @@ export function ImageUploadZone({
         <div className="space-y-4">
             {/* Upload Zone */}
             <div
-                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${disabled
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${disabled
                     ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                     : dragActive
                         ? 'border-emerald-500 bg-emerald-50'

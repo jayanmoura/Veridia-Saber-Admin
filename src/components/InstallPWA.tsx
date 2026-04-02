@@ -48,7 +48,7 @@ export function InstallPWA() {
         <>
             {/* Install Button */}
             <button
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-all bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-emerald-500/25 hover:scale-105 z-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-[transform,colors,box-shadow] bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-emerald-500/25 hover:scale-105 z-50"
                 id="setup_button"
                 aria-label="Instalar App"
                 onClick={() => setShowModal(true)}
@@ -60,7 +60,7 @@ export function InstallPWA() {
             {/* Custom Modal */}
             {showModal && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 animate-fadeIn"
                     onClick={() => setShowModal(false)}
                 >
                     <div
@@ -145,7 +145,7 @@ export function InstallPWA() {
                             <button
                                 onClick={handleInstallClick}
                                 disabled={isInstalling}
-                                className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl transition-all shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl transition-[transform,colors,box-shadow] shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isInstalling ? (
                                     <>

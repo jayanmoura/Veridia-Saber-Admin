@@ -71,7 +71,7 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
             <div className="grid grid-cols-1 gap-6">
                 <button
                     onClick={handleNewSpecies}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white p-6 rounded-xl shadow-sm transition-all transform hover:scale-[1.01] flex flex-col items-center justify-center gap-3 group"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white p-6 rounded-xl shadow-sm transition-[transform,colors,box-shadow] transform hover:scale-[1.01] flex flex-col items-center justify-center gap-3 group"
                 >
                     <div className="p-4 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
                         <Plus size={32} />

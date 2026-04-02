@@ -75,7 +75,7 @@ export function GlobalHeatmap() {
                         nome_cientifico,
                         familia:familia_id(familia_nome),
                         created_by,
-                        imagens(url_imagem)
+                        imagens(url_imagem, url_thumbnail)
                     )
                 `)
                 .not('latitude', 'is', null)
@@ -108,7 +108,7 @@ export function GlobalHeatmap() {
                     family_name: especie?.familia?.familia_nome || 'Sem Família',
                     collector: 'Painel Web',
                     date: item.created_at,
-                    image: especie?.imagens?.[0]?.url_imagem || undefined,
+                    image: especie?.imagens?.[0]?.url_thumbnail || especie?.imagens?.[0]?.url_imagem || undefined,
                     user_id: especie?.created_by || null
                 };
             });
@@ -174,21 +174,21 @@ export function GlobalHeatmap() {
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => setMapStyle('light')}
-                            className={`p-1.5 rounded-md text-xs font-medium transition-all ${mapStyle === 'light' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`p-1.5 rounded-md text-xs font-medium transition-colors ${mapStyle === 'light' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
                             title="Mapa Claro"
                         >
                             <Layers size={14} />
                         </button>
                         <button
                             onClick={() => setMapStyle('dark')}
-                            className={`p-1.5 rounded-md text-xs font-medium transition-all ${mapStyle === 'dark' ? 'bg-gray-800 shadow text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`p-1.5 rounded-md text-xs font-medium transition-colors ${mapStyle === 'dark' ? 'bg-gray-800 shadow text-white' : 'text-gray-500 hover:text-gray-700'}`}
                             title="Mapa Escuro"
                         >
                             <Layers size={14} className="fill-current" />
                         </button>
                         <button
                             onClick={() => setMapStyle('satellite')}
-                            className={`p-1.5 rounded-md text-xs font-medium transition-all ${mapStyle === 'satellite' ? 'bg-green-700 shadow text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`p-1.5 rounded-md text-xs font-medium transition-colors ${mapStyle === 'satellite' ? 'bg-green-700 shadow text-white' : 'text-gray-500 hover:text-gray-700'}`}
                             title="Satélite"
                         >
                             <Layers size={14} />
@@ -223,14 +223,14 @@ export function GlobalHeatmap() {
             {/* Map Container */}
             <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0 animate-fade-in-up delay-75">
                 {loading && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/90">
                         <Loader2 className="animate-spin text-emerald-600" size={40} />
                     </div>
                 )}
 
                 {/* Legend - Only show if user is logged in */}
                 {currentUserId && (
-                    <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+                    <div className="absolute bottom-3 left-3 z-[1000] bg-white rounded-lg shadow-md px-3 py-2 border border-gray-200">
                         <p className="text-xs font-semibold text-gray-700 mb-1.5">Legenda</p>
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">

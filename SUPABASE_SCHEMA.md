@@ -239,10 +239,14 @@ Este documento descreve o schema do banco de dados PostgreSQL hospedado no Supab
 | criado_por | text | YES | - |
 | local_id | bigint | YES | - |
 | **especime_id** | bigint | YES | - |
+| url_thumbnail | text | YES | - |
+| url_micro | text | YES | - |
 
 *Imagens associadas a espécies ou espécimes. Cada imagem pertence exclusivamente a uma espécie OU a um espécime, nunca a ambos.*
 
 > ℹ️ **Constraint CHECK**: `(especie_id IS NOT NULL AND especime_id IS NULL) OR (especie_id IS NULL AND especime_id IS NOT NULL)` — garante que cada imagem esteja vinculada a exatamente uma das duas entidades.
+
+> ℹ️ **Versões otimizadas para exibição.** `url_thumbnail` (1200px, JPEG 85%) para modais. `url_micro` (300px, JPEG 70%) para listagens em tabela. `url_imagem` preserva o original científico.
 
 ---
 

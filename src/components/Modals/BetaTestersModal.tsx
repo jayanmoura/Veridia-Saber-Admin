@@ -92,7 +92,7 @@ export function BetaTestersModal({ isOpen, onClose }: BetaTestersModalProps) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50"
                 onClick={onClose}
             />
 
@@ -128,7 +128,7 @@ export function BetaTestersModal({ isOpen, onClose }: BetaTestersModalProps) {
                                 value={newEmail}
                                 onChange={(e) => setNewEmail(e.target.value)}
                                 placeholder="Email do novo testador..."
-                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-colors"
                                 required
                             />
                         </div>

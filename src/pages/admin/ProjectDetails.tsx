@@ -499,7 +499,7 @@ export default function ProjectDetailsPage() {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && createPortal(
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeleteModal(false)} />
                     <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
@@ -536,7 +536,7 @@ export default function ProjectDetailsPage() {
             {/* Success Modal */}
             {showSuccessModal && createPortal(
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-black/50" />
                     <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center">
                         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="text-green-600" size={32} />

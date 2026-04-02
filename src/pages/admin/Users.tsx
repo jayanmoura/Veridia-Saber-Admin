@@ -518,7 +518,7 @@ export default function Users() {
             {isEditModalOpen && editingUser && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50"
                         onClick={closeEditModal}
                     />
 
@@ -662,7 +662,7 @@ export default function Users() {
             {isDeleteModalOpen && userToDelete && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50"
                         onClick={closeDeleteModal}
                     />
 
@@ -718,7 +718,7 @@ export default function Users() {
             {isInviteModalOpen && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50"
                         onClick={() => setIsInviteModalOpen(false)}
                     />
 

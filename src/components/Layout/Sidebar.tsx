@@ -100,7 +100,7 @@ export function Sidebar() {
     });
 
     return (
-        <aside className="w-64 bg-teal-950 text-white flex flex-col fixed inset-y-0 left-0 z-50 transition-all duration-300 shadow-xl">
+        <aside className="w-64 bg-teal-950 text-white flex flex-col fixed inset-y-0 left-0 z-50 shadow-xl">
             {/* Header with Logo */}
             <div className="h-20 flex items-center px-6 border-b border-teal-800/50 bg-teal-950">
                 <img src={logoIcon} alt="Logo Veridia" className="w-10 h-10 mr-3 rounded-lg" />
@@ -119,7 +119,7 @@ export function Sidebar() {
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
                                 ? 'bg-teal-800 text-white border border-teal-600/30 shadow-sm'
                                 : 'text-gray-200 hover:bg-teal-900 hover:text-white'
                             }`

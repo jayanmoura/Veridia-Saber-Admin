@@ -107,7 +107,7 @@ export default function Login() {
                             <input
                                 type="email"
                                 required
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                                 placeholder="seu@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -122,7 +122,7 @@ export default function Login() {
                             <input
                                 type="password"
                                 required
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                                 placeholder="Sua senha"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -153,7 +153,7 @@ export default function Login() {
                         type="button"
                         onClick={handleGoogleLogin}
                         disabled={loading || googleLoading}
-                        className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 font-medium py-2.5 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 font-medium py-2.5 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {/* Google Icon SVG */}
                         <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
