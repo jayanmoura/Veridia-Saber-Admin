@@ -236,8 +236,12 @@ export function LocalAdminView({
                             {recentLocalSpecies.map((species) => (
                                 <div key={species.id} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
                                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                        {species.imagem_url ? (
-                                            <img src={species.imagem_url} alt={species.nome_cientifico} className="w-full h-full object-cover" />
+                                        {(species.imagem_url || species.imagem_thumbnail || species.imagem_original) ? (
+                                            <img
+                                                src={species.imagem_url || species.imagem_thumbnail || species.imagem_original || ''}
+                                                alt={species.nome_cientifico}
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
                                                 <Leaf size={20} className="text-gray-300" />

@@ -21,6 +21,7 @@ import {
 interface ImageData {
     id: string;
     url_imagem: string;
+    url_thumbnail: string | null;
     creditos: string | null;
     created_at: string;
     especie: {
@@ -94,9 +95,10 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             const { data, error } = await supabase
                 .from('imagens')
                 .select(`
-                    id, 
-                    url_imagem, 
-                    creditos, 
+                    id,
+                    url_imagem,
+                    url_thumbnail,
+                    creditos,
                     created_at, 
                     especie:especie_id(nome_cientifico),
                     especime:especime_id(
@@ -111,6 +113,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             const imageList: ImageData[] = (data || []).map((item: any) => ({
                 id: item.id,
                 url_imagem: item.url_imagem,
+                url_thumbnail: item.url_thumbnail || null,
                 creditos: item.creditos,
                 created_at: item.created_at,
                 especie: item.especie,
@@ -416,7 +419,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
                                     >
                                         <div className="aspect-square bg-gray-100">
                                             <img
-                                                src={img.url_imagem}
+                                                src={img.url_thumbnail || img.url_imagem}
                                                 alt="Foto"
                                                 className="w-full h-full object-cover"
                                                 loading="lazy"
@@ -453,7 +456,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
                             {paginatedFolderNames.map((folderName) => {
                                 const folderImages = groupedImages[folderName];
                                 const isSelected = selectedFolders.has(folderName);
-                                const coverImage = folderImages[0]?.url_imagem;
+                                const coverImage = folderImages[0]?.url_thumbnail || folderImages[0]?.url_imagem;
 
                                 return (
                                     <div

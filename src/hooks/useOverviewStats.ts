@@ -40,7 +40,9 @@ export interface RecentLocalSpecies {
     nome_cientifico: string;
     nome_popular: string | null;
     created_at: string;
-    imagem_url: string | null;
+    imagem_url: string | null;       // url_micro (preferencial)
+    imagem_thumbnail: string | null; // url_thumbnail (fallback)
+    imagem_original: string | null;  // url_imagem (fallback final)
 }
 
 export interface LocalFamily {
@@ -276,7 +278,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         try {
             const { data: recentData } = await supabase
                 .from('especie_local')
-                .select(`created_at, especie:especie_id(id, nome_cientifico, nome_popular, imagens(url_imagem))`)
+                .select(`created_at, especie:especie_id(id, nome_cientifico, nome_popular, imagens(url_imagem, url_thumbnail, url_micro))`)
                 .eq('local_id', profile.local_id)
                 .order('created_at', { ascending: false })
                 .limit(5);
@@ -289,7 +291,9 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                         nome_cientifico: item.especie.nome_cientifico,
                         nome_popular: item.especie.nome_popular || null,
                         created_at: item.created_at,
-                        imagem_url: item.especie.imagens?.[0]?.url_imagem || null
+                        imagem_url: item.especie.imagens?.[0]?.url_micro || null,
+                        imagem_thumbnail: item.especie.imagens?.[0]?.url_thumbnail || null,
+                        imagem_original: item.especie.imagens?.[0]?.url_imagem || null,
                     }));
                 setRecentLocalSpecies(mapped);
             }
