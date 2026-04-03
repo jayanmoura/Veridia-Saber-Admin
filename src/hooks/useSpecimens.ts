@@ -110,7 +110,8 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                 .from('especie_local')
                 .select(`
                     *,
-                    especie:especie_id(nome_cientifico, familia:familia_id(familia_nome), imagens(url_micro, url_thumbnail, url_imagem))
+                    especie:especie_id(nome_cientifico, familia:familia_id(familia_nome)),
+                    imagens:imagens!imagens_especime_id_fkey(url_micro, url_thumbnail, url_imagem)
                 `)
                 .eq('local_id', projectId)
                 .order('created_at', { ascending: false });
@@ -122,9 +123,9 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                 tombo_codigo: item.tombo_codigo, // Ensure it's mapped
                 nome_cientifico: item.especie?.nome_cientifico,
                 familia_nome: item.especie?.familia?.familia_nome,
-                url_imagem: item.especie?.imagens?.[0]?.url_micro
-                    || item.especie?.imagens?.[0]?.url_thumbnail
-                    || item.especie?.imagens?.[0]?.url_imagem
+                url_imagem: item.imagens?.[0]?.url_micro
+                    || item.imagens?.[0]?.url_thumbnail
+                    || item.imagens?.[0]?.url_imagem
             }));
 
             setSpecimens(formatted);
