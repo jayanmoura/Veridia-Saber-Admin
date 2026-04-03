@@ -7,7 +7,9 @@ export interface LinkedSpecies {
     nome_popular: string | null;
     familia_id: number | null;
     familia?: { familia_nome: string } | null;
-    imagem?: string | null;
+    imagem?: string | null;        // url_micro (preferencial para listagem)
+    imagem_thumbnail?: string | null;
+    imagem_original?: string | null;
 }
 
 interface SpeciesTabProps {
@@ -38,9 +40,9 @@ export function SpeciesTab({ species, singleLabelLoading, onGenerateSingleLabel 
                 >
                     <div className="flex items-center gap-3">
                         {/* Cover Image or Placeholder */}
-                        {sp.imagem ? (
+                        {(sp.imagem || sp.imagem_thumbnail || sp.imagem_original) ? (
                             <img
-                                src={sp.imagem}
+                                src={sp.imagem || sp.imagem_thumbnail || sp.imagem_original || ''}
                                 alt={sp.nome_cientifico || 'Espécie'}
                                 className="w-12 h-12 rounded-lg object-cover"
                             />

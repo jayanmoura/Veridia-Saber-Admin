@@ -212,13 +212,17 @@ export function SpecimenModal({
                         setUploadStage('saving');
                         const imageRecords = uploadResults.map(result => ({
                             especime_id: savedId,
-                            especie_id: null,           // Explícito: não é imagem de espécie global
+                            especie_id: null,
                             url_imagem: result.url,
                             url_thumbnail: result.thumbnailUrl || null,
                             url_micro: result.microUrl || null,
                             creditos: result.credits || null,
                             local_id: parseInt(formData.local_id || '0'),
                             institution_id: formData.institution_id || null,
+                            tamanho_original: result.tamanhoOriginal || null,
+                            tamanho_thumbnail: result.tamanhoThumbnail || null,
+                            tamanho_micro: result.tamanhoMicro || null,
+                            tamanho_estimado: false,
                         }));
 
                         await supabase.from('imagens').insert(imageRecords);

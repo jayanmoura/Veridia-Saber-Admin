@@ -30,7 +30,9 @@ export interface LinkedSpecies {
     nome_popular: string | null;
     familia_id: number | null;
     familia?: { familia_nome: string } | null;
-    imagem?: string | null;
+    imagem?: string | null;        // url_micro (preferencial para listagem)
+    imagem_thumbnail?: string | null;
+    imagem_original?: string | null;
 }
 
 export interface LinkedFamily {
@@ -45,7 +47,22 @@ export interface ModalSpecies {
     nome_popular: string | null;
 }
 
-export type TabType = 'users' | 'species' | 'families' | 'specimens';
+export type TabType = 'users' | 'species' | 'families' | 'specimens' | 'storage';
+
+export interface StorageAnalysis {
+    totalImages: number;
+    withMicro: number;
+    withThumbnail: number;
+    withOriginalOnly: number;
+    estimatedCount: number;
+    byMonth: { month: string; count: number }[];
+    estimatedSizeMB: {
+        original: number;
+        thumbnail: number;
+        micro: number;
+        total: number;
+    };
+}
 
 export interface UseProjectDetailsOptions {
     projectId: string | undefined;
@@ -70,6 +87,7 @@ export interface UseProjectDetailsReturn {
     usersCount: number;
     speciesCountTotal: number;
     familiesCount: number;
+    specimensCount: number;
 
     // Pagination
     currentPage: number;
@@ -86,6 +104,11 @@ export interface UseProjectDetailsReturn {
 
     // Actions
     refetch: () => void;
+
+    // Storage
+    storageAnalysis: StorageAnalysis | null;
+    loadingStorage: boolean;
+    fetchStorageAnalysis: () => void;
 
     // Permissions
     isGlobalAdmin: boolean;
@@ -127,10 +150,15 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
     const [usersCount, setUsersCount] = useState(0);
     const [speciesCountTotal, setSpeciesCountTotal] = useState(0);
     const [familiesCount, setFamiliesCount] = useState(0);
+    const [specimensCount, setSpecimensCount] = useState(0);
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+
+    // Storage Analysis States
+    const [storageAnalysis, setStorageAnalysis] = useState<StorageAnalysis | null>(null);
+    const [loadingStorage, setLoadingStorage] = useState(false);
 
     // Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -176,13 +204,21 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
             if (userCount !== null) setUsersCount(userCount);
 
-            // Count Species
+            // Count Species (unique especie_id occurrences used as "species linked")
             const { count: specCount } = await supabase
                 .from('especie_local')
                 .select('*', { count: 'exact', head: true })
                 .eq('local_id', projectId);
 
             if (specCount !== null) setSpeciesCountTotal(specCount);
+
+            // Count Specimens (same table, same filter — kept separate for clarity)
+            const { count: specimensCount } = await supabase
+                .from('especie_local')
+                .select('*', { count: 'exact', head: true })
+                .eq('local_id', projectId);
+
+            if (specimensCount !== null) setSpecimensCount(specimensCount);
 
             // Count Families
             const { data: familyData } = await supabase
@@ -231,12 +267,12 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         .select(`
                             id,
                             especie:especie_id(
-                                id, 
-                                nome_cientifico, 
-                                nome_popular, 
-                                familia_id, 
-                                familia:familia_id(id, familia_nome), 
-                                imagens(url_imagem)
+                                id,
+                                nome_cientifico,
+                                nome_popular,
+                                familia_id,
+                                familia:familia_id(id, familia_nome),
+                                imagens(url_micro, url_thumbnail, url_imagem)
                             )
                         `)
                         .eq('local_id', projectId)
@@ -247,7 +283,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         if (!s) return null;
 
                         const familia = Array.isArray(s.familia) ? s.familia[0] : s.familia;
-                        const imagem = s.imagens && s.imagens.length > 0 ? s.imagens[0]?.url_imagem : null;
+                        const img0 = s.imagens?.[0];
 
                         return {
                             id: s.id,
@@ -255,7 +291,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                             nome_popular: s.nome_popular,
                             familia_id: s.familia_id,
                             familia,
-                            imagem
+                            imagem: img0?.url_micro || null,
+                            imagem_thumbnail: img0?.url_thumbnail || null,
+                            imagem_original: img0?.url_imagem || null,
                         };
                     }).filter(Boolean) as LinkedSpecies[];
 
@@ -301,8 +339,8 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                     break;
 
                 case 'specimens':
-                    // Specimens are handled by their own hook/component (SpecimensTab)
-                    // We just need to support the tab switch
+                case 'storage':
+                    // Handled by their own hook/component
                     setTabLoading(false);
                     setTotalPages(1);
                     break;
@@ -313,6 +351,63 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             setTabLoading(false);
         }
     }, [projectId, itemsPerPage, usersCount, speciesCountTotal]);
+
+    // Fetch storage analysis
+    const fetchStorageAnalysis = useCallback(async () => {
+        if (!projectId) return;
+        setLoadingStorage(true);
+        try {
+            const { data } = await supabase
+                .from('imagens')
+                .select('tamanho_original, tamanho_thumbnail, tamanho_micro, tamanho_estimado, created_at')
+                .eq('local_id', projectId);
+
+            if (!data) return;
+
+            const totalImages = data.length;
+            const withMicro = data.filter(img => img.tamanho_micro).length;
+            const withThumbnail = data.filter(img => img.tamanho_thumbnail).length;
+            const withOriginalOnly = data.filter(img => !img.tamanho_micro && !img.tamanho_thumbnail).length;
+            const estimatedCount = data.filter(img => img.tamanho_estimado).length;
+
+            const sumBytes = (field: 'tamanho_original' | 'tamanho_thumbnail' | 'tamanho_micro') =>
+                data.reduce((acc, img) => acc + (img[field] || 0), 0);
+
+            const toMB = (bytes: number) => bytes / (1024 * 1024);
+
+            const estimatedSizeMB = {
+                original: toMB(sumBytes('tamanho_original')),
+                thumbnail: toMB(sumBytes('tamanho_thumbnail')),
+                micro: toMB(sumBytes('tamanho_micro')),
+                total: toMB(
+                    sumBytes('tamanho_original') +
+                    sumBytes('tamanho_thumbnail') +
+                    sumBytes('tamanho_micro')
+                ),
+            };
+
+            const monthMap: Record<string, number> = {};
+            data.forEach(img => {
+                const month = img.created_at?.slice(0, 7);
+                if (month) monthMap[month] = (monthMap[month] || 0) + 1;
+            });
+            const byMonth = Object.entries(monthMap)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([month, count]) => ({ month, count }));
+
+            setStorageAnalysis({
+                totalImages,
+                withMicro,
+                withThumbnail,
+                withOriginalOnly,
+                estimatedCount,
+                byMonth,
+                estimatedSizeMB,
+            });
+        } finally {
+            setLoadingStorage(false);
+        }
+    }, [projectId]);
 
     // Open family modal
     const openFamilyModal = useCallback(async (familyId: number, familyName: string) => {
@@ -387,6 +482,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         usersCount,
         speciesCountTotal,
         familiesCount,
+        specimensCount,
         currentPage,
         setCurrentPage,
         totalPages,
@@ -397,6 +493,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         openFamilyModal,
         closeModal,
         refetch,
+        storageAnalysis,
+        loadingStorage,
+        fetchStorageAnalysis,
         isGlobalAdmin
     };
 }

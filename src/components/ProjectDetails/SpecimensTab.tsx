@@ -7,9 +7,10 @@ import { useState } from 'react';
 
 interface SpecimensTabProps {
     projectId: string;
+    readOnly?: boolean;
 }
 
-export function SpecimensTab({ projectId }: SpecimensTabProps) {
+export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps) {
     const { profile } = useAuth();
     const {
         specimens,
@@ -43,13 +44,15 @@ export function SpecimensTab({ projectId }: SpecimensTabProps) {
                         Gerencie os registros físicos e georreferenciados deste projeto.
                     </p>
                 </div>
-                <button
-                    onClick={openNewModal}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm text-sm font-medium"
-                >
-                    <Plus size={16} />
-                    Adicionar Espécime
-                </button>
+                {!readOnly && (
+                    <button
+                        onClick={openNewModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm text-sm font-medium"
+                    >
+                        <Plus size={16} />
+                        Adicionar Espécime
+                    </button>
+                )}
             </div>
 
             {loading ? (

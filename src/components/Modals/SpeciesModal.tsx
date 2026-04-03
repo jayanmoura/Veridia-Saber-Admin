@@ -55,8 +55,8 @@ export const uploadImages = async (
         projectId: string | null;
         speciesName: string;
     }
-): Promise<{ url: string; thumbnailUrl: string | null; microUrl: string | null }[]> => {
-    const results: { url: string; thumbnailUrl: string | null; microUrl: string | null }[] = [];
+): Promise<{ url: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]> => {
+    const results: { url: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[] = [];
 
     // Sanitize species name for folder path (consistent with user request)
     const sanitizedSpeciesName = options.speciesName
@@ -101,8 +101,11 @@ export const uploadImages = async (
             .getPublicUrl(filePath);
 
         // Generate and upload thumbnails (non-critical)
+        const originalSize = file.size;
         let thumbnailUrl: string | null = null;
         let microUrl: string | null = null;
+        let thumbSize: number | null = null;
+        let microSize: number | null = null;
         try {
             const dir = filePath.substring(0, filePath.lastIndexOf('/'));
             const base = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.[^.]+$/, '.jpg');
@@ -111,6 +114,9 @@ export const uploadImages = async (
                 compressImage(file),
                 compressForListing(file),
             ]);
+
+            thumbSize = thumbFile.size;
+            microSize = microFile.size;
 
             const [thumbResult, microResult] = await Promise.all([
                 supabase.storage.from(bucket).upload(`${dir}/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
@@ -127,7 +133,7 @@ export const uploadImages = async (
             // Thumbnails are non-critical; original is safely uploaded
         }
 
-        results.push({ url: publicUrl, thumbnailUrl, microUrl });
+        results.push({ url: publicUrl, thumbnailUrl, microUrl, tamanhoOriginal: originalSize, tamanhoThumbnail: thumbSize, tamanhoMicro: microSize });
     }
 
     return results;
@@ -759,11 +765,17 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
                 // Insert image references WITH local_id for project scope
                 const imageRecords = imageUrls.map(result => ({
                     especie_id: speciesId,
+                    especime_id: null,
                     url_imagem: result.url,
                     url_thumbnail: result.thumbnailUrl || null,
                     url_micro: result.microUrl || null,
-                    local_id: effectiveLocalId, // Required for project images!
+                    creditos: result.credits || null,
+                    local_id: effectiveLocalId || null,
                     institution_id: profile?.institution_id || null,
+                    tamanho_original: result.tamanhoOriginal || null,
+                    tamanho_thumbnail: result.tamanhoThumbnail || null,
+                    tamanho_micro: result.tamanhoMicro || null,
+                    tamanho_estimado: false,
                 }));
 
                 if (imageRecords.length > 0) {

@@ -187,6 +187,9 @@ Uma mesma espécie pode possuir múltiplos espécimes distribuídos por diferent
 - **Conteúdo Educacional** — Editor rich text (TipTap) com upload de imagens por órgão vegetal
 - **Logs de Auditoria** — Rastreamento de alterações realizadas no sistema
 - **PWA** — Instalável como aplicativo em dispositivos móveis
+- **Galeria de Fotos** — Visualização em pastas por espécie com seleção e download em lote (ZIP)
+- **Inspeção de Espécimes** — Auditoria global de espécimes por projeto (somente leitura, Curador Mestre)
+- **Análise de Storage** — Painel de uso real de imagens com tamanhos por versão e evolução mensal
 
 ## Documentação Adicional
 
@@ -194,7 +197,8 @@ Uma mesma espécie pode possuir múltiplos espécimes distribuídos por diferent
 |---|---|
 | [`SUPABASE_SCHEMA.md`](./SUPABASE_SCHEMA.md) | Schema completo do banco de dados (tabelas, RLS, triggers, functions) |
 | [`PROJECT_STRUCTURE Painel admin.md`](./PROJECT_STRUCTURE%20Painel%20admin.md) | Mapa detalhado de todos os arquivos do projeto com descrições |
-| [`REFACTORING_CHECKLIST.md`](./REFACTORING_CHECKLIST.md) | Lista de pendências técnicas e melhorias planejadas |
+| [`docs/DECISIONS.md`](./docs/DECISIONS.md) | Decisões arquiteturais, pendências e dívidas técnicas |
+| [`INFRA-VERIDIASABER.md`](./INFRA-VERIDIASABER.md) | Infraestrutura completa: Supabase, storage, Edge Functions, deploy e decisões técnicas |
 
 ## Scripts Disponíveis
 
@@ -204,7 +208,9 @@ Uma mesma espécie pode possuir múltiplos espécimes distribuídos por diferent
 | `npm run build` | Compila TypeScript e gera o bundle de produção |
 | `npm run preview` | Serve localmente o bundle de produção para validação |
 | `npm run lint` | Executa o ESLint em todo o projeto |
+| `npm test`         | Vitest com UI interativa                              |
+| `npm run test:run` | Vitest headless — obrigatório antes de cada git push  |
 
 ---
 
-Veridia Saber © 2024 — Projeto proprietário.
+Veridia Saber © 2026 — Projeto proprietário.

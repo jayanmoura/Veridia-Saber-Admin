@@ -18,7 +18,8 @@ import {
     TreeDeciduous,
     Loader2,
     AlertTriangle,
-    CheckCircle
+    CheckCircle,
+    HardDrive
 } from 'lucide-react';
 import { generateHerbariumLabels } from '../../utils/pdf';
 import { downloadCSV } from '../../utils/csvGenerator';
@@ -32,6 +33,7 @@ import {
     SpeciesTab,
     FamiliesTab,
     SpecimensTab,
+    StorageAnalysisTab,
     type LinkedSpecies
 } from '../../components/ProjectDetails';
 import { MapPin } from 'lucide-react'; // Ensure MapPin is imported if not already
@@ -55,6 +57,7 @@ export default function ProjectDetailsPage() {
         usersCount,
         speciesCountTotal,
         familiesCount,
+        specimensCount,
         currentPage,
         setCurrentPage,
         totalPages,
@@ -64,8 +67,19 @@ export default function ProjectDetailsPage() {
         modalLoading,
         openFamilyModal,
         closeModal,
-        isGlobalAdmin
+        isGlobalAdmin,
+        storageAnalysis,
+        loadingStorage,
+        fetchStorageAnalysis,
     } = useProjectDetails({ projectId: id });
+
+    // Tab change with auto-fetch for storage
+    const handleTabChange = (tab: typeof activeTab) => {
+        setActiveTab(tab);
+        if (tab === 'storage' && !storageAnalysis && !loadingStorage) {
+            fetchStorageAnalysis();
+        }
+    };
 
     // Local UI states
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,7 +94,8 @@ export default function ProjectDetailsPage() {
         { id: 'users' as const, label: 'Usuários', icon: Users, count: usersCount },
         { id: 'species' as const, label: 'Espécies', icon: Leaf, count: speciesCountTotal },
         { id: 'families' as const, label: 'Famílias', icon: TreeDeciduous, count: familiesCount },
-        { id: 'specimens' as const, label: 'Espécimes', icon: MapPin, count: null }, // TODO: Fetch specimen count if needed
+        { id: 'specimens' as const, label: 'Espécimes', icon: MapPin, count: specimensCount },
+        { id: 'storage' as const, label: 'Storage', icon: HardDrive, count: null },
     ];
 
     // Derived
@@ -410,7 +425,7 @@ export default function ProjectDetailsPage() {
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
+                                    onClick={() => handleTabChange(tab.id)}
                                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-medium transition-colors relative
                                         ${activeTab === tab.id
                                             ? 'text-emerald-600 bg-emerald-50/50'
@@ -453,7 +468,14 @@ export default function ProjectDetailsPage() {
                                         />
                                     )}
                                     {activeTab === 'specimens' && (
-                                        <SpecimensTab projectId={id || ''} />
+                                        <SpecimensTab projectId={id || ''} readOnly={isGlobalAdmin} />
+                                    )}
+                                    {activeTab === 'storage' && (
+                                        <StorageAnalysisTab
+                                            analysis={storageAnalysis}
+                                            loading={loadingStorage}
+                                            onFetch={fetchStorageAnalysis}
+                                        />
                                     )}
                                 </>
                             )}

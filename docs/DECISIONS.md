@@ -347,12 +347,11 @@ O produto é apresentado institucionalmente como uma **ferramenta de botânica s
 
 | Pendência | Impacto | Severidade |
 |---|---|---|
-| Desincronização `is_staff()` vs `profiles.role` | RLS pode não reconhecer staff | 🔴 Alta |
 | Coluna `especie_local_id` redundante em `imagens` | Confusão de FK | 🟡 Média |
-| Roles `curador`/`coordenador` em `is_staff()` | Resquícios de nomenclatura anterior | 🟡 Média |
 | `persistSession: false` no Supabase Client | Sessões não persistem entre reloads | 🟢 Intencional |
 | Repository Pattern incompleto | Nem todas as entidades têm repos | 🟢 Baixa |
 | `any` em `institution.ts` (`supabase: any`) | Viola a regra de tipagem do projeto | 🟡 Média |
+| `backfill-image-sizes` sem JWT | Exposição mínima | 🟡 Média | Edge Function deployada sem verify_jwt para uso imediato — reativar JWT ou desativar a função |
 
 ---
 
@@ -360,15 +359,29 @@ O produto é apresentado institucionalmente como uma **ferramenta de botânica s
 
 O sistema preserva a imagem original em resolução completa (dado científico) e gera versões otimizadas para exibição:
 
-| Versão | Resolução | Qualidade | Campo DB | Uso |
-|--------|-----------|-----------|----------|-----|
-| Original | Resolução completa da câmera | Sem compressão | `url_imagem` | Inspeção científica (PhotoGalleryModal) |
-| Thumbnail | 1200px max width | JPEG 85% | `url_thumbnail` | Modais e visualizações médias |
-| Micro | 300px max width | JPEG 70% | `url_micro` | Listagens em tabela (SpeciesTable, Specimens) |
+| Versão | Resolução | Qualidade | Campo DB | Tamanho médio real | Uso |
+|--------|-----------|-----------|----------|--------------------|-----|
+| Original | Câmera completa | Sem compressão | `url_imagem` | ~12 MB (variável) | Download científico, inspeção |
+| Thumbnail | 1200px max width | JPEG 85% | `url_thumbnail` | ~0,7 MB | Modais e galeria |
+| Micro | 300px max width | JPEG 70% | `url_micro` | ~0,05 MB | Ícones em tabelas e listagens |
 
 A compressão é feita no frontend via Canvas API (`src/utils/imageCompressor.ts`) antes do upload. Os três arquivos são salvos no mesmo bucket, com thumbnails em subpasta `thumbs/` e micros em `micro/`.
 
 Componentes de listagem usam fallback: `url_micro || url_thumbnail || url_imagem` para compatibilidade com imagens antigas.
+
+### Tamanhos Reais em Disco (colunas na tabela `imagens`)
+
+A tabela `imagens` armazena os tamanhos reais capturados no momento do upload:
+```sql
+tamanho_original  integer  -- bytes do arquivo original (File.size)
+tamanho_thumbnail integer  -- bytes do thumbnail gerado
+tamanho_micro     integer  -- bytes do micro gerado
+tamanho_estimado  boolean  -- TRUE = backfill estimado, FALSE = dado real do upload
+```
+
+Registros anteriores à feature (03/04/2026) foram preenchidos via Edge Function
+`backfill-image-sizes` com tamanhos reais do Supabase Storage.
+Os novos uploads gravam os tamanhos automaticamente via `useSpeciesImages` e `useSpecimenImages`.
 
 ---
 
@@ -382,6 +395,18 @@ Componentes de listagem usam fallback: `url_micro || url_thumbnail || url_imagem
 
 ---
 
+## 13. Edge Functions
+
+| Função | JWT | Propósito |
+|---|---|---|
+| `login-proxy` | ❌ | Proxy de autenticação por senha |
+| `cleanup-user-storage` | ✅ | Limpeza de arquivos ao deletar usuário |
+| `backfill-image-sizes` | ❌ | Backfill pontual de tamanhos reais via storage.list() — uso concluído em 03/04/2026 |
+
+> ⚠️ `backfill-image-sizes` está sem JWT. Considerar reativar JWT ou desativar a função após uso.
+
+---
+
 ## Como manter este documento
 
 - Atualizar sempre que uma decisão arquitetural ou de negócio relevante for tomada
@@ -390,4 +415,4 @@ Componentes de listagem usam fallback: `url_micro || url_thumbnail || url_imagem
 
 ---
 
-*Data de criação do documento: 29/03/2026*
+*Criado em: 29/03/2026 — Última atualização: 03/04/2026*
