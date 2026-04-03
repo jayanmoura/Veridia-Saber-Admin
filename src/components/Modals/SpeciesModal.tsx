@@ -55,8 +55,8 @@ export const uploadImages = async (
         projectId: string | null;
         speciesName: string;
     }
-): Promise<{ url: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]> => {
-    const results: { url: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[] = [];
+): Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]> => {
+    const results: { url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[] = [];
 
     // Sanitize species name for folder path (consistent with user request)
     const sanitizedSpeciesName = options.speciesName
@@ -133,7 +133,7 @@ export const uploadImages = async (
             // Thumbnails are non-critical; original is safely uploaded
         }
 
-        results.push({ url: publicUrl, thumbnailUrl, microUrl, tamanhoOriginal: originalSize, tamanhoThumbnail: thumbSize, tamanhoMicro: microSize });
+        results.push({ url: publicUrl, credits: null, thumbnailUrl, microUrl, tamanhoOriginal: originalSize, tamanhoThumbnail: thumbSize, tamanhoMicro: microSize });
     }
 
     return results;

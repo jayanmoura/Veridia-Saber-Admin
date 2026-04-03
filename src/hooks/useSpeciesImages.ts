@@ -31,7 +31,7 @@ export interface UseSpeciesImagesReturn {
     handleFiles: (files: File[]) => void;
     removeNewImage: (index: number) => void;
     handleDeleteExistingImage: (imageId: string, imageUrl: string) => Promise<void>;
-    uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
+    uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
     loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
     setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     setNewImageCredits: React.Dispatch<React.SetStateAction<string[]>>;
@@ -221,8 +221,8 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
     const uploadImages = useCallback(async (
         speciesId: string,
         options: UploadOptions
-    ): Promise<{ url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]> => {
-        const results: { url: string; credits: string; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[] = [];
+    ): Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]> => {
+        const results: { url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[] = [];
 
         const sanitizedSpeciesName = options.speciesName
             ? options.speciesName
