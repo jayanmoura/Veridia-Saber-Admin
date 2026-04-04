@@ -4,12 +4,15 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { X, Upload, Loader2, Info, List } from 'lucide-react';
 import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
+import { compressImage, compressForListing } from '../../utils/imageCompressor';
 
 interface Family {
     id?: string;
     familia_nome: string;
     autoria_taxonomica?: string | null;
     imagem_referencia?: string | null;
+    imagem_thumbnail?: string | null;
+    imagem_micro?: string | null;
     caracteristicas?: string | null;
     descricao_familia?: string | null;
     fonte_referencia?: string | null;
@@ -120,7 +123,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                     fonte_referencia: initialData.fonte_referencia || '',
                     link_referencia: initialData.link_referencia || '',
                 });
-                setImagePreview(initialData.imagem_referencia || null);
+                setImagePreview(initialData.imagem_thumbnail || initialData.imagem_referencia || null);
             } else {
                 setFormData({
                     familia_nome: '',
@@ -173,11 +176,17 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         setImagePreview(URL.createObjectURL(file));
     };
 
-    const uploadImage = async (): Promise<string | null> => {
-        if (!imageFile) return initialData?.imagem_referencia || null;
+    const uploadImage = async (): Promise<{ original: string | null; thumbnail: string | null; micro: string | null }> => {
+        if (!imageFile) return {
+            original: initialData?.imagem_referencia || null,
+            thumbnail: initialData?.imagem_thumbnail || null,
+            micro: initialData?.imagem_micro || null,
+        };
 
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `familias/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const fileName = `familias/${timestamp}_${random}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
             .from('imagens-plantas')
@@ -188,11 +197,34 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             throw new Error('Erro ao fazer upload da imagem');
         }
 
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl: originalUrl } } = supabase.storage
             .from('imagens-plantas')
             .getPublicUrl(fileName);
 
-        return publicUrl;
+        // Generate and upload thumbnail + micro (non-critical — failure does not abort the save)
+        const base = `${timestamp}_${random}.jpg`;
+        let thumbnailUrl: string | null = null;
+        let microUrl: string | null = null;
+        try {
+            const [thumbFile, microFile] = await Promise.all([
+                compressImage(imageFile),
+                compressForListing(imageFile),
+            ]);
+            const [thumbResult, microResult] = await Promise.all([
+                supabase.storage.from('imagens-plantas').upload(`familias/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
+                supabase.storage.from('imagens-plantas').upload(`familias/micro/${base}`, microFile, { contentType: 'image/jpeg' }),
+            ]);
+            if (!thumbResult.error) {
+                thumbnailUrl = supabase.storage.from('imagens-plantas').getPublicUrl(`familias/thumbs/${base}`).data.publicUrl;
+            }
+            if (!microResult.error) {
+                microUrl = supabase.storage.from('imagens-plantas').getPublicUrl(`familias/micro/${base}`).data.publicUrl;
+            }
+        } catch {
+            // Thumbnails are non-critical; original already uploaded safely
+        }
+
+        return { original: originalUrl, thumbnail: thumbnailUrl, micro: microUrl };
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -216,7 +248,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
         try {
             // Upload image if there's a new one
-            const imageUrl = await uploadImage();
+            const { original: imageUrl, thumbnail: thumbnailUrl, micro: microUrl } = await uploadImage();
 
             const dataToSave = {
                 familia_nome: formData.familia_nome.trim(),
@@ -226,6 +258,8 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                 fonte_referencia: formData.fonte_referencia?.trim() || null,
                 link_referencia: formData.link_referencia?.trim() || null,
                 imagem_referencia: imageUrl,
+                imagem_thumbnail: thumbnailUrl,
+                imagem_micro: microUrl,
             };
 
             if (initialData?.id) {

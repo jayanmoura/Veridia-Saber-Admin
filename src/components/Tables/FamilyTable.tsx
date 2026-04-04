@@ -5,6 +5,8 @@ interface Family {
     familia_nome: string;
     autoria_taxonomica?: string | null;
     imagem_referencia: string | null;
+    imagem_thumbnail: string | null;
+    imagem_micro: string | null;
     quantidade_especies: number;
     created_by_name?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
@@ -79,12 +81,12 @@ export function FamilyTable({
                             families.map((family) => (
                                 <tr key={family.id} className="group hover:bg-gray-50/80 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="w-10 h-10 flex-shrink-0 relative">
-                                            {family.imagem_referencia ? (
+                                        <div className="w-10 h-10 flex-shrink-0 relative overflow-hidden rounded-full">
+                                            {(family.imagem_micro || family.imagem_thumbnail || family.imagem_referencia) ? (
                                                 <img
-                                                    src={family.imagem_referencia}
+                                                    src={family.imagem_micro || family.imagem_thumbnail || family.imagem_referencia!}
                                                     alt={family.familia_nome}
-                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm peer"
+                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm"
                                                     onError={(e) => {
                                                         e.currentTarget.style.display = 'none';
                                                         const fallback = e.currentTarget.nextElementSibling;
@@ -94,7 +96,7 @@ export function FamilyTable({
                                             ) : null}
                                             <div
                                                 className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 items-center justify-center text-emerald-600 absolute inset-0"
-                                                style={{ display: family.imagem_referencia ? 'none' : 'flex' }}
+                                                style={{ display: (family.imagem_micro || family.imagem_thumbnail || family.imagem_referencia) ? 'none' : 'flex' }}
                                             >
                                                 <TreeDeciduous size={18} />
                                             </div>

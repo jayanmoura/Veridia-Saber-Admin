@@ -69,15 +69,12 @@ describe('AuthContext', () => {
   beforeEach(() => {
     resetSupabaseMocks();
 
-    // Padrão: sem sessão ativa
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: null },
-      error: null,
-    });
-
-    // onAuthStateChange padrão: retorna subscription sem disparar callback
-    mockSupabase.auth.onAuthStateChange.mockReturnValue({
-      data: { subscription: { unsubscribe: vi.fn() } },
+    // Padrão: sem sessão ativa — onAuthStateChange dispara INITIAL_SESSION com null,
+    // fazendo loading virar false sem perfil.
+    mockSupabase.auth.onAuthStateChange.mockImplementation((callback: unknown) => {
+      const cb = callback as (event: string, session: unknown) => void;
+      cb('INITIAL_SESSION', null);
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
     });
   });
 
@@ -86,10 +83,10 @@ describe('AuthContext', () => {
   // ===========================================================================
   describe('estado inicial', () => {
     it('não deve renderizar o conteúdo enquanto loading é true', async () => {
-      // Simula uma resposta lenta do getSession
-      mockSupabase.auth.getSession.mockImplementation(
-        () => new Promise(() => { /* nunca resolve */ }),
-      );
+      // Simula onAuthStateChange que nunca dispara callback, mantendo loading = true
+      mockSupabase.auth.onAuthStateChange.mockReturnValue({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      });
 
       renderWithAuth(<AuthConsumer />);
 
@@ -99,7 +96,7 @@ describe('AuthContext', () => {
       expect(screen.queryByTestId('session')).not.toBeInTheDocument();
     });
 
-    it('com getSession retornando session: null, loading deve virar false', async () => {
+    it('com sessão inicial null, loading deve virar false', async () => {
       renderWithAuth(<AuthConsumer />);
 
       // Aguarda o estado de loading desaparecer
@@ -110,7 +107,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('session').textContent).toBe('sem-sessao');
     });
 
-    it('com getSession retornando session: null, profile deve ser null', async () => {
+    it('com sessão inicial null, profile deve ser null', async () => {
       renderWithAuth(<AuthConsumer />);
 
       await waitFor(() => {
@@ -126,10 +123,11 @@ describe('AuthContext', () => {
   // ===========================================================================
   describe('sessão autenticada', () => {
     beforeEach(() => {
-      // Sessão ativa com user.id = 'user-123'
-      mockSupabase.auth.getSession.mockResolvedValue({
-        data: { session: mockSession as any },
-        error: null,
+      // Sessão ativa: onAuthStateChange dispara INITIAL_SESSION com mockSession
+      mockSupabase.auth.onAuthStateChange.mockImplementation((callback: unknown) => {
+        const cb = callback as (event: string, session: unknown) => void;
+        cb('INITIAL_SESSION', mockSession);
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
       });
 
       // Perfil de retorno para from('profiles').select().eq().single()
@@ -202,12 +200,7 @@ describe('AuthContext', () => {
     beforeEach(() => {
       authCallback = null;
 
-      // Inicia com sessão ativa e perfil carregado
-      mockSupabase.auth.getSession.mockResolvedValue({
-        data: { session: mockSession as any },
-        error: null,
-      });
-
+      // Perfil de retorno para a sessão inicial
       mockSupabaseResponse('profiles', 'single', {
         data: mockProfile,
         error: null,
@@ -220,10 +213,11 @@ describe('AuthContext', () => {
         return { error: null };
       });
 
-      // Simula o disparo do onAuthStateChange capturando o callback externamente
+      // Captura o callback E dispara INITIAL_SESSION para carregar o estado inicial
       mockSupabase.auth.onAuthStateChange.mockImplementation(
         (callback: unknown) => {
           authCallback = callback as (event: string, session: any) => void;
+          authCallback('INITIAL_SESSION', mockSession as any);
           return { data: { subscription: { unsubscribe: vi.fn() } } };
         },
       );

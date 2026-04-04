@@ -278,7 +278,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         try {
             const { data: recentData } = await supabase
                 .from('especie_local')
-                .select(`created_at, especie:especie_id(id, nome_cientifico, nome_popular, imagens(url_imagem, url_thumbnail, url_micro))`)
+                .select(`id, created_at, especie:especie_id(id, nome_cientifico, nome_popular), imagens!especime_id(url_imagem, url_thumbnail, url_micro)`)
                 .eq('local_id', profile.local_id)
                 .order('created_at', { ascending: false })
                 .limit(5);
@@ -287,13 +287,13 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 const mapped = recentData
                     .filter((item: any) => item.especie)
                     .map((item: any) => ({
-                        id: item.especie.id,
+                        id: String(item.id),
                         nome_cientifico: item.especie.nome_cientifico,
                         nome_popular: item.especie.nome_popular || null,
                         created_at: item.created_at,
-                        imagem_url: item.especie.imagens?.[0]?.url_micro || null,
-                        imagem_thumbnail: item.especie.imagens?.[0]?.url_thumbnail || null,
-                        imagem_original: item.especie.imagens?.[0]?.url_imagem || null,
+                        imagem_url: item.imagens?.[0]?.url_micro || null,
+                        imagem_thumbnail: item.imagens?.[0]?.url_thumbnail || null,
+                        imagem_original: item.imagens?.[0]?.url_imagem || null,
                     }));
                 setRecentLocalSpecies(mapped);
             }

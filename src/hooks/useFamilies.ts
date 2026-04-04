@@ -7,6 +7,8 @@ export interface Family {
     familia_nome: string;
     autoria_taxonomica?: string | null;
     imagem_referencia: string | null;
+    imagem_thumbnail: string | null;
+    imagem_micro: string | null;
     especie?: { count: number }[];
     quantidade_especies: number;
     created_at?: string | null;

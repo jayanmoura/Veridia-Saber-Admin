@@ -39,6 +39,19 @@ export default function Login() {
             if (data.data?.session) {
                 const { error: sessionError } = await supabase.auth.setSession(data.data.session);
                 if (sessionError) throw sessionError;
+
+                // Aguarda o AuthContext processar o SIGNED_IN antes de navegar
+                await new Promise<void>((resolve) => {
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+                        if (event === 'SIGNED_IN') {
+                            subscription.unsubscribe();
+                            resolve();
+                        }
+                    });
+                    // Timeout de segurança: se o evento não chegar em 3s, navega mesmo assim
+                    setTimeout(resolve, 3000);
+                });
+
                 navigate('/');
             } else {
                 throw new Error('Erro inesperado ao criar sessão');
