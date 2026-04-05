@@ -211,6 +211,33 @@ Uma mesma espécie pode possuir múltiplos espécimes distribuídos por diferent
 | `npm test`         | Vitest com UI interativa                              |
 | `npm run test:run` | Vitest headless — obrigatório antes de cada git push  |
 
+## Testes
+
+### Unitários e de integração (Vitest)
+
+```bash
+npm run test:run   # headless — obrigatório antes de cada git push
+npm test           # watch mode — manter aberto durante desenvolvimento
+npx vitest run src/test/unit/NomeDoArquivo.test.ts  # arquivo específico
+```
+
+**115 testes passando em 7 arquivos:**
+
+| Arquivo | Cobertura |
+|---|---|
+| `auth.types.test.ts` | Tipos, hierarquia de roles, helpers |
+| `AuthContext.test.tsx` | Sessão, fetchProfile, onAuthStateChange |
+| `guards.test.tsx` | PrivateRoute, OnlyGlobalAdmin |
+| `Users.test.tsx` | RBAC na página de usuários |
+| `speciesModal.test.tsx` | Upload de imagens, deleção, renderização |
+| `useOverviewStats.test.ts` | Queries por role no dashboard |
+| `Login.test.tsx` | Fluxo login-proxy, erros pt-BR, loading |
+
+### E2E (Playwright) — pendente
+
+Aguarda criação do projeto `VeridiaSaber-Staging` no Supabase (plano premium).
+Nunca rodar testes E2E com CRUD contra o banco de produção.
+
 ---
 
 Veridia Saber © 2026 — Projeto proprietário.

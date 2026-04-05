@@ -415,4 +415,42 @@ Os novos uploads gravam os tamanhos automaticamente via `useSpeciesImages` e `us
 
 ---
 
-*Criado em: 29/03/2026 — Última atualização: 03/04/2026*
+### Galeria de Imagens Existentes usa url_micro/url_thumbnail (05/04/2026)
+
+**Problema:** `loadExistingImages` nos hooks `useSpeciesImages` e `useSpecimenImages`
+buscava apenas `url_imagem` do banco, e o componente `ImageUploadZone` exibia
+`img.url_imagem` diretamente na galeria — carregando imagens originais (~12MB cada)
+na UI.
+
+**Decisão:** Atualizar `ExistingImage` para incluir `url_thumbnail` e `url_micro`,
+atualizar o `.select()` para buscar os três campos, e atualizar o `src` da `<img>`
+para usar `url_micro || url_thumbnail || url_imagem`.
+
+**Regra reforçada:** A imagem original (`url_imagem`) só deve ser acessada em
+contexto de download científico explícito — nunca em listagens, tabelas, ícones
+ou galerias da UI.
+
+---
+
+### Suíte de Testes Vitest — 115 testes (05/04/2026)
+
+**Contexto:** Conclusão dos Prompts 8 e 9 da bateria de testes documentada em
+`TESTES_RETOMADA.md`.
+
+**Prompt 8 — `useOverviewStats`:** 17 testes cobrindo classificação de roles,
+`fetchGlobalStats` (Curador Mestre), `fetchLocalStats` (Gestor de Acervo) e
+`fetchPersonalStats` (Consulente). Correção no mock compartilhado: `'is'` adicionado
+ao `chainMethods` e `count?: number | null` ao tipo do `mockSupabaseResponse`.
+
+**Prompt 9 — `Login`:** 14 testes cobrindo renderização, fluxo de sucesso via
+`login-proxy`, credenciais inválidas com mensagem em pt-BR, erro de rede e
+estado de loading. `functions.invoke`, `auth.setSession` e `auth.signInWithOAuth`
+adicionados ao mock compartilhado.
+
+**Prompt 10 — Playwright E2E:** pendente. Requer projeto `VeridiaSaber-Staging`
+no Supabase (plano premium). Nunca rodar testes E2E com CRUD contra produção.
+O projeto Arbosis é de estágio universitário e não deve ser usado como staging.
+
+---
+
+*Criado em: 29/03/2026 — Última atualização: 05/04/2026*
