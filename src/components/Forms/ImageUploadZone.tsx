@@ -3,6 +3,8 @@ import { Upload, Trash2, ImageOff } from 'lucide-react';
 export interface ExistingImage {
     id: string;
     url_imagem: string;
+    url_thumbnail: string | null;
+    url_micro: string | null;
     creditos: string | null;
 }
 
@@ -92,7 +94,7 @@ export function ImageUploadZone({
                         <div key={img.id} className="relative group">
                             <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
                                 <img
-                                    src={img.url_imagem}
+                                    src={img.url_micro || img.url_thumbnail || img.url_imagem}
                                     alt="Imagem existente"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {

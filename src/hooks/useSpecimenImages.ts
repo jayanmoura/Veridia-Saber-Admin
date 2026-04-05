@@ -6,6 +6,8 @@ import { compressImage, compressForListing } from '../utils/imageCompressor';
 export interface ExistingImage {
     id: string;
     url_imagem: string;
+    url_thumbnail: string | null;
+    url_micro: string | null;
     creditos: string | null;
 }
 
@@ -81,13 +83,15 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
 
         const { data } = await supabase
             .from('imagens')
-            .select('id, url_imagem, creditos')
+            .select('id, url_imagem, url_thumbnail, url_micro, creditos')
             .eq('especime_id', specimenId);
 
         if (data) {
             setExistingImages(data.map(img => ({
                 id: img.id,
                 url_imagem: img.url_imagem,
+                url_thumbnail: img.url_thumbnail || null,
+                url_micro: img.url_micro || null,
                 creditos: img.creditos || null
             })));
 

@@ -815,7 +815,7 @@ export function SpeciesModal({ isOpen, onClose, onSave, initialData }: SpeciesMo
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div role="dialog" className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50"

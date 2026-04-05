@@ -8,13 +8,13 @@ import { vi } from 'vitest';
  * Mapeia { table -> { method -> mock } } para permitir sobrescrever
  * retornos por tabela e método via mockSupabaseResponse().
  */
-const methodOverrides: Record<string, Record<string, { data: unknown; error: unknown }>> = {};
+const methodOverrides: Record<string, Record<string, { data: unknown; error: unknown; count?: number | null }>> = {};
 
 /** Retorna o valor configurado ou o padrão { data: null, error: null }. */
 function resolveReturn(
   table: string,
   method: string,
-): { data: null; error: null } | { data: unknown; error: unknown } {
+): { data: null; error: null; count?: null } | { data: unknown; error: unknown; count?: number | null } {
   return methodOverrides[table]?.[method] ?? { data: null, error: null };
 }
 
@@ -33,6 +33,7 @@ function createQueryBuilder(table: string) {
     'eq',
     'neq',
     'in',
+    'is',
     'ilike',
     'order',
     'limit',
@@ -83,6 +84,12 @@ export const mockSupabase = {
     signInWithPassword: vi.fn(() =>
       Promise.resolve({ data: { session: null, user: null }, error: null }),
     ),
+    signInWithOAuth: vi.fn(() =>
+      Promise.resolve({ data: null, error: null }),
+    ),
+    setSession: vi.fn(() =>
+      Promise.resolve({ data: { session: null, user: null }, error: null }),
+    ),
     getUser: vi.fn(() =>
       Promise.resolve({ data: { user: null }, error: null }),
     ),
@@ -130,7 +137,7 @@ vi.mock('../../lib/supabase', () => ({ supabase: mockSupabase }));
 export function mockSupabaseResponse(
   table: string,
   method: string,
-  response: { data: unknown; error: unknown },
+  response: { data: unknown; error: unknown; count?: number | null },
 ): void {
   if (!methodOverrides[table]) {
     methodOverrides[table] = {};
