@@ -26,7 +26,8 @@ import { supabase } from '../../lib/supabase';
 
 
 // 3. Componentes e hooks testados
-import { SpeciesModal } from '../../components/Modals/SpeciesModal';
+// Apontando para o SpeciesModalRefactored — versão refatorada em uso ativo
+import { SpeciesModalRefactored } from '../../components/Modals/SpeciesModal/SpeciesModalRefactored';
 import { useSpeciesImages } from '../../hooks/useSpeciesImages';
 
 const defaultProps = {
@@ -60,9 +61,6 @@ describe('SpeciesModal Integration Tests', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
-  // const getTrackerReqs = () => {
-  //     return typeof (supabase as any).__getMockReqs === 'function' ? (supabase as any).__getMockReqs() : [];
-  // };
 
   // --------------------------------------------------------------------------
   // GRUPO: useSpeciesImages — uploadImages — estratégia de bucket
@@ -160,31 +158,35 @@ describe('SpeciesModal Integration Tests', () => {
       // Perfil Gestor (Usuário de projeto), sem local
       currentProfile = { id: 'gestor-no-local', role: 'Gestor de Acervo', local_id: null };
 
-      render(<SpeciesModal {...defaultProps} />);
+      render(<SpeciesModalRefactored {...defaultProps} />);
 
       await waitFor(() => {
         expect(screen.getByText('Nova Espécie')).toBeInTheDocument();
       });
 
+      // O SpeciesModalRefactored delega o render do campo para SpeciesDataTab,
+      // que chama getUserLocalName() do hook — retorna 'Sem permissão de local' quando local_id é null.
       const localInput = screen.getByText('Sem permissão de local');
       expect(localInput).toBeInTheDocument();
-
-      // Quando Local_id e nulo o componente nao deveria chamar from('locais') (como a interface é bloqueada, ele não consome listas extras indevidamente na renderização base ou os hooks travam chamadas não pertinentes, garantimos via tracker)
-      // const reqs = getTrackerReqs();
-      // Note que o modal tenta buscar from('locais') no `loadAuxiliaryData` no useEffect de init SEM CONDICIONAIS para popular a lista de admins. 
-      // Então a restrição da regra pede apenas q vejamos se *com* perfil Gestor/local=null não tenta *salvar* (especie_local) ou buscar *conteúdo específico* do local,
-      // contudo a UI reage ao fato exibindo "Sem permissão de local".
     });
   });
 
   // --------------------------------------------------------------------------
-  // GRUPO: SpeciesModal — renderização do componente
+  // GRUPO: SpeciesModalRefactored — renderização do componente
   // --------------------------------------------------------------------------
-  describe('SpeciesModal — renderização do componente', () => {
+  describe('SpeciesModalRefactored — renderização do componente', () => {
     it('renderiza o modal quando isOpen: true', async () => {
-      render(<SpeciesModal {...defaultProps} />);
+      render(<SpeciesModalRefactored {...defaultProps} />);
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeTruthy();
+      });
+    });
+
+    it('renderiza as abas "Dados da Espécie" e "Etiqueta de Herbário"', async () => {
+      render(<SpeciesModalRefactored {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByText('Dados da Espécie')).toBeInTheDocument();
+        expect(screen.getByText('Etiqueta de Herbário')).toBeInTheDocument();
       });
     });
   });

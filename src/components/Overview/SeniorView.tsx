@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
-import { SpeciesModal } from '../../components/Modals/SpeciesModal';
+import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
 import { FamilyModal } from '../../components/Modals/FamilyModal';
 import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
 import { formatDistanceToNow } from 'date-fns';
@@ -194,7 +194,7 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
                     }
                 }}
             />
-            <SpeciesModal
+            <SpeciesModalRefactored
                 isOpen={isSpeciesModalOpen}
                 onClose={() => setIsSpeciesModalOpen(false)}
                 onSave={refetch}

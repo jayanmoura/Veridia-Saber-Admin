@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
-import { SpeciesModal } from '../../components/Modals/SpeciesModal';
+import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
 import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -159,7 +159,7 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
                     }
                 }}
             />
-            <SpeciesModal
+            <SpeciesModalRefactored
                 isOpen={isSpeciesModalOpen}
                 onClose={() => setIsSpeciesModalOpen(false)}
                 onSave={refetch}

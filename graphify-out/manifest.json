@@ -1,0 +1,602 @@
+{
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/postcss.config.js": {
+    "mtime": 1774385985.8385527,
+    "hash": "b0197450f6657a0e29dfc069e083f364"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/vite.config.ts": {
+    "mtime": 1775090344.6887102,
+    "hash": "544ba216900b966254147a7e0b708032"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/tailwind.config.js": {
+    "mtime": 1774385985.8523815,
+    "hash": "973cbd2bfaa0ef3dc3e4f934b19b46a1"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/eslint.config.js": {
+    "mtime": 1774385985.8375027,
+    "hash": "b8893da386a89dfd3672dad848f4ec7e"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/beta_testers.sql": {
+    "mtime": 1774385985.8517873,
+    "hash": "888c9885fe33dbecf5c9ef0dbc2cc16f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/add_codigo_vs.sql": {
+    "mtime": 1774385985.8517873,
+    "hash": "4926f385aa38b7bccd9f3e526dcc514f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/optimize_indexes.sql": {
+    "mtime": 1774385985.8523815,
+    "hash": "a1d2a4f00b40eb3988584037548e1156"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/add_sigla_and_tombo.sql": {
+    "mtime": 1774385985.8517873,
+    "hash": "298c7b27c9f84197c9efb7a73833b611"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/functions/login-proxy/index.ts": {
+    "mtime": 1774385985.8523815,
+    "hash": "6f5b94767858e50d7d320136ed24ab5c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/007_fix_beta_testers_insert_policy.sql": {
+    "mtime": 1775083694.359143,
+    "hash": "0c93d5f410bfa79297e1ae1a891e5926"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/migrate_imagens_vinculos.sql": {
+    "mtime": 1774385985.8523815,
+    "hash": "2b2de738c16060ad4cd43f145320787a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/001_rls_policies.sql": {
+    "mtime": 1774796512.4078496,
+    "hash": "918694489306363cebac8922b018a9a5"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/010_add_familia_image_resolutions.sql": {
+    "mtime": 1775366250.013602,
+    "hash": "0151388d4bddd2eb4bad635495fb25da"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/002_beta_testers.sql": {
+    "mtime": 1774796528.674134,
+    "hash": "e3584ead58f8a19c07965e88526cbe55"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/008_fix_storage_insert_arquivos_gerais.sql": {
+    "mtime": 1775083696.416749,
+    "hash": "25e14d7b17450ed98d384fae14c7e912"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/003_fix_especie_local_delete.sql": {
+    "mtime": 1775083686.1544604,
+    "hash": "41e5280a100f62b509ab701e7f748529"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/009_consolidate_storage_policies.sql": {
+    "mtime": 1775083698.4199858,
+    "hash": "63a123f65319bf23ab37952061326493"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/005_fix_imagens_delete_and_storage_policies.sql": {
+    "mtime": 1775083690.2563019,
+    "hash": "b24aca62fa2a614a1c14ffe7ee8bf3a0"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/004_rls_delete_scoped_by_local_id.sql": {
+    "mtime": 1775083688.215381,
+    "hash": "d30cc209eae22bff8da662743b99308c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/supabase/migrations/006_remove_broken_storage_triggers.sql": {
+    "mtime": 1775083692.3122225,
+    "hash": "775701575a733b8d97cde4a28644fbab"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/main.tsx": {
+    "mtime": 1774385985.8485525,
+    "hash": "78fffb4190e85688f3e63b8caaf799e5"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/App.tsx": {
+    "mtime": 1774385985.842138,
+    "hash": "31fa6b888464d81da42b2cb3b732e94c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/InstallPWA.tsx": {
+    "mtime": 1775090577.7704859,
+    "hash": "59bd7bdae49b3403577c70a615926806"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/RichTextEditor.tsx": {
+    "mtime": 1774557059.7361312,
+    "hash": "94afc342e49e239ff50aec2ce260a68b"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/PhotoGalleryModal.tsx": {
+    "mtime": 1775213980.2103105,
+    "hash": "d75a362661915573524c5d269d081dda"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/AnalyticsModal.tsx": {
+    "mtime": 1775090541.2539272,
+    "hash": "32d3232e9589b589c4971ecbc734eab1"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/BetaTestersModal.tsx": {
+    "mtime": 1775090541.2525182,
+    "hash": "6578af73693cb9c8cb11657d4b83793b"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/PendingCuratorshipModal.tsx": {
+    "mtime": 1775090541.2556245,
+    "hash": "094b343cb104f57c84135f7c0e0360f6"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesByFamilyModal.tsx": {
+    "mtime": 1775090463.7920086,
+    "hash": "fabb458b7bdfae5a9736e4dc1042f85f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/ConfirmDeleteModal.tsx": {
+    "mtime": 1775090366.8358266,
+    "hash": "52819500c71acf6025e19c72c47d3410"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/ProjectFormModal.tsx": {
+    "mtime": 1775090463.7922804,
+    "hash": "ac0b24c591d31b0f62838e24412e3b02"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SuccessModal.tsx": {
+    "mtime": 1775090577.7757485,
+    "hash": "46d0c6893d710ed19468207cbab927a4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpecimenModal_temp_check.tsx": {
+    "mtime": 1774385985.8464928,
+    "hash": "2bf0de0b6580f154e75fb04baa7382ef"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/FamilyModal.tsx": {
+    "mtime": 1775366250.012602,
+    "hash": "414edf7210e2b47adc83b9c99842f512"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpecimenModal.tsx": {
+    "mtime": 1775221796.4305995,
+    "hash": "a4c283e8372dff4546fc4c117a781b58"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesModal.tsx": {
+    "mtime": 1775427455.2615595,
+    "hash": "3c4fdd506fa63cd896a3f6a56e414ca3"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesModal/SpeciesModalRefactored.tsx": {
+    "mtime": 1775098699.9223654,
+    "hash": "5a89b0bf7efa36f986c3b51b63415aa4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesModal/index.ts": {
+    "mtime": 1774385985.8464928,
+    "hash": "762669875cdf6d6449945dccae7c8af3"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesModal/LabelDataTab.tsx": {
+    "mtime": 1774385985.8455524,
+    "hash": "adc7bea30c6abe701163ab309d9450c6"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Modals/SpeciesModal/SpeciesDataTab.tsx": {
+    "mtime": 1775090541.2586706,
+    "hash": "49f599084967c2575deb66f997059a71"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Families/FamilyLegacyNamesSection.tsx": {
+    "mtime": 1775090541.265823,
+    "hash": "3b397fa9a41f3ef1af4355e431007412"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Tables/index.ts": {
+    "mtime": 1774385985.8476381,
+    "hash": "e349ca8a23f622ef521785d157b344b5"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Tables/SpeciesTable.tsx": {
+    "mtime": 1775092052.1694994,
+    "hash": "48db07c3fca9d4cf6f90530bd53974bf"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Tables/FamilyTable.tsx": {
+    "mtime": 1775366250.013602,
+    "hash": "de685d279e9d74bab5205c1fead384aa"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Cards/index.ts": {
+    "mtime": 1774385985.8434927,
+    "hash": "019b2468d66d88a4d2f541f0907d7d68"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Cards/ProjectCard.tsx": {
+    "mtime": 1775090349.2984977,
+    "hash": "462d82619c8bfcc18dffd1ce16cc5e19"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/GlobalAdminView.tsx": {
+    "mtime": 1775090541.2644074,
+    "hash": "7b0209feb38a13d3b1852adb5b9105a1"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/FieldTaxonomistView.tsx": {
+    "mtime": 1775090577.7730737,
+    "hash": "81bde45c52c41fdeccc7c6072ff9883d"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/LocalAdminView.tsx": {
+    "mtime": 1775213509.3364997,
+    "hash": "0af05351675e5f221842ac2dc0fb6598"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/index.ts": {
+    "mtime": 1774385985.847016,
+    "hash": "55c44f07fa0d8e74d5d2426ba5b52ca9"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/SeniorView.tsx": {
+    "mtime": 1775090577.7718065,
+    "hash": "7cefae9f5bc5fe84b44f5f58fd6d488b"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Overview/CatalogerView.tsx": {
+    "mtime": 1774385985.8464928,
+    "hash": "9c999a307a5d0ba8fe244a84a566a0a9"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/SpeciesTab.tsx": {
+    "mtime": 1775216325.0320554,
+    "hash": "a7451d94ff8839abec37ca656c8c3ff3"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/ProjectHeader.tsx": {
+    "mtime": 1775090498.8582578,
+    "hash": "a239b7b9f7d28a888f04f7465a140def"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/UsersTab.tsx": {
+    "mtime": 1774385985.8473027,
+    "hash": "768e3b60bc86a68cfeb6f83b760303d4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/StorageAnalysisTab.tsx": {
+    "mtime": 1775222664.4776356,
+    "hash": "3f4d1470001a3735d4544fb03a4d6bf9"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/FamiliesTab.tsx": {
+    "mtime": 1774385985.847016,
+    "hash": "aa6e361e64e0e8cf3a11ffdab2809675"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/SpecimensTab.tsx": {
+    "mtime": 1775216330.6266816,
+    "hash": "fa431e9675ac85c6da240846d1973b3f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/ProjectDetails/index.ts": {
+    "mtime": 1775219870.9773374,
+    "hash": "ecc6d7788cce65db9f1c344f6e817118"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Maps/GlobalHeatmap.tsx": {
+    "mtime": 1775092064.7885683,
+    "hash": "4feb628ad8149ccedb53282fc9b45bf4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Maps/ProjectMapViz.tsx": {
+    "mtime": 1775092069.1039941,
+    "hash": "e9cc02742e549c9444c1728aef10217f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Dashboard/StatCard.tsx": {
+    "mtime": 1775090577.7744057,
+    "hash": "a7e20e7f0b5d1ee59c181153494758e1"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Layout/Sidebar.tsx": {
+    "mtime": 1775090354.8062437,
+    "hash": "816c3052d2f9cbd2ecc07e30dae2fe2e"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Layout/DashboardLayout.tsx": {
+    "mtime": 1775090340.0039263,
+    "hash": "0f5a664445e9de91bdada14e96f83b74"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/components/Forms/ImageUploadZone.tsx": {
+    "mtime": 1775426741.1897204,
+    "hash": "66eaf5564ac9a9b47f36735b8131c4db"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/config/institution.ts": {
+    "mtime": 1774385985.8476381,
+    "hash": "86c8c910d011218dc18247dceefb0020"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/csvGenerator.ts": {
+    "mtime": 1774385985.8508656,
+    "hash": "57daf98893264132574d8fd96657b887"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/imageCompressor.ts": {
+    "mtime": 1775098621.9896934,
+    "hash": "f3f7013188e07a6e93218d25ab714ad2"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/projectSpecimensReport.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "453b9ae515b978312c8af190d1d18551"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/specimenLabels.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "e0c8c61d73bd057a1920af2483acb356"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/types.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "55cb6638fc2619e3b612062d4cbbebf4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/index.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "46dd524a7e8dfaa7e6986cd36b53f382"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/generalReport.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "f22c555860923472af7a4be5812b9b7d"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/constants.ts": {
+    "mtime": 1774385985.8511314,
+    "hash": "2c741774b64644dddf0c3e81460f9050"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/familyReport.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "40592c70fe4910a251ba1879af5ebf47"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/speciesReport.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "4a52b5c74b8db1769ad0e6ed91ccfe2f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/utils/pdf/core.ts": {
+    "mtime": 1774385985.8511727,
+    "hash": "f36830d21eeb5782a0439e748b4d924c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/contexts/AuthContext.tsx": {
+    "mtime": 1775366250.013602,
+    "hash": "f2147731be1cb9d9e130f86975232fae"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/add_project_coordinates.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "266e883714ec82dd89be22b4682688a4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/add_label_fields.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "16b8924291245f9b02ba27468c2e0140"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/fix_map_permissions_robust.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "f515c1c89572ee4e1f7c1629bc849664"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/fix_map_permissions.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "64fb976b037fa912ec6877329f671bd9"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/add_created_by_especie_local.sql": {
+    "mtime": 1774385985.8476381,
+    "hash": "81ff3dcc613a2758c52f6b9588d87bb4"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/create_etiquetas_table.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "59326a386fef6988bf44156c3838e476"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/database/fix_projects_update_policy.sql": {
+    "mtime": 1774385985.8478718,
+    "hash": "d53b48b4f457ac57e8f46b94a609f51c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/routes/index.tsx": {
+    "mtime": 1775113690.8355665,
+    "hash": "339f55609c2f2a59dba0b20c4d6962b2"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/types/auth.ts": {
+    "mtime": 1774385985.8508656,
+    "hash": "99853f6727255f18aea68c6a93197b72"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/services/specimenRepo.ts": {
+    "mtime": 1775098717.6158292,
+    "hash": "e6ddaa606cbb9091ba22ab371c486b3a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/services/speciesRepo.ts": {
+    "mtime": 1774385985.8505828,
+    "hash": "e6d9a65caeb1aa74bcaa78cc6dc070e8"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/services/types.ts": {
+    "mtime": 1775098711.6850092,
+    "hash": "649ca23f029d58235b7cf7f3fd237896"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/lib/supabase.ts": {
+    "mtime": 1774385985.8485525,
+    "hash": "ffc0dfe2334d9b837fb32403121bc3e0"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/AuditLogs.tsx": {
+    "mtime": 1774385985.849129,
+    "hash": "69b79b0b9067d8dd27566c6cd571830a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/GlobalMap.tsx": {
+    "mtime": 1774385985.849265,
+    "hash": "d15f6572b81328ff4534958593917121"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/ProjectMap.tsx": {
+    "mtime": 1775092080.1874368,
+    "hash": "2dc59d5a7025505ea48e5b3d91279d74"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Specimens.tsx": {
+    "mtime": 1775098725.4045925,
+    "hash": "b72b89f0555260acaa8889329d4592a1"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Users.tsx": {
+    "mtime": 1775090463.7934144,
+    "hash": "c7f2cc8dac5bdd942d2ce36f3cd56763"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/ProjectDetails.tsx": {
+    "mtime": 1775222675.1866505,
+    "hash": "d20bb7f5b4c8af1aeb4968fab50f5985"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/SpecimensInspection.tsx": {
+    "mtime": 1775216670.3298051,
+    "hash": "881bb9251b7508e2883254d40cf302fc"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/EducationalContent.tsx": {
+    "mtime": 1775090541.2719257,
+    "hash": "1817c7eaf8aed7885ca276a6927f42d3"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Projects.tsx": {
+    "mtime": 1775090541.245899,
+    "hash": "e23f77cfcc49cae40200c706dc51f40b"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Species.tsx": {
+    "mtime": 1774385985.8495524,
+    "hash": "63c5c41df858aa0f496e80b983883535"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Login.tsx": {
+    "mtime": 1775366250.013602,
+    "hash": "0bc5203968d04cde93a93473acdc7543"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Overview.tsx": {
+    "mtime": 1774385985.849265,
+    "hash": "2a658107249db3fd3fa65f3db62decce"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/admin/Families.tsx": {
+    "mtime": 1775090541.2444282,
+    "hash": "ce9f8f3914bef04c59a55a6ab4b05cc0"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/landingpage/Terms.tsx": {
+    "mtime": 1774385985.8505828,
+    "hash": "8edefa4074dfbb94d1b8f61e3e2ba13d"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/landingpage/Disclaimer.tsx": {
+    "mtime": 1774385985.8495524,
+    "hash": "34d2b8e6ec628985342181b06161ec5a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/landingpage/Privacy.tsx": {
+    "mtime": 1774385985.8505828,
+    "hash": "70024ae1b569857da5ed66dec1565974"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/landingpage/EmailConfirmed.tsx": {
+    "mtime": 1774385985.8505828,
+    "hash": "f5a49937c4d7eb927161754d9f44dfd2"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/pages/landingpage/LandingPage.tsx": {
+    "mtime": 1774385985.8505828,
+    "hash": "eb560e82c685904b175b17a32acd14d2"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useProjectActions.ts": {
+    "mtime": 1775079007.159316,
+    "hash": "c9ddc50de242530c46926563d842904c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpeciesActions.ts": {
+    "mtime": 1774797579.111837,
+    "hash": "ca4cc9abca512c454743b6a171ebe624"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useFamilyLegacyNames.ts": {
+    "mtime": 1774797672.4906569,
+    "hash": "3c7cfbbc7558eda35b136a9c8f005a85"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpeciesForm.ts": {
+    "mtime": 1774797581.9706113,
+    "hash": "297bfa751c013536a4c8f8844c624e70"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useProjectDetails.ts": {
+    "mtime": 1775221816.0770228,
+    "hash": "709c8b2f3740316089776d710d373d3e"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useFamilies.ts": {
+    "mtime": 1775366250.013602,
+    "hash": "1776e3938e2b299682536547b0f97a4c"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpecies.ts": {
+    "mtime": 1775092044.917036,
+    "hash": "9558412e11bc9ca325884e06d8609d7f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useFamilyActions.ts": {
+    "mtime": 1774797669.7078655,
+    "hash": "2dd33d22ef7724e33aa76caf895f772d"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/index.ts": {
+    "mtime": 1774385985.8478718,
+    "hash": "765cf97ea36d8b84d66e946017d03502"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpeciesImages.ts": {
+    "mtime": 1775426732.415071,
+    "hash": "4a8da1ac24fccf43b4bda66c59926a39"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useOverviewStats.ts": {
+    "mtime": 1775366250.013602,
+    "hash": "8a6dd0244b3ebab06b56c08780785e2b"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpecimenImages.ts": {
+    "mtime": 1775426739.175023,
+    "hash": "1537775fc573efde16f86a1d10a4db43"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useProjects.ts": {
+    "mtime": 1774797687.0375705,
+    "hash": "d00e43fb037556e4a10e1caaeff9893f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/hooks/useSpecimens.ts": {
+    "mtime": 1775237674.948795,
+    "hash": "dff718c595705c423b9b63f3f3f00a52"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/setup.ts": {
+    "mtime": 1775098732.111388,
+    "hash": "c976109963c0762326dec2844a3a0d0a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/mocks/supabase.ts": {
+    "mtime": 1775428531.1014597,
+    "hash": "4653cce17c0511b606d717113e1b20ac"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/auth.types.test.ts": {
+    "mtime": 1774833505.2656565,
+    "hash": "6e9debdb1f8beb1b3edb19b31f06e040"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/Users.test.tsx": {
+    "mtime": 1774835844.1322384,
+    "hash": "9eb9c951ac83a8a7a9a20792fc08575a"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/AuthContext.test.tsx": {
+    "mtime": 1775366250.013602,
+    "hash": "0515346002642707ab39941718176b34"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/speciesModal.test.tsx": {
+    "mtime": 1775427481.4461784,
+    "hash": "31f5f1b4d1db186b73cedae5242b7b41"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/Login.test.tsx": {
+    "mtime": 1775428557.8275778,
+    "hash": "fe3ac1ab904a905ec7c8e7f5ba8f8428"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/useOverviewStats.test.ts": {
+    "mtime": 1775427947.2751994,
+    "hash": "0d945318faad93fde9c6e1ef80ae14be"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/test/unit/guards.test.tsx": {
+    "mtime": 1774835537.0072303,
+    "hash": "cb785161b337daaa5216ec74bf1df0b8"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/dev-dist/workbox-5a5d9309.js": {
+    "mtime": 1775062247.0247707,
+    "hash": "5e1be2ced820369c087e631fdca1a550"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/dev-dist/sw.js": {
+    "mtime": 1775062247.0240579,
+    "hash": "6a86ffc6562ee4b4ca6be0153106e587"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/dev-dist/registerSW.js": {
+    "mtime": 1775062243.0076673,
+    "hash": "3ca0b8505b4bec776b69afdba2768812"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/index.html": {
+    "mtime": 1774385985.8375027,
+    "hash": "58d9d3d479ba80e4906ef4502ae30d1d"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/PROJECT_STRUCTURE Painel admin.md": {
+    "mtime": 1774798789.0381992,
+    "hash": "b0d7c935ddbd11bcc8b6226c09dabe89"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/SUPABASE_SCHEMA.md": {
+    "mtime": 1775112864.362712,
+    "hash": "b5952edf9a193b59bd9337ea8dae652f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/CLAUDE.md": {
+    "mtime": 1775089871.990745,
+    "hash": "ae4d739c0dc25447f4cea5ad50d80437"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/README.md": {
+    "mtime": 1775430890.8233216,
+    "hash": "fdbaa400705ad54b0a7ff97f15ca5a5f"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/docs/DECISIONS.md": {
+    "mtime": 1775430868.314152,
+    "hash": "a84cb32c0ae6686a98aca5ed1d198532"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/docs/mobile_legal/PRIVACY.md": {
+    "mtime": 1774385985.8374228,
+    "hash": "2d2a2d2d30fb14a9701bdca329816e69"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/docs/mobile_legal/TERMS.md": {
+    "mtime": 1774385985.8375027,
+    "hash": "a4f8d60d8ff670010e4be995c284ec00"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/public/jayan-moura.jpeg": {
+    "mtime": 1774385985.8405528,
+    "hash": "101644756ea94b97bfe359a5f7ea9132"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/public/pwa-512x512.png": {
+    "mtime": 1774385985.8415527,
+    "hash": "57fe2ffe7afe7ecf91fbdbf624e78520"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/public/icon.png": {
+    "mtime": 1774385985.8405528,
+    "hash": "6f6e4af9fbde98f13e729cb4a47d6edd"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/public/Tela-Inicial.png": {
+    "mtime": 1774385985.8395526,
+    "hash": "f82a7586f7a0446f588119da71bf4522"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/public/pwa-192x192.png": {
+    "mtime": 1774385985.8405528,
+    "hash": "7f305b7a468ed9d5811a2af69ad40eb0"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/assets/react.svg": {
+    "mtime": 1774385985.8425527,
+    "hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "/home/jayan-moura/\u00c1rea de trabalho/Projetos/Veridia-Saber-Admin/src/assets/icon.png": {
+    "mtime": 1774385985.8425527,
+    "hash": "6f6e4af9fbde98f13e729cb4a47d6edd"
+  }
+}

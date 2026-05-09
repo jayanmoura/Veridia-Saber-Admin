@@ -60,7 +60,7 @@ interface SpecimenDetailModalProps {
 }
 
 function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalProps) {
-    const [images, setImages] = useState<{ id: string; url_imagem: string; creditos: string | null }[]>([]);
+    const [images, setImages] = useState<{ id: string; url_imagem: string; url_thumbnail: string | null; url_micro: string | null; creditos: string | null }[]>([]);
     const [loadingImages, setLoadingImages] = useState(false);
 
     useEffect(() => {
@@ -75,7 +75,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
         try {
             const { data } = await supabase
                 .from('imagens')
-                .select('id, url_imagem, creditos')
+                .select('id, url_imagem, url_thumbnail, url_micro, creditos')
                 .eq('especime_id', specimen.id);
             setImages(data || []);
         } catch (error) {
@@ -187,7 +187,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
                                 {images.map(img => (
                                     <div key={img.id} className="relative group">
                                         <img
-                                            src={img.url_imagem}
+                                            src={img.url_micro || img.url_thumbnail || img.url_imagem}
                                             alt="Espécime"
                                             className="w-full h-32 object-cover rounded-lg border border-gray-200"
                                         />
