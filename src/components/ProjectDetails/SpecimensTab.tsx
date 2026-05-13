@@ -1,9 +1,12 @@
-import { MapPin, Plus, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Plus, Edit2, Trash2, Tag, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSpecimens } from '../../hooks/useSpecimens';
 import { SpecimenModal } from '../Modals/SpecimenModal';
 import { ConfirmDeleteModal } from '../Modals/ConfirmDeleteModal';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { SortableColumnHeader } from '../Tables/SortableColumnHeader';
+import { extractCodeNumber } from '../../utils/sorting';
+import { generateHerbariumLabels } from '../../utils/pdf';
 
 interface SpecimensTabProps {
     projectId: string;
@@ -34,6 +37,67 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('pt-BR');
     };
+
+    const [labelLoading, setLabelLoading] = useState<number | null>(null);
+
+    const handlePrintLabel = async (specimen: any) => {
+        setLabelLoading(specimen.id);
+        try {
+            const formatStr = (dateStr?: string | null) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
+
+            const labelData = {
+                scientificName: specimen.nome_cientifico || 'Sem Identificação',
+                author: specimen.autor || undefined,
+                family: specimen.familia_nome || 'INDETERMINADA',
+                popularName: specimen.nome_popular || undefined,
+                collector: specimen.coletor || 'Sem Coletor',
+                collectorNumber: specimen.numero_coletor || undefined,
+                date: formatStr(specimen.created_at),
+                location: specimen.locais?.nome || 'Local Desconhecido',
+                notes: specimen.detalhes_localizacao || '',
+                morphology: specimen.morfologia || undefined,
+                habitat: specimen.habitat_ecologia || undefined,
+                determinant: specimen.determinador || '',
+                determinationDate: formatStr(specimen.data_determinacao),
+                coordinates: (specimen.latitude && specimen.longitude)
+                    ? `Lat: ${specimen.latitude} Long: ${specimen.longitude}`
+                    : undefined,
+                tomboNumber: specimen.tombo_codigo || specimen.id
+            };
+
+            generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
+        } catch (error) {
+            console.error('Error generating label:', error);
+            alert('Erro ao gerar etiqueta');
+        } finally {
+            setLabelLoading(null);
+        }
+    };
+
+    const [sortKey, setSortKey] = useState<string | null>(null);
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = (key: string) => {
+        if (sortKey === key) {
+            if (sortDir === 'asc') setSortDir('desc');
+            else { setSortKey(null); setSortDir('asc'); }
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortedSpecimens = useMemo(() => {
+        if (!sortKey) return specimens;
+        return [...specimens].sort((a, b) => {
+            if (sortKey === 'tombo') {
+                const valA = extractCodeNumber(a.tombo_codigo || a.id.toString());
+                const valB = extractCodeNumber(b.tombo_codigo || b.id.toString());
+                return sortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return 0;
+        });
+    }, [specimens, sortKey, sortDir]);
 
     return (
         <div className="space-y-6">
@@ -68,7 +132,15 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="px-6 py-3 font-semibold text-gray-700">Tombo</th>
+                                <th className="px-6 py-3 font-semibold text-gray-700">
+                                    <SortableColumnHeader
+                                        label="Tombo"
+                                        sortKey="tombo"
+                                        currentSortKey={sortKey}
+                                        direction={sortDir}
+                                        onSort={handleSort}
+                                    />
+                                </th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Espécie</th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Coletor</th>
                                 <th className="px-6 py-3 font-semibold text-gray-700">Data</th>
@@ -76,7 +148,7 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {specimens.map((item) => (
+                            {sortedSpecimens.map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4 font-mono text-gray-500 font-bold text-xs">{item.tombo_codigo || `#${item.id}`}</td>
                                     <td className="px-6 py-4">
@@ -101,6 +173,14 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handlePrintLabel(item)}
+                                                className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                title="Gerar Etiqueta"
+                                                disabled={labelLoading === item.id}
+                                            >
+                                                {labelLoading === item.id ? <Loader2 size={16} className="animate-spin" /> : <Tag size={16} />}
+                                            </button>
                                             <button
                                                 onClick={() => openEditModal(item)}
                                                 className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"

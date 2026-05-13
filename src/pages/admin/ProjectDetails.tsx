@@ -33,8 +33,7 @@ import {
     SpeciesTab,
     FamiliesTab,
     SpecimensTab,
-    StorageAnalysisTab,
-    type LinkedSpecies
+    StorageAnalysisTab
 } from '../../components/ProjectDetails';
 import { MapPin } from 'lucide-react'; // Ensure MapPin is imported if not already
 
@@ -86,14 +85,13 @@ export default function ProjectDetailsPage() {
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [genLabelsLoading, setGenLabelsLoading] = useState(false);
-    const [singleLabelLoading, setSingleLabelLoading] = useState<string | null>(null);
     const [exportCSVLoading, setExportCSVLoading] = useState(false);
 
     // Tab config
     const tabs = [
         { id: 'users' as const, label: 'Usuários', icon: Users, count: usersCount },
-        { id: 'species' as const, label: 'Espécies', icon: Leaf, count: speciesCountTotal },
         { id: 'families' as const, label: 'Famílias', icon: TreeDeciduous, count: familiesCount },
+        { id: 'species' as const, label: 'Espécies', icon: Leaf, count: speciesCountTotal },
         { id: 'specimens' as const, label: 'Espécimes', icon: MapPin, count: specimensCount },
         { id: 'storage' as const, label: 'Storage', icon: HardDrive, count: null },
     ];
@@ -268,41 +266,6 @@ export default function ProjectDetailsPage() {
         }
     };
 
-    const handleGenerateSingleLabel = async (species: LinkedSpecies) => {
-        if (!project || !id) return;
-        setSingleLabelLoading(species.id);
-        try {
-            const { data } = await supabase
-                .from('especie_local')
-                .select('id, detalhes_localizacao, created_at, determinador, data_determinacao, coletor, numero_coletor, morfologia, habitat_ecologia')
-                .eq('local_id', id)
-                .eq('especie_id', species.id)
-                .maybeSingle();
-
-            const formatDate = (dateStr?: string) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : undefined;
-            const label = {
-                scientificName: species.nome_cientifico || 'Sem Identificação',
-                author: species.autor || undefined,
-                family: species.familia?.familia_nome || 'INDETERMINADA',
-                popularName: species.nome_popular || undefined,
-                collector: data?.coletor || project.nome,
-                collectorNumber: data?.numero_coletor,
-                date: formatDate(data?.created_at) || new Date().toLocaleDateString('pt-BR'),
-                location: `${project.nome} (${project.tipo || 'Local'})`,
-                notes: data?.detalhes_localizacao || '',
-                morphology: data?.morfologia,
-                habitat: data?.habitat_ecologia,
-                determinant: data?.determinador || 'Sistema Veridia',
-                determinationDate: formatDate(data?.data_determinacao),
-                tomboNumber: data?.id
-            };
-            generateHerbariumLabels([label], `Etiqueta_${(species.nome_cientifico || 'especie').replace(/\s+/g, '_')}.pdf`);
-        } catch {
-            alert('Erro ao gerar etiqueta.');
-        } finally {
-            setSingleLabelLoading(null);
-        }
-    };
 
     const handleExportCSV = async () => {
         if (!project || !id) return;
@@ -454,18 +417,14 @@ export default function ProjectDetailsPage() {
                             ) : (
                                 <>
                                     {activeTab === 'users' && <UsersTab users={linkedUsers} />}
-                                    {activeTab === 'species' && (
-                                        <SpeciesTab
-                                            species={linkedSpecies}
-                                            singleLabelLoading={singleLabelLoading}
-                                            onGenerateSingleLabel={handleGenerateSingleLabel}
-                                        />
-                                    )}
                                     {activeTab === 'families' && (
                                         <FamiliesTab
                                             families={linkedFamilies}
                                             onFamilyClick={openFamilyModal}
                                         />
+                                    )}
+                                    {activeTab === 'species' && (
+                                        <SpeciesTab species={linkedSpecies} />
                                     )}
                                     {activeTab === 'specimens' && (
                                         <SpecimensTab projectId={id || ''} readOnly={isGlobalAdmin} />

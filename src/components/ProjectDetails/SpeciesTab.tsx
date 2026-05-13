@@ -1,4 +1,6 @@
-import { Leaf, Loader2, Tag } from 'lucide-react';
+import { Leaf, Edit2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface LinkedSpecies {
     id: string;
@@ -10,18 +12,24 @@ export interface LinkedSpecies {
     imagem?: string | null;        // url_micro (preferencial para listagem)
     imagem_thumbnail?: string | null;
     imagem_original?: string | null;
+    specimens?: {
+        id: string | number;
+        tombo_codigo: string | null;
+        created_at: string | null;
+        url_imagem: string | null;
+    }[];
 }
 
 interface SpeciesTabProps {
     species: LinkedSpecies[];
-    singleLabelLoading: string | null;
-    onGenerateSingleLabel: (species: LinkedSpecies) => void;
 }
 
 /**
  * Species tab content for ProjectDetails page.
  */
-export function SpeciesTab({ species, singleLabelLoading, onGenerateSingleLabel }: SpeciesTabProps) {
+export function SpeciesTab({ species }: SpeciesTabProps) {
+    const [selectedSpeciesForModal, setSelectedSpeciesForModal] = useState<LinkedSpecies | null>(null);
+
     if (species.length === 0) {
         return (
             <div className="text-center py-12 text-gray-400">
@@ -62,18 +70,14 @@ export function SpeciesTab({ species, singleLabelLoading, onGenerateSingleLabel 
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => onGenerateSingleLabel(sp)}
-                            disabled={singleLabelLoading === sp.id}
-                            title="Gerar Etiqueta"
-                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        >
-                            {singleLabelLoading === sp.id ? (
-                                <Loader2 size={18} className="animate-spin text-emerald-600" />
-                            ) : (
-                                <Tag size={18} />
-                            )}
-                        </button>
+                        {sp.specimens && sp.specimens.length > 1 && (
+                            <button
+                                onClick={() => setSelectedSpeciesForModal(sp)}
+                                className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-full text-xs font-medium cursor-pointer transition-colors"
+                            >
+                                {sp.specimens.length} espécimes
+                            </button>
+                        )}
                         {sp.familia && (
                             <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                                 {(sp.familia as any).familia_nome}
@@ -82,6 +86,56 @@ export function SpeciesTab({ species, singleLabelLoading, onGenerateSingleLabel 
                     </div>
                 </div>
             ))}
+
+            {selectedSpeciesForModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedSpeciesForModal(null)} />
+                    <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">
+                                Espécimes de {selectedSpeciesForModal.nome_cientifico}
+                            </h3>
+                            <button onClick={() => setSelectedSpeciesForModal(null)} className="text-gray-400 hover:text-gray-600">
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {selectedSpeciesForModal.specimens?.map(specimen => (
+                                <div key={specimen.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        {specimen.url_imagem ? (
+                                            <img src={specimen.url_imagem} className="w-10 h-10 rounded-lg object-cover" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><Leaf size={16} className="text-gray-400" /></div>
+                                        )}
+                                        <div>
+                                            <p className="font-medium text-gray-900 text-sm">{specimen.tombo_codigo || specimen.id}</p>
+                                            <p className="text-xs text-gray-500">Coletado em {specimen.created_at ? new Date(specimen.created_at).toLocaleDateString('pt-BR') : '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => window.location.href = `/specimens?search=${specimen.id}`}
+                                            className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                                            title="Editar na gestão global"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => window.location.href = `/specimens?search=${specimen.id}`}
+                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                            title="Excluir na gestão global"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

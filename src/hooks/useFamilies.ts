@@ -85,18 +85,29 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
     const [pendingFamilies, setPendingFamilies] = useState<PendingFamily[]>([]);
     const [pendingLoading, setPendingLoading] = useState(false);
 
-    // Calculate stats from current page data (Richest) and global data (Missing Images)
-    const calculateStats = useCallback((data: Family[], total: number, missingImagesGlobal: number) => {
+    // Calculate stats from global data (Richest) and global data (Missing Images)
+    const calculateStats = useCallback((_data: Family[], total: number, missingImagesGlobal: number, allSpeciesData?: any[]) => {
         let richest: FamilyStats['richest'] = null;
         let maxCount = 0;
 
-        data.forEach(f => {
-            const count = f.especie?.[0]?.count || f.quantidade_especies || 0;
-            if (count > maxCount) {
-                maxCount = count;
-                richest = { name: f.familia_nome, count };
-            }
-        });
+        if (allSpeciesData && allSpeciesData.length > 0) {
+            const familyCounts: Record<string, number> = {};
+
+            allSpeciesData.forEach(s => {
+                const fam = Array.isArray(s.familia) ? s.familia[0] : s.familia;
+                if (fam && fam.familia_nome) {
+                    const name = fam.familia_nome;
+                    familyCounts[name] = (familyCounts[name] || 0) + 1;
+                }
+            });
+
+            Object.entries(familyCounts).forEach(([name, count]) => {
+                if (count > maxCount) {
+                    maxCount = count;
+                    richest = { name, count };
+                }
+            });
+        }
 
         setStats({ total, richest, missingImages: missingImagesGlobal });
     }, []);
@@ -121,12 +132,17 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
                 .select('id', { count: 'exact', head: true })
                 .is('imagem_referencia', null);
 
+            let richestQuery = supabase
+                .from('especie')
+                .select('familia:familia_id(familia_nome)')
+                .not('familia_id', 'is', null);
+
             if (search) {
                 query = query.ilike('familia_nome', `%${search}%`);
                 imgQuery = imgQuery.ilike('familia_nome', `%${search}%`);
             }
 
-            const [mainResult, imgResult] = await Promise.all([query, imgQuery]);
+            const [mainResult, imgResult, richestResult] = await Promise.all([query, imgQuery, richestQuery]);
 
             const { data, error, count } = mainResult;
 
@@ -142,7 +158,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
 
             setFamilies(formattedData);
             setTotalCount(count || 0);
-            calculateStats(formattedData, count || 0, missingImagesGlobal);
+            calculateStats(formattedData, count || 0, missingImagesGlobal, richestResult.data || []);
 
         } catch (error) {
             console.error('Error fetching families:', error);

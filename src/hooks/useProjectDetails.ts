@@ -33,6 +33,12 @@ export interface LinkedSpecies {
     imagem?: string | null;        // url_micro (preferencial para listagem)
     imagem_thumbnail?: string | null;
     imagem_original?: string | null;
+    specimens?: {
+        id: string | number;
+        tombo_codigo: string | null;
+        created_at: string | null;
+        url_imagem: string | null;
+    }[];
 }
 
 export interface LinkedFamily {
@@ -205,12 +211,15 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             if (userCount !== null) setUsersCount(userCount);
 
             // Count Species (unique especie_id occurrences used as "species linked")
-            const { count: specCount } = await supabase
+            const { data: specData } = await supabase
                 .from('especie_local')
-                .select('*', { count: 'exact', head: true })
+                .select('especie_id')
                 .eq('local_id', projectId);
 
-            if (specCount !== null) setSpeciesCountTotal(specCount);
+            if (specData) {
+                const uniqueSpeciesIds = new Set(specData.map(d => d.especie_id).filter(Boolean));
+                setSpeciesCountTotal(uniqueSpeciesIds.size);
+            }
 
             // Count Specimens (same table, same filter — kept separate for clarity)
             const { count: specimensCount } = await supabase
@@ -266,6 +275,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         .from('especie_local')
                         .select(`
                             id,
+                            created_at,
+                            tombo_codigo,
+                            imagens(url_micro, url_thumbnail, url_imagem),
                             especie:especie_id(
                                 id,
                                 nome_cientifico,
@@ -275,30 +287,49 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                                 imagens(url_micro, url_thumbnail, url_imagem)
                             )
                         `)
-                        .eq('local_id', projectId)
-                        .range(start, end);
+                        .eq('local_id', projectId);
 
-                    const normalizedSpecies: LinkedSpecies[] = (speciesData || []).map((item: any) => {
+                    const speciesMap = new Map<string, LinkedSpecies>();
+
+                    (speciesData || []).forEach((item: any) => {
                         const s = item.especie;
-                        if (!s) return null;
+                        if (!s || !s.id) return;
 
-                        const familia = Array.isArray(s.familia) ? s.familia[0] : s.familia;
-                        const img0 = s.imagens?.[0];
+                        const imgEspecie = s.imagens?.[0];
+                        const imgEspecime = item.imagens?.[0];
+                        const imgSource = imgEspecime || imgEspecie;
 
-                        return {
-                            id: s.id,
-                            nome_cientifico: s.nome_cientifico,
-                            nome_popular: s.nome_popular,
-                            familia_id: s.familia_id,
-                            familia,
-                            imagem: img0?.url_micro || null,
-                            imagem_thumbnail: img0?.url_thumbnail || null,
-                            imagem_original: img0?.url_imagem || null,
+                        const specimenInfo = {
+                            id: item.id,
+                            tombo_codigo: item.tombo_codigo || null,
+                            created_at: item.created_at,
+                            url_imagem: imgSource?.url_micro || imgSource?.url_thumbnail || imgSource?.url_imagem || null
                         };
-                    }).filter(Boolean) as LinkedSpecies[];
 
-                    setLinkedSpecies(normalizedSpecies);
-                    setTotalPages(Math.ceil(speciesCountTotal / itemsPerPage) || 1);
+                        if (speciesMap.has(s.id)) {
+                            speciesMap.get(s.id)!.specimens!.push(specimenInfo);
+                        } else {
+                            const familia = Array.isArray(s.familia) ? s.familia[0] : s.familia;
+                            speciesMap.set(s.id, {
+                                id: s.id,
+                                nome_cientifico: s.nome_cientifico,
+                                nome_popular: s.nome_popular,
+                                familia_id: s.familia_id,
+                                familia,
+                                imagem: imgEspecie?.url_micro || null,
+                                imagem_thumbnail: imgEspecie?.url_thumbnail || null,
+                                imagem_original: imgEspecie?.url_imagem || null,
+                                specimens: [specimenInfo]
+                            });
+                        }
+                    });
+
+                    const uniqueSpeciesArray = Array.from(speciesMap.values()).sort((a, b) =>
+                        (a.nome_cientifico || '').localeCompare(b.nome_cientifico || '')
+                    );
+
+                    setLinkedSpecies(uniqueSpeciesArray.slice(start, end + 1));
+                    setTotalPages(Math.ceil(uniqueSpeciesArray.length / itemsPerPage) || 1);
                     break;
 
                 case 'families':

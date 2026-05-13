@@ -24,7 +24,7 @@ export interface FamilyOption {
 
 export interface SpeciesStats {
     total: number;
-    topEpithet: { name: string; count: number } | null;
+    topGenus: { name: string; count: number } | null;
     missingImages: number;
 }
 
@@ -79,36 +79,38 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
     const [totalCount, setTotalCount] = useState(0);
     const [stats, setStats] = useState<SpeciesStats>({
         total: 0,
-        topEpithet: null,
+        topGenus: null,
         missingImages: 0
     });
 
-    // Calculate stats from current page data (Top Epithet) and global data (Missing Images)
-    const calculateStats = useCallback((data: Species[], total: number, missingImagesGlobal: number) => {
-        // missingImages is now passed from global query, distinguishing from page-local data
-        const epithetCounts: Record<string, number> = {};
+    // Calculate stats from global data (Top Genus) and global data (Missing Images)
+    const calculateStats = useCallback((data: Species[], total: number, missingImagesGlobal: number, allNamesData?: any[]) => {
+        const genusCounts: Record<string, number> = {};
 
-        data.forEach(s => {
-            const parts = s.nome_cientifico?.trim().split(' ') || [];
-            if (parts.length >= 2) {
-                const epithet = parts[1].toLowerCase().replace(/[^a-z]/g, '');
-                if (epithet) {
-                    epithetCounts[epithet] = (epithetCounts[epithet] || 0) + 1;
+        const dataToProcess = (allNamesData && allNamesData.length > 0) ? allNamesData : data;
+
+        dataToProcess.forEach(s => {
+            const parts = s.nome_cientifico?.trim().split(/\s+/) || [];
+            if (parts.length >= 1) {
+                let genus = parts[0].trim();
+                if (genus) {
+                    genus = genus.charAt(0).toUpperCase() + genus.slice(1).toLowerCase();
+                    genusCounts[genus] = (genusCounts[genus] || 0) + 1;
                 }
             }
         });
 
-        let topEpithet = null;
+        let topGenus = null;
         let maxCount = 0;
 
-        Object.entries(epithetCounts).forEach(([name, count]) => {
+        Object.entries(genusCounts).forEach(([name, count]) => {
             if (count > maxCount) {
                 maxCount = count;
-                topEpithet = { name, count };
+                topGenus = { name, count };
             }
         });
 
-        setStats({ total, missingImages: missingImagesGlobal, topEpithet });
+        setStats({ total, missingImages: missingImagesGlobal, topGenus });
     }, []);
 
     // Fetch families for filter dropdown
@@ -196,8 +198,28 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                 imgQuery = imgQuery.eq('familia_id', familyId);
             }
 
+            // 3. Fetch ALL species names to calculate Top Genus accurately across the database
+            let allNamesQuery;
+            if (!isGlobalAdmin && userLocalId) {
+                allNamesQuery = supabase
+                    .from('especie')
+                    .select('nome_cientifico, especie_local!inner(local_id)')
+                    .eq('especie_local.local_id', userLocalId);
+            } else {
+                allNamesQuery = supabase
+                    .from('especie')
+                    .select('nome_cientifico');
+            }
+
+            if (search) {
+                allNamesQuery = allNamesQuery.ilike('nome_cientifico', `%${search}%`);
+            }
+            if (familyId) {
+                allNamesQuery = allNamesQuery.eq('familia_id', familyId);
+            }
+
             // execute parallel
-            const [mainResult, imgResult] = await Promise.all([query, imgQuery]);
+            const [mainResult, imgResult, allNamesResult] = await Promise.all([query, imgQuery, allNamesQuery]);
 
             const { data, error, count } = mainResult;
             if (error) throw error;
@@ -220,7 +242,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
             setSpecies(formattedData);
             setTotalCount(count || 0);
-            calculateStats(formattedData, count || 0, globalMissingImages);
+            calculateStats(formattedData, count || 0, globalMissingImages, allNamesResult.data || []);
 
         } catch (error) {
             console.error('Error fetching species:', error);

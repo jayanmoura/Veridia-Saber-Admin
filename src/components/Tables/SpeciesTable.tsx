@@ -1,4 +1,7 @@
 import { Leaf, FileText, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { SortableColumnHeader } from './SortableColumnHeader';
+import { extractCodeNumber } from '../../utils/sorting';
 
 export interface SpeciesItem {
     id: string;
@@ -60,6 +63,31 @@ export function SpeciesTable({
         return 'Sistema';
     };
 
+    const [sortKey, setSortKey] = useState<string | null>(null);
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = (key: string) => {
+        if (sortKey === key) {
+            if (sortDir === 'asc') setSortDir('desc');
+            else { setSortKey(null); setSortDir('asc'); }
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortedSpecies = useMemo(() => {
+        if (!sortKey) return species;
+        return [...species].sort((a, b) => {
+            if (sortKey === 'codigo') {
+                const valA = extractCodeNumber((a as any).codigo_vs);
+                const valB = extractCodeNumber((b as any).codigo_vs);
+                return sortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return 0;
+        });
+    }, [species, sortKey, sortDir]);
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -67,7 +95,15 @@ export function SpeciesTable({
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-200">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">Foto</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Código</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">
+                                <SortableColumnHeader
+                                    label="Código"
+                                    sortKey="codigo"
+                                    currentSortKey={sortKey}
+                                    direction={sortDir}
+                                    onSort={handleSort}
+                                />
+                            </th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Família</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Espécie</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Criado por</th>
@@ -86,8 +122,8 @@ export function SpeciesTable({
                                     <td className="px-6 py-4"><div className="h-8 w-24 bg-gray-100 rounded ml-auto"></div></td>
                                 </tr>
                             ))
-                        ) : species.length > 0 ? (
-                            species.map((specie) => {
+                        ) : sortedSpecies.length > 0 ? (
+                            sortedSpecies.map((specie) => {
                                 const imageUrl = specie.imagens?.[0]?.url_thumbnail || specie.imagens?.[0]?.url_imagem;
 
                                 return (

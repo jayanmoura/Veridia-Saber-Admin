@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapPin, Search, Loader2, Plus, Edit2, Trash2, Tag, Filter, Leaf, FileText } from 'lucide-react';
 import { specimenRepo } from '../../services/specimenRepo';
@@ -10,6 +9,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { ConfirmDeleteModal } from '../../components/Modals/ConfirmDeleteModal';
+import { SortableColumnHeader } from '../../components/Tables/SortableColumnHeader';
+import { extractCodeNumber } from '../../utils/sorting';
 
 // Initial Form State
 const INITIAL_FORM: SpecimenFormData = {
@@ -140,6 +141,31 @@ export default function Specimens() {
         s.coletor?.toLowerCase().includes(search.toLowerCase()) ||
         s.numero_coletor?.includes(search)
     );
+
+    const [sortKey, setSortKey] = useState<string | null>(null);
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = (key: string) => {
+        if (sortKey === key) {
+            if (sortDir === 'asc') setSortDir('desc');
+            else { setSortKey(null); setSortDir('asc'); }
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortedSpecimens = useMemo(() => {
+        if (!sortKey) return filtered;
+        return [...filtered].sort((a, b) => {
+            if (sortKey === 'tombo') {
+                const valA = extractCodeNumber(a.tombo_codigo || a.id.toString());
+                const valB = extractCodeNumber(b.tombo_codigo || b.id.toString());
+                return sortDir === 'asc' ? valA - valB : valB - valA;
+            }
+            return 0;
+        });
+    }, [filtered, sortKey, sortDir]);
 
     const handlePrintLabel = async (specimen: Specimen) => {
         setLabelLoading(specimen.id);
@@ -419,7 +445,15 @@ export default function Specimens() {
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-3 font-semibold text-gray-700 w-20">Foto</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-700">Tombo</th>
+                                    <th className="px-6 py-3 font-semibold text-gray-700">
+                                        <SortableColumnHeader
+                                            label="Tombo"
+                                            sortKey="tombo"
+                                            currentSortKey={sortKey}
+                                            direction={sortDir}
+                                            onSort={handleSort}
+                                        />
+                                    </th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Espécie</th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Projeto (Local)</th>
                                     <th className="px-6 py-3 font-semibold text-gray-700">Coletor</th>
@@ -429,7 +463,7 @@ export default function Specimens() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filtered.map((item) => (
+                                {sortedSpecimens.map((item) => (
                                     <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                                         <td className="px-6 py-4">
                                             {item.imagens && item.imagens.length > 0 ? (

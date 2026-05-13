@@ -14,7 +14,6 @@ import { SuccessModal } from '../../components/Modals/SuccessModal';
 import { useFamilies, useFamilyActions } from '../../hooks';
 import {
     TreeDeciduous,
-    Crown,
     ImageOff,
     Search,
     Download,
@@ -134,9 +133,9 @@ export default function Families() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard title="Total de Famílias" value={stats.total} icon={TreeDeciduous} color="emerald" loading={loading} />
                     <StatCard
-                        title="Família + Rica (Pág)"
+                        title="Família Mais Rica"
                         value={loading ? "..." : (stats.richest ? `${stats.richest.name} (${stats.richest.count})` : '-')}
-                        icon={Crown}
+                        icon={TreeDeciduous}
                         color="amber"
                         loading={loading}
                     />

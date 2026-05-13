@@ -16,14 +16,14 @@ import { useSpecies, useSpeciesActions } from '../../hooks';
 import { hasMinLevel } from '../../types/auth';
 import {
     Leaf,
-    Image as ImageIcon,
     ImageOff,
     Search,
     Download,
     Plus,
     Filter,
     Loader2,
-    AlertTriangle
+    AlertTriangle,
+    TreeDeciduous
 } from 'lucide-react';
 
 
@@ -246,9 +246,9 @@ export default function SpeciesPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard title="Total de Espécies" value={stats.total} icon={Leaf} color="emerald" loading={loading} />
                 <StatCard
-                    title="Top Epíteto (Pág)"
-                    value={loading ? "..." : (stats.topEpithet ? `${stats.topEpithet.name} (${stats.topEpithet.count})` : '-')}
-                    icon={ImageIcon}
+                    title="Top Gênero"
+                    value={loading ? "..." : (stats.topGenus ? `${stats.topGenus.name} (${stats.topGenus.count})` : '-')}
+                    icon={TreeDeciduous}
                     color="blue"
                     loading={loading}
                 />
