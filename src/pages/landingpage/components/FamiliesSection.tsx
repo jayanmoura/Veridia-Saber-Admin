@@ -1,0 +1,450 @@
+import { useEffect, useState, useRef } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { supabase } from '../../../lib/supabase';
+
+
+
+// ─── Interfaces ──────────────────────────────────────────────────────────────
+
+interface SpecimenPin {
+  id: string;
+  latitude: number;
+  longitude: number;
+  tombo_codigo: string | null;
+  tombo_num: string | null;
+  nome_cientifico: string;
+  nome_popular: string;
+  especie_id: string;
+  familia_nome: string;
+  familia_id: string;
+}
+
+interface LocalPin {
+  id: string;
+  nome: string;
+  latitude: number;
+  longitude: number;
+  cidade: string;
+  estado: string;
+}
+
+// ─── Supabase row types (planas, sem joins) ───────────────────────────────────
+
+interface FamiliaRow {
+  id: string;
+  familia_nome: string;
+  descricao_familia: string | null;
+  imagem_micro: string | null;
+  imagem_thumbnail: string | null;
+}
+
+interface EspecieRow {
+  id: string;
+  nome_cientifico: string;
+  nome_popular: string | null;
+  familia_id: string | null;
+}
+
+interface EspecieLocalRow {
+  id: string;
+  latitude: number | null;
+  longitude: number | null;
+  tombo_codigo: string | null;
+  tombo_num: string | null;
+  especie_id: string | null;
+}
+
+interface LocalRow {
+  id: string;
+  nome: string;
+  cidade: string | null;
+  estado: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+// ─── MapController ────────────────────────────────────────────────────────────
+
+interface MapControllerProps {
+  activeTab: 'familias' | 'especies' | 'projetos';
+  specimensPins: SpecimenPin[];
+  projetosPins: LocalPin[];
+  mapRef: React.MutableRefObject<L.Map | null>;
+}
+
+function MapController({ activeTab, specimensPins, projetosPins, mapRef }: MapControllerProps) {
+  const map = useMap();
+
+  useEffect(() => {
+    mapRef.current = map;
+    map.invalidateSize();
+
+    const activePins = activeTab === 'projetos' ? projetosPins : specimensPins;
+
+    if (activePins.length > 0) {
+      const bounds = L.latLngBounds(activePins.map(p => [p.latitude, p.longitude]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    } else {
+      map.setView([-22.74, -43.70], 12);
+    }
+  }, [activeTab, specimensPins, projetosPins, map, mapRef]);
+
+  return null;
+}
+
+// ─── FamiliesSection ──────────────────────────────────────────────────────────
+
+export function FamiliesSection() {
+  const [activeTab, setActiveTab] = useState<'familias' | 'especies' | 'projetos'>('familias');
+  const [specimensPins, setSpecimensPins] = useState<SpecimenPin[]>([]);
+  const [projetosPins, setProjetosPins] = useState<LocalPin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+  const [chipSelecionado, setChipSelecionado] = useState<string | null>(null);
+
+  // Resetar filtro ao trocar de aba
+  useEffect(() => {
+    setChipSelecionado(null);
+  }, [activeTab]);
+
+  const mapRef = useRef<L.Map | null>(null);
+
+  // Garantir que Leaflet só renderiza no client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        // ── 1. Buscar locais / projetos (query plana) ──────────────────────
+        const { data: locData, error: locError } = await supabase
+          .from('locais')
+          .select('id, nome, cidade, estado, latitude, longitude')
+          .order('nome');
+
+        if (locError) throw locError;
+
+        const locRows = (locData as LocalRow[]) || [];
+
+        const projPins: LocalPin[] = locRows
+          .filter(l => l.latitude !== null && l.longitude !== null)
+          .map(l => ({
+            id: l.id,
+            nome: l.nome,
+            latitude: Number(l.latitude),
+            longitude: Number(l.longitude),
+            cidade: l.cidade || '',
+            estado: l.estado || ''
+          }));
+        setProjetosPins(projPins);
+
+        // ── 4. Buscar espécimes georreferenciados (query plana — padrão admin) ──
+        const { data: elData, error: elError } = await supabase
+          .from('especie_local')
+          .select('id, latitude, longitude, tombo_codigo, tombo_num, especie_id')
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
+          .limit(500);
+
+        if (elError) throw elError;
+
+        const elRows = (elData as EspecieLocalRow[]) || [];
+
+        if (elRows.length > 0) {
+          // ── 4a. Buscar espécies pelos especie_id retornados ───────────────
+          const especieIds = [...new Set(elRows.map(r => r.especie_id).filter(Boolean))] as string[];
+
+          const { data: especieDetalheData, error: especieDetalheError } = await supabase
+            .from('especie')
+            .select('id, nome_cientifico, nome_popular, familia_id')
+            .in('id', especieIds);
+
+          if (especieDetalheError) throw especieDetalheError;
+
+          const especieMap = new Map<string, EspecieRow>();
+          ((especieDetalheData as EspecieRow[]) || []).forEach(e => especieMap.set(e.id, e));
+
+          // ── 4b. Buscar famílias pelos familia_id retornados ───────────────
+          const familiaIds = [...new Set(
+            Array.from(especieMap.values()).map(e => e.familia_id).filter(Boolean)
+          )] as string[];
+
+          let familiaMap = new Map<string, string>(); // id -> familia_nome
+
+          if (familiaIds.length > 0) {
+            const { data: familiaDetalheData, error: familiaDetalheError } = await supabase
+              .from('familia')
+              .select('id, familia_nome')
+              .in('id', familiaIds);
+
+            if (familiaDetalheError) throw familiaDetalheError;
+
+            ((familiaDetalheData as FamiliaRow[]) || []).forEach(f => familiaMap.set(f.id, f.familia_nome));
+          }
+
+          // ── 4c. Montar os pins ─────────────────────────────────────────────
+          const pins: SpecimenPin[] = elRows
+            .filter(r => r.especie_id !== null)
+            .map(r => {
+              const esp = especieMap.get(r.especie_id as string);
+              const familiaId = esp?.familia_id || '';
+              const familiaNome = familiaId ? (familiaMap.get(familiaId) || 'Desconhecida') : 'Desconhecida';
+              return {
+                id: r.id,
+                latitude: Number(r.latitude),
+                longitude: Number(r.longitude),
+                tombo_codigo: r.tombo_codigo,
+                tombo_num: r.tombo_num,
+                nome_cientifico: esp?.nome_cientifico || 'Desconhecida',
+                nome_popular: esp?.nome_popular || '',
+                especie_id: r.especie_id as string,
+                familia_nome: familiaNome,
+                familia_id: familiaId
+              };
+            });
+
+          setSpecimensPins(pins);
+        } else {
+          setSpecimensPins([]);
+        }
+
+      } catch (err) {
+        console.error('Erro ao carregar dados do painel botânico:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  // ─── Derivadas ────────────────────────────────────────────────────────────
+
+  // Obter chips da aba ativa baseados nos pins georreferenciados no mapa
+  const getChips = () => {
+    if (activeTab === 'familias') {
+      const visto = new Set<string>();
+      const resultado: Array<{ id: string; label: string }> = [];
+      for (const pin of specimensPins) {
+        if (pin.familia_id && !visto.has(pin.familia_id)) {
+          visto.add(pin.familia_id);
+          resultado.push({ id: pin.familia_id, label: pin.familia_nome });
+        }
+      }
+      return resultado.sort((a, b) => a.label.localeCompare(b.label));
+    }
+    if (activeTab === 'especies') {
+      const visto = new Set<string>();
+      const resultado: Array<{ id: string; label: string }> = [];
+      for (const pin of specimensPins) {
+        if (pin.especie_id && !visto.has(pin.especie_id)) {
+          visto.add(pin.especie_id);
+          resultado.push({ id: pin.especie_id, label: pin.nome_cientifico });
+        }
+      }
+      return resultado.sort((a, b) => a.label.localeCompare(b.label));
+    }
+    if (activeTab === 'projetos') {
+      return projetosPins
+        .map(p => ({ id: p.id, label: p.nome }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    }
+    return [];
+  };
+
+  const chips = getChips();
+
+  const specimensPinsFiltrados = specimensPins.filter(pin => {
+    if (!chipSelecionado) return true;
+    if (activeTab === 'familias') return pin.familia_id === chipSelecionado;
+    if (activeTab === 'especies') return pin.especie_id === chipSelecionado;
+    return true;
+  });
+
+  const projetosPinsFiltrados = projetosPins.filter(pin => {
+    if (!chipSelecionado) return true;
+    if (activeTab === 'projetos') return String(pin.id) === chipSelecionado;
+    return true;
+  });
+
+  const activePins = activeTab === 'projetos' ? projetosPinsFiltrados : specimensPinsFiltrados;
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <section className="py-10 px-6 bg-transparent">
+      <div className="container mx-auto max-w-6xl space-y-6">
+
+        {/* Título e Dropdowns Alinhados */}
+        <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-[#dde8d5] mb-6">
+          {/* Esquerda: tag + título */}
+          <div className="text-left">
+            <p className="text-xs uppercase tracking-widest text-[#4a7c5a] mb-1 font-bold">
+              FILOGENIA E DISTRIBUIÇÃO
+            </p>
+            <h2 className="text-2xl font-bold text-[#1a3a1f]">Explore o Acervo</h2>
+          </div>
+
+          {/* Direita: dropdowns */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Dropdown 1: Tipo de visualização */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-[#4a7c5a]">Explorar:</label>
+              <select
+                value={activeTab}
+                onChange={e => {
+                  setActiveTab(e.target.value as 'familias' | 'especies' | 'projetos');
+                  setChipSelecionado(null);
+                }}
+                className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 bg-white text-[#1a3a1f] focus:outline-none focus:border-[#5fcf6e] cursor-pointer font-medium"
+              >
+                <option value="familias">Famílias</option>
+                <option value="especies">Espécies</option>
+                <option value="projetos">Projetos</option>
+              </select>
+            </div>
+
+            {/* Dropdown 2: filtro por item específico */}
+            {!loading && chips.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-[#4a7c5a]">Filtrar:</label>
+                <select
+                  value={chipSelecionado ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setChipSelecionado(val || null);
+                    // Ao selecionar, fazer flyTo no mapa para o item correspondente
+                    if (val && mapRef.current) {
+                      const ponto = activeTab === 'projetos'
+                        ? projetosPins.find(p => String(p.id) === val)
+                        : specimensPins.find(p => {
+                            if (activeTab === 'familias') return p.familia_id === val;
+                            if (activeTab === 'especies') return p.especie_id === val;
+                            return false;
+                          });
+                      if (ponto) {
+                        mapRef.current.flyTo([ponto.latitude, ponto.longitude], 16);
+                      }
+                    }
+                  }}
+                  className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 bg-white text-[#1a3a1f] focus:outline-none focus:border-[#5fcf6e] cursor-pointer font-medium max-w-[200px]"
+                >
+                  <option value="">Todos</option>
+                  {chips.map(chip => (
+                    <option key={chip.id} value={chip.id}>
+                      {chip.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mapa Leaflet */}
+        <div className="w-full h-[480px] rounded-2xl overflow-hidden border border-[#dde8d5] relative z-0">
+          {loading && (
+            <div className="absolute inset-0 z-50 bg-[#e8f0e4] animate-pulse rounded-2xl flex items-center justify-center">
+              <span className="text-xs font-semibold text-[#4a7c5a]">Carregando mapa interativo...</span>
+            </div>
+          )}
+
+          {!loading && activePins.length === 0 && (
+            <div className="absolute inset-0 z-[1000] bg-[#1a3a1f]/5 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+              <div className="bg-white border border-[#dde8d5] rounded-xl px-5 py-3 shadow-md text-xs sm:text-sm font-semibold text-[#1a3a1f]">
+                Nenhum espécime georreferenciado ainda
+              </div>
+            </div>
+          )}
+
+          {isMounted && (
+            <MapContainer
+              center={[-22.74, -43.70]}
+              zoom={12}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom={false}
+            >
+              <MapController
+                activeTab={activeTab}
+                specimensPins={specimensPinsFiltrados}
+                projetosPins={projetosPinsFiltrados}
+                mapRef={mapRef}
+              />
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              {/* Marcadores de Espécimes (abas Famílias e Espécies) */}
+              {activeTab !== 'projetos' &&
+                specimensPinsFiltrados.map((pin) => (
+                  <CircleMarker
+                    key={`specimen-${pin.id}`}
+                    center={[pin.latitude, pin.longitude]}
+                    radius={8}
+                    color={activeTab === 'familias' ? '#5fcf6e' : '#4a7c5a'}
+                    fillColor={activeTab === 'familias' ? '#5fcf6e' : '#4a7c5a'}
+                    fillOpacity={0.8}
+                    weight={2}
+                    stroke
+                  >
+                    <Popup>
+                      {activeTab === 'familias' ? (
+                        <div>
+                          <strong>{pin.familia_nome}</strong>
+                          <br />
+                          <span><i>{pin.nome_cientifico}</i> — {pin.tombo_codigo ?? pin.tombo_num ?? 'sem tombo'}</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span style={{ fontStyle: 'italic', fontWeight: 600 }}>{pin.nome_cientifico}</span> — {pin.tombo_codigo ?? pin.tombo_num ?? 'sem tombo'}
+                          {pin.nome_popular && (
+                            <>
+                              <br />
+                              <span>{pin.nome_popular}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </Popup>
+                  </CircleMarker>
+                ))}
+
+              {/* Marcadores de Projetos */}
+              {activeTab === 'projetos' &&
+                projetosPinsFiltrados.map((pin) => (
+                  <CircleMarker
+                    key={`projeto-${pin.id}`}
+                    center={[pin.latitude, pin.longitude]}
+                    radius={10}
+                    color="#1a3a1f"
+                    fillColor="#1a3a1f"
+                    fillOpacity={0.8}
+                    weight={2}
+                    stroke
+                  >
+                    <Popup>
+                      <div>
+                        <strong>{pin.nome}</strong>
+                        <br />
+                        <span style={{ fontSize: '12px', color: '#555' }}>
+                          {pin.cidade && pin.estado
+                            ? `${pin.cidade}, ${pin.estado}`
+                            : pin.cidade || pin.estado || ''}
+                        </span>
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                ))}
+            </MapContainer>
+          )}
+        </div>
+
+      </div>
+    </section>
+  );
+}

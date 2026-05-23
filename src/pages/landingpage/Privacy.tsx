@@ -1,176 +1,93 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
-import logoIcon from '/icon.png';
+import { LegalPageLayout } from './components/LegalPageLayout';
 
-// ============ HEADER ============
-function Header() {
-    return (
-        <header className="bg-gradient-to-r from-[#1a472a] via-[#234d32] to-[#1a3a24] text-white py-4 px-6">
-            <div className="container mx-auto flex items-center justify-between">
-                <Link to="/landing" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1">
-                        <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
-                    </div>
-                    <span className="text-xl font-bold">Veridia Saber</span>
-                </Link>
-                <Link
-                    to="/landing"
-                    className="flex items-center gap-2 text-emerald-200 hover:text-white transition-colors"
-                >
-                    <ArrowLeft size={18} />
-                    <span>Voltar</span>
-                </Link>
-            </div>
-        </header>
-    );
-}
-
-// ============ FOOTER ============
-function Footer() {
-    return (
-        <footer className="bg-gray-900 text-white py-12">
-            <div className="container mx-auto px-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1">
-                            <img src={logoIcon} alt="Veridia Saber" className="w-full h-full object-contain" />
-                        </div>
-                        <span className="text-xl font-bold">Veridia Saber</span>
-                    </div>
-
-                    {/* Links */}
-                    <nav className="flex flex-wrap justify-center gap-6 text-sm">
-                        <Link to="/politica" className="text-white font-medium">
-                            Política de Privacidade
-                        </Link>
-                        <Link to="/termos" className="text-gray-400 hover:text-white transition-colors">
-                            Termos de Uso
-                        </Link>
-                        <Link to="/disclaimer" className="text-gray-400 hover:text-white transition-colors">
-                            Isenção de Responsabilidade
-                        </Link>
-                        <a
-                            href="https://painel-admin.veridiasaber.com.br"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                        >
-                            Acessar Painel Admin
-                            <ExternalLink size={14} />
-                        </a>
-                    </nav>
-
-                    {/* Copyright */}
-                    <div className="text-gray-500 text-sm">
-                        © 2026 Veridia Saber. Todos os direitos reservados.
-                    </div>
-                </div>
-            </div>
-        </footer>
-    );
-}
-
-// ============ PRIVACY PAGE ============
 export default function Privacy() {
-    // Scroll to top when page loads
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
-    return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <Header />
+  return (
+    <LegalPageLayout
+      title="Política de Privacidade"
+      tag="Privacidade"
+      updatedAt="Última atualização: Janeiro de 2026"
+    >
+      <p className="text-[#4a5a44] leading-relaxed">
+        O Veridia Saber ("nós", "nosso") preza pela sua privacidade. Esta política descreve como coletamos, usamos e protegemos suas informações ao utilizar nosso aplicativo móvel.
+      </p>
 
-            <main className="flex-1 py-12">
-                <article className="max-w-3xl mx-auto px-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                        Política de Privacidade
-                    </h1>
-                    <p className="text-gray-500 mb-8">Última atualização: Janeiro de 2026</p>
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">1. Informações que Coletamos</h2>
+      <p className="text-[#4a5a44] leading-relaxed mb-4">
+        Para o funcionamento correto do aplicativo, solicitamos as seguintes permissões e dados:
+      </p>
+      <ul className="list-disc pl-5 space-y-4 text-[#4a5a44]">
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Acesso à Galeria/Arquivos:</strong> Necessário para que você possa fazer upload de fotos de plantas e espécimes para catalogação dentro dos seus projetos. As fotos ficam salvas no nosso banco de dados seguro quando sincronizadas.
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Localização (GPS):</strong> Coletamos dados de localização precisos (apenas quando o app está em uso) para georreferenciar as coletas botânicas no mapa. Isso permite que você saiba exatamente onde uma planta foi encontrada.
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Dados da Conta:</strong> Coletamos seu nome e e-mail para criação de conta e sincronização de dados entre dispositivos.
+        </li>
+      </ul>
 
-                    <div className="prose prose-lg prose-gray max-w-none">
-                        <p className="text-gray-700 leading-relaxed mb-8">
-                            O Veridia Saber ("nós", "nosso") preza pela sua privacidade. Esta política descreve como coletamos, usamos e protegemos suas informações ao utilizar nosso aplicativo móvel.
-                        </p>
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">2. Como Usamos Seus Dados</h2>
+      <ul className="list-disc pl-5 space-y-4 text-[#4a5a44]">
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Funcionamento:</strong> Para permitir a criação de coleções, identificação de espécies e mapeamento de flora.
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Sincronização:</strong> Para salvar seu progresso na nuvem (via Supabase), garantindo que você não perca dados se trocar de celular.
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Melhorias:</strong> Podemos usar dados anônimos para corrigir erros (crashes) e melhorar a performance do app.
+        </li>
+      </ul>
 
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">1. Informações que Coletamos</h2>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                            Para o funcionamento correto do aplicativo, solicitamos as seguintes permissões e dados:
-                        </p>
-                        <ul className="space-y-4 text-gray-700">
-                            <li>
-                                <strong className="text-gray-900">Acesso à Galeria/Arquivos:</strong> Necessário para que você possa fazer upload de fotos de plantas e espécimes para catalogação dentro dos seus projetos. As fotos ficam salvas no nosso banco de dados seguro quando sincronizadas.
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Localização (GPS):</strong> Coletamos dados de localização precisos (apenas quando o app está em uso) para georreferenciar as coletas botânicas no mapa. Isso permite que você saiba exatamente onde uma planta foi encontrada.
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Dados da Conta:</strong> Coletamos seu nome e e-mail para criação de conta e sincronização de dados entre dispositivos.
-                            </li>
-                        </ul>
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">3. Compartilhamento de Dados</h2>
+      <p className="text-[#4a5a44] leading-relaxed">
+        Nós <strong className="text-[#1a3a1f] font-semibold">não vendemos</strong> seus dados pessoais para terceiros. Seus dados são armazenados em serviços de nuvem seguros (Supabase) necessários para a operação do aplicativo.
+      </p>
 
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">2. Como Usamos Seus Dados</h2>
-                        <ul className="space-y-4 text-gray-700">
-                            <li>
-                                <strong className="text-gray-900">Funcionamento:</strong> Para permitir a criação de coleções, identificação de espécies e mapeamento de flora.
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Sincronização:</strong> Para salvar seu progresso na nuvem (via Supabase), garantindo que você não perca dados se trocar de celular.
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Melhorias:</strong> Podemos usar dados anônimos para corrigir erros (crashes) e melhorar a performance do app.
-                            </li>
-                        </ul>
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">4. Seus Direitos (LGPD)</h2>
+      <p className="text-[#4a5a44] leading-relaxed">
+        Você tem o direito de solicitar a exclusão completa da sua conta e de todos os dados associados a qualquer momento entrando em contato conosco.
+      </p>
 
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">3. Compartilhamento de Dados</h2>
-                        <p className="text-gray-700 leading-relaxed">
-                            Nós <strong className="text-gray-900">não vendemos</strong> seus dados pessoais para terceiros. Seus dados são armazenados em serviços de nuvem seguros (Supabase) necessários para a operação do aplicativo.
-                        </p>
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">5. Coleta de Dados e Analytics</h2>
+      <p className="text-[#4a5a44] leading-relaxed mb-4">
+        O Veridia Saber coleta dados anônimos de uso do aplicativo para melhorar a experiência do usuário. Os dados coletados incluem:
+      </p>
+      <ul className="list-disc pl-5 space-y-3 text-[#4a5a44] mb-4">
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Eventos de uso:</strong> login, logout, criação de coleções, adição de plantas
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Localização:</strong> apenas quando você adiciona uma planta com geolocalização
+        </li>
+        <li className="marker:text-[#5fcf6e]">
+          <strong className="text-[#1a3a1f] font-semibold">Imagens:</strong> fotos de plantas que você captura
+        </li>
+      </ul>
+      <p className="text-[#4a5a44] leading-relaxed mb-4">
+        <strong className="text-[#1a3a1f] font-semibold">Não coletamos dados pessoais sensíveis.</strong> Todos os dados são transmitidos de forma criptografada (HTTPS) e os dados de analytics são automaticamente excluídos após 90 dias.
+      </p>
+      <p className="text-[#4a5a44] leading-relaxed">
+        O aplicativo está em conformidade com a <strong className="text-[#1a3a1f] font-semibold">LGPD (Lei Geral de Proteção de Dados)</strong>. Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo e-mail{' '}
+        <a href="mailto:suporte@veridiasaber.com" className="text-[#5fcf6e] hover:text-[#4eb85c] underline font-medium">
+          suporte@veridiasaber.com
+        </a>.
+      </p>
 
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">4. Seus Direitos (LGPD)</h2>
-                        <p className="text-gray-700 leading-relaxed">
-                            Você tem o direito de solicitar a exclusão completa da sua conta e de todos os dados associados a qualquer momento entrando em contato conosco.
-                        </p>
-
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">5. Coleta de Dados e Analytics</h2>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                            O Veridia Saber coleta dados anônimos de uso do aplicativo para melhorar a experiência do usuário. Os dados coletados incluem:
-                        </p>
-                        <ul className="space-y-3 text-gray-700 mb-4">
-                            <li>
-                                <strong className="text-gray-900">Eventos de uso:</strong> login, logout, criação de coleções, adição de plantas
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Localização:</strong> apenas quando você adiciona uma planta com geolocalização
-                            </li>
-                            <li>
-                                <strong className="text-gray-900">Imagens:</strong> fotos de plantas que você captura
-                            </li>
-                        </ul>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                            <strong className="text-gray-900">Não coletamos dados pessoais sensíveis.</strong> Todos os dados são transmitidos de forma criptografada (HTTPS) e os dados de analytics são automaticamente excluídos após 90 dias.
-                        </p>
-                        <p className="text-gray-700 leading-relaxed">
-                            O aplicativo está em conformidade com a <strong className="text-gray-900">LGPD (Lei Geral de Proteção de Dados)</strong>. Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo e-mail{' '}
-                            <a href="mailto:suporte@veridiasaber.com" className="text-emerald-600 hover:text-emerald-700 underline">
-                                suporte@veridiasaber.com
-                            </a>.
-                        </p>
-
-                        <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">6. Contato</h2>
-                        <p className="text-gray-700 leading-relaxed">
-                            Se tiver dúvidas sobre esta política, entre em contato:{' '}
-                            <a href="mailto:contatos@veridiasaber.com.br" className="text-emerald-600 hover:text-emerald-700 underline">
-                                contatos@veridiasaber.com.br
-                            </a>
-                        </p>
-                    </div>
-                </article>
-            </main>
-
-            <Footer />
-        </div>
-    );
+      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">6. Contato</h2>
+      <p className="text-[#4a5a44] leading-relaxed">
+        Se tiver dúvidas sobre esta política, entre em contato:{' '}
+        <a href="mailto:contatos@veridiasaber.com.br" className="text-[#5fcf6e] hover:text-[#4eb85c] underline font-medium">
+          contatos@veridiasaber.com.br
+        </a>
+      </p>
+    </LegalPageLayout>
+  );
 }

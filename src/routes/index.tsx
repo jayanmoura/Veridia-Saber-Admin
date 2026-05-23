@@ -5,6 +5,14 @@ import Privacy from '../pages/landingpage/Privacy';
 import Terms from '../pages/landingpage/Terms';
 import Disclaimer from '../pages/landingpage/Disclaimer';
 import EmailConfirmed from '../pages/landingpage/EmailConfirmed';
+import CatalogoEspecies from '../pages/landingpage/CatalogoEspecies';
+import DetalhesEspecie from '../pages/landingpage/DetalhesEspecie';
+import CatalogoFamilias from '../pages/landingpage/CatalogoFamilias';
+import DetalhesFamilia from '../pages/landingpage/DetalhesFamilia';
+import LocalsPublicos from '../pages/landingpage/LocalsPublicos';
+import DetalhesLocal from '../pages/landingpage/DetalhesLocal';
+import SobrePage from '../pages/landingpage/SobrePage';
+import CriadorPage from '../pages/landingpage/CriadorPage';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -68,12 +76,52 @@ export const publicRouter = createBrowserRouter([
         element: <LandingPage />,
     },
     {
+        path: '/catalogo',
+        element: <CatalogoEspecies />,
+    },
+    {
+        path: '/catalogo/especie/:id',
+        element: <DetalhesEspecie />,
+    },
+    {
+        path: '/familias-catalogo',
+        element: <CatalogoFamilias />,
+    },
+    {
+        path: '/familias-catalogo/:id',
+        element: <DetalhesFamilia />,
+    },
+    {
+        path: '/locais-publico',
+        element: <LocalsPublicos />,
+    },
+    {
+        path: '/locais-publico/:id',
+        element: <DetalhesLocal />,
+    },
+    {
+        path: '/sobre',
+        element: <SobrePage />,
+    },
+    {
+        path: '/criador',
+        element: <CriadorPage />,
+    },
+    {
+        path: '/privacidade',
+        element: <Privacy />,
+    },
+    {
         path: '/politica',
         element: <Privacy />,
     },
     {
         path: '/termos',
         element: <Terms />,
+    },
+    {
+        path: '/isencao',
+        element: <Disclaimer />,
     },
     {
         path: '/disclaimer',
