@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { FallingLeaves } from './components/FallingLeaves';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { AboutVeridia } from './components/AboutVeridia';
@@ -14,6 +15,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <FallingLeaves />
       {/* Navbar Fixa */}
       <Navbar />
 

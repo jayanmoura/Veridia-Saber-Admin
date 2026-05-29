@@ -64,7 +64,7 @@ export function HeroSection() {
       />
 
       <div className="relative z-10 container mx-auto max-w-4xl flex flex-col items-center justify-center space-y-6">
-        
+
         {/* Tag Superior */}
         <div className="space-y-2">
           <span className="text-xs uppercase tracking-widest text-[#a0c8a8] font-bold block">
@@ -105,7 +105,7 @@ export function HeroSection() {
 
         {/* Seção de Contadores/Stats integrados */}
         <div className="flex gap-8 items-center justify-center mt-6">
-          
+
           {/* Espécies (Registros de Dados) */}
           <div className="text-center min-w-[140px]">
             {loading ? (

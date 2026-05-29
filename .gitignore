@@ -15,9 +15,6 @@ dist-ssr
 dev-dist/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -29,3 +26,8 @@ public/downloads/*.apk
 
 # Contratos (dados pessoais sensíveis)
 Contratos/
+
+# Agent workflows e configurações locais de IDE
+.agent/
+.vscode/*
+!.vscode/extensions.json 
