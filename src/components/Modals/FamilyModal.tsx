@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { X, Upload, Loader2, Info, List } from 'lucide-react';
 import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
 import { compressImage, compressForListing } from '../../utils/imageCompressor';
+import { uploadFile, getStorageUrl } from '../../utils/storage';
 
 interface Family {
     id?: string;
@@ -188,18 +189,13 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         const random = Math.random().toString(36).substring(7);
         const fileName = `familias/${timestamp}_${random}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-            .from('imagens-plantas')
-            .upload(fileName, imageFile);
-
-        if (uploadError) {
+        let originalUrl: string | null = null;
+        try {
+            originalUrl = await uploadFile('imagens-plantas', fileName, imageFile);
+        } catch (uploadError) {
             console.error('Upload error:', uploadError);
             throw new Error('Erro ao fazer upload da imagem');
         }
-
-        const { data: { publicUrl: originalUrl } } = supabase.storage
-            .from('imagens-plantas')
-            .getPublicUrl(fileName);
 
         // Generate and upload thumbnail + micro (non-critical — failure does not abort the save)
         const base = `${timestamp}_${random}.jpg`;
@@ -210,15 +206,15 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                 compressImage(imageFile),
                 compressForListing(imageFile),
             ]);
-            const [thumbResult, microResult] = await Promise.all([
-                supabase.storage.from('imagens-plantas').upload(`familias/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
-                supabase.storage.from('imagens-plantas').upload(`familias/micro/${base}`, microFile, { contentType: 'image/jpeg' }),
+            const [thumbResult, microResult] = await Promise.allSettled([
+                uploadFile('imagens-plantas', `familias/thumbs/${base}`, thumbFile),
+                uploadFile('imagens-plantas', `familias/micro/${base}`, microFile),
             ]);
-            if (!thumbResult.error) {
-                thumbnailUrl = supabase.storage.from('imagens-plantas').getPublicUrl(`familias/thumbs/${base}`).data.publicUrl;
+            if (thumbResult.status === 'fulfilled' && thumbResult.value) {
+                thumbnailUrl = getStorageUrl('imagens-plantas', `familias/thumbs/${base}`);
             }
-            if (!microResult.error) {
-                microUrl = supabase.storage.from('imagens-plantas').getPublicUrl(`familias/micro/${base}`).data.publicUrl;
+            if (microResult.status === 'fulfilled' && microResult.value) {
+                microUrl = getStorageUrl('imagens-plantas', `familias/micro/${base}`);
             }
         } catch {
             // Thumbnails are non-critical; original already uploaded safely

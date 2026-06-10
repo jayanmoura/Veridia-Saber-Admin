@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage, compressForListing } from '../utils/imageCompressor';
+import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
 
 // ============ TYPES ============
 export interface ExistingImage {
@@ -148,33 +149,14 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
         setNewImageCredits(prev => prev.filter((_, i) => i !== index));
     }, []);
 
-    // Extract storage info from URL
-    const extractStorageInfo = (urlStr: string): { bucket: string; path: string } | null => {
-        try {
-            const url = new URL(urlStr);
-            const match = url.pathname.match(/\/arquivos-gerais\/(.+)$/);
-            if (match) {
-                return { bucket: 'arquivos-gerais', path: match[1] };
-            }
-            return null;
-        } catch {
-            // fallback para URL relativa ou malformada
-            const match = urlStr.match(/\/arquivos-gerais\/(.+?)(?:\?.*)?$/);
-            if (match) {
-                return { bucket: 'arquivos-gerais', path: match[1] };
-            }
-            return null;
-        }
-    };
+
 
     // Delete existing image
     const handleDeleteExistingImage = useCallback(async (imageId: string, imageUrl: string) => {
         try {
-            const storageInfo = extractStorageInfo(imageUrl);
+            const storageInfo = parseStorageUrl(imageUrl);
             if (storageInfo) {
-                await supabase.storage
-                    .from(storageInfo.bucket)
-                    .remove([storageInfo.path]);
+                await deleteFile(storageInfo.bucket, storageInfo.path);
             }
 
             const { error: dbError } = await supabase
@@ -219,18 +201,13 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
             const filePath = `locais/${options.localId}/especimes/${specimenId}/${timestamp}_${randomSuffix}.${fileExt}`;
 
             options.onStageChange?.('uploading');
-            const { error } = await supabase.storage
-                .from(bucket)
-                .upload(filePath, file);
-
-            if (error) {
+            let publicUrl: string;
+            try {
+                publicUrl = await uploadFile(bucket, filePath, file);
+            } catch (error) {
                 console.error('Error uploading file:', error);
                 continue;
             }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
 
             // Generate and upload thumbnails (non-critical)
             const originalSize = file.size;
@@ -253,16 +230,16 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
 
                 options.onStageChange?.('uploading');
 
-                const [thumbResult, microResult] = await Promise.all([
-                    supabase.storage.from(bucket).upload(`${dir}/thumbs/${base}`, thumbFile, { contentType: 'image/jpeg' }),
-                    supabase.storage.from(bucket).upload(`${dir}/micro/${base}`, microFile, { contentType: 'image/jpeg' }),
+                const [thumbResult, microResult] = await Promise.allSettled([
+                    uploadFile(bucket, `${dir}/thumbs/${base}`, thumbFile),
+                    uploadFile(bucket, `${dir}/micro/${base}`, microFile)
                 ]);
 
-                if (!thumbResult.error) {
-                    thumbnailUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/thumbs/${base}`).data.publicUrl;
+                if (thumbResult.status === 'fulfilled') {
+                    thumbnailUrl = thumbResult.value;
                 }
-                if (!microResult.error) {
-                    microUrl = supabase.storage.from(bucket).getPublicUrl(`${dir}/micro/${base}`).data.publicUrl;
+                if (microResult.status === 'fulfilled') {
+                    microUrl = microResult.value;
                 }
             } catch {
                 // Thumbnails are non-critical; original is safely uploaded

@@ -13,6 +13,7 @@ import { ConfirmDeleteModal } from '../../components/Modals/ConfirmDeleteModal';
 import { SuccessModal } from '../../components/Modals/SuccessModal';
 import { SpeciesTable } from '../../components/Tables';
 import { useSpecies, useSpeciesActions } from '../../hooks';
+import { deleteFile, parseStorageUrl } from '../../utils/storage';
 import { hasMinLevel } from '../../types/auth';
 import {
     Leaf,
@@ -140,16 +141,13 @@ export default function SpeciesPage() {
                     .eq('local_id', userLocalId);
 
                 if (imagesToDelete && imagesToDelete.length > 0) {
-                    const paths = imagesToDelete
-                        .map(img => {
-                            const match = img.url_imagem.match(/\/arquivos-gerais\/(.+)$/);
-                            return match ? match[1] : null;
-                        })
-                        .filter(Boolean) as string[];
-
-                    if (paths.length > 0) {
-                        await supabase.storage.from('arquivos-gerais').remove(paths);
-                    }
+                    const deletePromises = imagesToDelete.map(async (img) => {
+                        const storageInfo = parseStorageUrl(img.url_imagem);
+                        if (storageInfo) {
+                            await deleteFile(storageInfo.bucket, storageInfo.path);
+                        }
+                    });
+                    await Promise.allSettled(deletePromises);
                 }
 
                 await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id).eq('local_id', userLocalId);
@@ -184,16 +182,13 @@ export default function SpeciesPage() {
                     .eq('especie_id', speciesToDelete.id);
 
                 if (globalImages && globalImages.length > 0) {
-                    const paths = globalImages
-                        .map(img => {
-                            const match = img.url_imagem.match(/\/imagens-plantas\/(.+)$/);
-                            return match ? match[1] : null;
-                        })
-                        .filter(Boolean) as string[];
-
-                    if (paths.length > 0) {
-                        await supabase.storage.from('imagens-plantas').remove(paths);
-                    }
+                    const deletePromises = globalImages.map(async (img) => {
+                        const storageInfo = parseStorageUrl(img.url_imagem);
+                        if (storageInfo) {
+                            await deleteFile(storageInfo.bucket, storageInfo.path);
+                        }
+                    });
+                    await Promise.allSettled(deletePromises);
                 }
 
                 await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id);

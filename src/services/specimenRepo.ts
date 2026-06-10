@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Specimen, SpecimenFilters } from './types';
+import { deleteFile } from '../utils/storage';
 
 export const specimenRepo = {
     /**
@@ -113,15 +114,9 @@ export const specimenRepo = {
 
                 if (pathsToDelete.length > 0) {
                     // 3. Delete files from storage
-                    const { data: removeData, error: storageError } = await supabase.storage
-                        .from('arquivos-gerais')
-                        .remove(pathsToDelete);
-
-                    if (storageError) {
-                        console.error('[DeleteSpecimen] Error deleting files from storage:', storageError);
-                    } else {
-                        console.log('[DeleteSpecimen] Storage remove result:', removeData);
-                    }
+                    const deletePromises = pathsToDelete.map(path => deleteFile('arquivos-gerais', path));
+                    const results = await Promise.allSettled(deletePromises);
+                    console.log('[DeleteSpecimen] Storage remove result:', results);
                 } else {
                     console.warn('[DeleteSpecimen] No paths extracted from URLs. Regex might be failing.');
                 }

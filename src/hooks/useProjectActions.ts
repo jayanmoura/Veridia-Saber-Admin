@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
+import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
 
 interface Profile {
     id: string;
@@ -182,17 +183,13 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const filePath = `locais/${projectId}/capa/${Date.now()}_${sanitizedName}`;
 
-        const { error: uploadError } = await supabase.storage
-            .from('arquivos-gerais')
-            .upload(filePath, file);
-
-        if (uploadError) {
+        try {
+            const url = await uploadFile('arquivos-gerais', filePath, file);
+            return url;
+        } catch (uploadError) {
             console.error('Upload error:', uploadError);
             return null;
         }
-
-        const { data } = supabase.storage.from('arquivos-gerais').getPublicUrl(filePath);
-        return data.publicUrl;
     };
 
     // Image handlers
@@ -356,13 +353,9 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 // Delete old image if exists
                 if (selectedProject.imagem_capa) {
                     try {
-                        // Extract path from public URL
-                        // URL format: .../arquivos-gerais/locais/ID/capa/FILE
-                        const oldPathMatch = selectedProject.imagem_capa.match(/\/arquivos-gerais\/(.*)/);
-                        if (oldPathMatch && oldPathMatch[1]) {
-                            // Decode URI component to handle spaces/special chars in filename
-                            const oldPath = decodeURIComponent(oldPathMatch[1]);
-                            await supabase.storage.from('arquivos-gerais').remove([oldPath]);
+                        const storageInfo = parseStorageUrl(selectedProject.imagem_capa);
+                        if (storageInfo) {
+                            await deleteFile(storageInfo.bucket, storageInfo.path);
                         }
                     } catch (err) {
                         console.error('Error deleting old image:', err);
@@ -452,7 +445,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 for (const item of items) {
                     const fullPath = `${path}/${item.name}`;
                     if (item.metadata) {
-                        await supabase.storage.from('arquivos-gerais').remove([fullPath]);
+                        await deleteFile('arquivos-gerais', fullPath);
                     } else {
                         await nukeFolder(fullPath);
                     }

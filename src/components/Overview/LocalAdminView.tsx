@@ -19,6 +19,7 @@ import {
     CheckCircle
 } from 'lucide-react';
 import type { ProjectData, LocalStats, RecentLocalSpecies, LocalFamily } from '../../hooks';
+import { uploadFile } from '../../utils/storage';
 
 interface LocalAdminViewProps {
     projectData: ProjectData | null;
@@ -91,17 +92,10 @@ export function LocalAdminView({
                 const fileExt = editCoverFile.name.split('.').pop();
                 const fileName = `locais/${profile.local_id}/capa/${Date.now()}.${fileExt}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('arquivos-gerais')
-                    .upload(fileName, editCoverFile, { upsert: true });
+                const url = await uploadFile('arquivos-gerais', fileName, editCoverFile);
+                if (!url) throw new Error('Falha no upload da capa');
 
-                if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabase.storage
-                    .from('arquivos-gerais')
-                    .getPublicUrl(fileName);
-
-                newCoverUrl = urlData.publicUrl;
+                newCoverUrl = url;
             }
 
             const { error } = await supabase

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdf';
+import { deleteFile, parseStorageUrl } from '../utils/storage';
 
 interface Profile {
     id: string;
@@ -107,15 +108,7 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
     const closeBlockModal = useCallback(() => setShowBlockModal(false), []);
     const closeSuccessModal = useCallback(() => setShowSuccessModal(false), []);
 
-    // Helper: Extract storage path from public URL
-    const extractStoragePath = (publicUrl: string): string | null => {
-        try {
-            const match = publicUrl.match(/\/imagens-plantas\/(.+)$/);
-            return match ? match[1] : null;
-        } catch {
-            return null;
-        }
-    };
+
 
     // Export all families to PDF
     const handleExportAll = useCallback(async () => {
@@ -208,9 +201,9 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
         try {
             // Delete image from storage if exists
             if (familyToDelete.imagem_referencia) {
-                const storagePath = extractStoragePath(familyToDelete.imagem_referencia);
-                if (storagePath) {
-                    await supabase.storage.from('imagens-plantas').remove([storagePath]);
+                const storageInfo = parseStorageUrl(familyToDelete.imagem_referencia);
+                if (storageInfo) {
+                    await deleteFile(storageInfo.bucket, storageInfo.path);
                 }
             }
 

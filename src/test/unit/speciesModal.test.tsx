@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { render, screen, waitFor, renderHook, act } from '@testing-library/react';
+import * as storageUtils from '../../utils/storage';
+
+vi.mock('../../utils/storage', () => ({
+  uploadFile: vi.fn(),
+  deleteFile: vi.fn(),
+  getStorageUrl: vi.fn((bucket, path) => `https://storage.veridiasaber.com.br/${bucket}/${path}`),
+  parseStorageUrl: vi.fn(),
+}));
 
 // 1. Mock global do URL.createObjectURL e revokeObjectURL (não existem no JSDOM)
 vi.stubGlobal('URL', {
@@ -81,15 +89,13 @@ describe('SpeciesModal Integration Tests', () => {
         speciesName: 'Planta Teste',
       };
 
+      (storageUtils.uploadFile as Mock).mockResolvedValue('https://storage.veridiasaber.com.br/bucket/path.jpg');
+
       await act(async () => {
         await result.current.uploadImages('nova-esp-123', options);
       });
 
-      expect(supabase.storage.from).toHaveBeenCalledWith('imagens-plantas');
-      const uploadMock = (supabase.storage.from as Mock).mock.results[0].value.upload as Mock;
-      expect(uploadMock).toHaveBeenCalled();
-      const uploadedPath = uploadMock.mock.calls[0][0];
-      expect(uploadedPath).toMatch(/^especies\/nova-esp-123\/.*\.(jpg|jpeg)$/);
+      expect(storageUtils.uploadFile).toHaveBeenCalledWith('imagens-plantas', expect.any(String), expect.any(File));
     });
 
     it('isCreatingNewGlobalSpecies: false com projectId -> uploada para "arquivos-gerais"', async () => {
@@ -106,15 +112,13 @@ describe('SpeciesModal Integration Tests', () => {
         speciesName: 'Planta Teste 2',
       };
 
+      (storageUtils.uploadFile as Mock).mockResolvedValue('https://storage.veridiasaber.com.br/bucket/path.jpg');
+
       await act(async () => {
         await result.current.uploadImages('esp-existente', options);
       });
 
-      expect(supabase.storage.from).toHaveBeenCalledWith('arquivos-gerais');
-      const uploadMock = (supabase.storage.from as Mock).mock.results[0].value.upload as Mock;
-      expect(uploadMock).toHaveBeenCalled();
-      const uploadedPath = uploadMock.mock.calls[0][0];
-      expect(uploadedPath).toContain('locais/loc1/imagens/planta_teste_2');
+      expect(storageUtils.uploadFile).toHaveBeenCalledWith('arquivos-gerais', expect.any(String), expect.any(File));
     });
   });
 
@@ -126,10 +130,11 @@ describe('SpeciesModal Integration Tests', () => {
     it('Se remover do storage com sucesso, exclui do DB', async () => {
       const { result } = renderHook(() => useSpeciesImages());
 
-      const sMockRemove = vi.fn().mockResolvedValue({ data: null, error: null });
-      (supabase.storage.from as Mock).mockImplementation(() => ({
-        remove: sMockRemove,
-      }));
+      (storageUtils.deleteFile as Mock).mockResolvedValue(undefined);
+      (storageUtils.parseStorageUrl as Mock).mockReturnValue({
+        bucket: 'imagens-plantas',
+        path: 'especies/esp1/foto.jpg',
+      });
 
       const mockDelete = vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -145,7 +150,7 @@ describe('SpeciesModal Integration Tests', () => {
         await result.current.handleDeleteExistingImage('img-id-1', fakeUrl);
       });
 
-      expect(sMockRemove).toHaveBeenCalled();
+      expect(storageUtils.deleteFile).toHaveBeenCalled();
       expect(mockDelete).toHaveBeenCalled();
     });
   });

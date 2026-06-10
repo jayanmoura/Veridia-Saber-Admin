@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, Heading2, Heading3, List, ImageIcon } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { uploadFile } from '../utils/storage';
 
 interface RichTextEditorProps {
     content: string;
@@ -47,20 +47,10 @@ export default function RichTextEditor({ content, onChange, placeholder, orgao }
             const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
             const fileName = `${orgao}/conteudo_${Date.now()}_${cleanFileName}`;
 
-            const { error } = await supabase.storage
-                .from('imagens_conteudo')
-                .upload(fileName, file);
+            const url = await uploadFile('imagens_conteudo', fileName, file);
 
-            if (error) {
-                throw error;
-            }
-
-            const { data: publicUrlData } = supabase.storage
-                .from('imagens_conteudo')
-                .getPublicUrl(fileName);
-
-            if (publicUrlData && editor) {
-                editor.chain().focus().setImage({ src: publicUrlData.publicUrl }).run();
+            if (url && editor) {
+                editor.chain().focus().setImage({ src: url }).run();
             }
         } catch (err: any) {
             console.error('Erro no upload de imagem:', err);

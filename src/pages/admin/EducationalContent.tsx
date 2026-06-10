@@ -20,6 +20,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import RichTextEditor from '../../components/RichTextEditor';
 import { SuccessModal } from '../../components/Modals/SuccessModal';
+import { deleteFile, getStorageUrl } from '../../utils/storage';
 
 interface ContentItem {
     id: number;
@@ -227,8 +228,7 @@ export default function EducationalContent() {
         const { data } = await supabase.storage.from('imagens_conteudo').list(pasta);
         if (data) {
             const filesWithUrls = data.filter(f => f.name !== '.emptyFolderPlaceholder').map(f => {
-                const { data: urlData } = supabase.storage.from('imagens_conteudo').getPublicUrl(`${pasta}/${f.name}`);
-                return { ...f, publicUrl: urlData.publicUrl };
+                return { ...f, publicUrl: getStorageUrl('imagens_conteudo', `${pasta}/${f.name}`) };
             });
             setFolderFiles(filesWithUrls);
         } else {
@@ -283,10 +283,10 @@ export default function EducationalContent() {
         
         setIsDeletingFiles(true);
         try {
-            const pathsToRemove = Array.from(selectedFiles).map(name => `${currentFolder}/${name}`);
-            const { error } = await supabase.storage.from('imagens_conteudo').remove(pathsToRemove);
-            
-            if (error) throw error;
+            const deletePromises = Array.from(selectedFiles).map(name => 
+                deleteFile('imagens_conteudo', `${currentFolder}/${name}`)
+            );
+            await Promise.allSettled(deletePromises);
             
             setFeedbackModal({ isOpen: true, title: 'Sucesso', message: 'Imagens excluídas com sucesso!', variant: 'success' });
             setSelectedFiles(new Set()); 
@@ -294,8 +294,7 @@ export default function EducationalContent() {
             const { data } = await supabase.storage.from('imagens_conteudo').list(currentFolder);
             if (data) {
                 const filesWithUrls = data.filter(f => f.name !== '.emptyFolderPlaceholder').map(f => {
-                    const { data: urlData } = supabase.storage.from('imagens_conteudo').getPublicUrl(`${currentFolder}/${f.name}`);
-                    return { ...f, publicUrl: urlData.publicUrl };
+                    return { ...f, publicUrl: getStorageUrl('imagens_conteudo', `${currentFolder}/${f.name}`) };
                 });
                 setFolderFiles(filesWithUrls);
             } else {
