@@ -52,7 +52,7 @@ export default function Projects() {
         <div className="space-y-8 animate-fade-in-up">
             {/* Toast */}
             {actions.toast && (
-                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg animate-in slide-in-from-top duration-300 ${actions.toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg animate-in slide-in-from-top duration-300 ${actions.toast.type === 'success' ? 'bg-forest-600 text-white' : 'bg-red-600 text-white'
                     }`}>
                     {actions.toast.type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
                     {actions.toast.message}
@@ -90,14 +90,14 @@ export default function Projects() {
                     <input
                         type="text"
                         placeholder="Buscar projeto..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none transition-colors"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <button
                     onClick={() => actions.setIsNewModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm w-full sm:w-auto"
                 >
                     <Plus size={18} />
                     <span>Novo Projeto</span>

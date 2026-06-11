@@ -70,12 +70,12 @@ export default function MorfologiaOrgaoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-stone-50 text-stone-800">
         <Navbar />
         <div className="flex-grow flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 border-4 border-[#5fcf6e] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[#4a7c5a] font-medium text-sm animate-pulse">Carregando tópicos de {orgaoDecodificado}...</p>
+            <div className="w-12 h-12 border-4 border-forest-400 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-forest-600 font-medium text-sm animate-pulse">Carregando tópicos de {orgaoDecodificado}...</p>
           </div>
         </div>
         <Footer />
@@ -85,17 +85,17 @@ export default function MorfologiaOrgaoPage() {
 
   if (error || !orgao) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex flex-col items-center justify-center py-20 px-6 text-center">
           <ShieldAlert className="text-red-500 w-16 h-16 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-[#1a3a1f]">Erro ao carregar tópicos</h2>
-          <p className="text-[#4a7c5a] mt-2 max-w-sm text-sm">
+          <h2 className="text-2xl font-bold text-forest-900">Erro ao carregar tópicos</h2>
+          <p className="text-forest-600 mt-2 max-w-sm text-sm">
             {error || 'Não foi possível identificar o órgão selecionado.'}
           </p>
           <button
             onClick={() => navigate('/morfologia')}
-            className="mt-6 px-6 py-3 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
+            className="mt-6 px-6 py-3 bg-forest-900 hover:bg-forest-800 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
           >
             Voltar para Morfologia
           </button>
@@ -106,7 +106,7 @@ export default function MorfologiaOrgaoPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
@@ -114,30 +114,30 @@ export default function MorfologiaOrgaoPage() {
         <div className="mb-6">
           <button
             onClick={() => navigate('/morfologia')}
-            className="flex items-center gap-2 text-sm font-semibold text-[#4a7c5a] hover:text-[#1a3a1f] transition-colors cursor-pointer bg-transparent border-none outline-none"
+            className="flex items-center gap-2 text-sm font-semibold text-forest-600 hover:text-forest-900 transition-colors cursor-pointer bg-transparent border-none outline-none"
           >
             <span>← Morfologia Vegetal</span>
           </button>
         </div>
 
         {/* Header do órgão */}
-        <div className="mb-8 border-b border-[#dde8d5] pb-6">
+        <div className="mb-8 border-b border-forest-200 pb-6">
           <div className="flex items-center gap-3">
             <span className="text-3xl leading-none">{emoji}</span>
-            <h1 className="text-3xl font-bold text-[#1a3a1f] capitalize">
+            <h1 className="text-3xl font-bold text-forest-900 capitalize">
               {orgaoDecodificado}
             </h1>
           </div>
-          <p className="text-sm text-[#7a9a7a] mt-1 font-medium">
+          <p className="text-sm text-neutral-500 mt-1 font-medium">
             Selecione um tópico para estudar
           </p>
         </div>
 
         {/* Lista de tópicos Accordion */}
         {topicos.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-[#dde8d5] shadow-xs">
-            <Leaf size={40} className="mx-auto text-stone-300 mb-2 animate-pulse" />
-            <p className="text-sm text-stone-500 italic">
+          <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
+            <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
+            <p className="text-sm text-neutral-500 italic">
               Nenhum tópico cadastrado para este órgão.
             </p>
           </div>
@@ -146,7 +146,7 @@ export default function MorfologiaOrgaoPage() {
             {topicos.map((topico) => (
               <div
                 key={topico.id}
-                className="bg-white rounded-2xl border border-[#dde8d5] overflow-hidden hover:border-[#5fcf6e] transition-all duration-300 shadow-xs"
+                className="bg-white rounded-2xl border border-forest-200 overflow-hidden hover:border-forest-400 transition-all duration-300 shadow-xs"
               >
                 {/* Header do tópico — clicável */}
                 <button
@@ -154,15 +154,15 @@ export default function MorfologiaOrgaoPage() {
                   className="w-full flex items-center justify-between p-5 text-left cursor-pointer bg-transparent border-none outline-none"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <span className="text-[#5fcf6e] font-mono text-sm font-bold flex-shrink-0">
+                    <span className="text-forest-400 font-mono text-sm font-bold flex-shrink-0">
                       {String(topico.ordem).padStart(2, '0')}
                     </span>
-                    <span className="font-semibold text-[#1a3a1f] truncate leading-snug">
+                    <span className="font-semibold text-forest-900 truncate leading-snug">
                       {topico.titulo}
                     </span>
                   </div>
                   <span
-                    className={`text-[#4a7c5a] text-sm transform transition-transform duration-300 flex-shrink-0 ${
+                    className={`text-forest-600 text-sm transform transition-transform duration-300 flex-shrink-0 ${
                       aberto === topico.id ? 'rotate-180' : ''
                     }`}
                   >
@@ -172,29 +172,29 @@ export default function MorfologiaOrgaoPage() {
 
                 {/* Conteúdo expandido */}
                 {aberto === topico.id && (
-                  <div className="px-5 pb-5 border-t border-[#dde8d5] bg-stone-50/30">
+                  <div className="px-5 pb-5 border-t border-forest-200 bg-neutral-50/30">
                     {topico.conteudo ? (
                       <div
                         className="pt-4
-                                   [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#1a3a1f] [&_h1]:mb-3 [&_h1]:mt-4
-                                   [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-[#1a3a1f] [&_h2]:mb-2 [&_h2]:mt-4
-                                   [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[#4a7c5a] [&_h3]:mb-2 [&_h3]:mt-3
-                                   [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:text-[#4a5a44]
-                                   [&_strong]:font-semibold [&_strong]:text-[#1a3a1f]
-                                   [&_em]:italic [&_em]:text-[#4a5a44]
+                                   [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-forest-900 [&_h1]:mb-3 [&_h1]:mt-4
+                                   [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-forest-900 [&_h2]:mb-2 [&_h2]:mt-4
+                                   [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-forest-600 [&_h3]:mb-2 [&_h3]:mt-3
+                                   [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:text-neutral-700
+                                   [&_strong]:font-semibold [&_strong]:text-forest-900
+                                   [&_em]:italic [&_em]:text-neutral-700
                                    [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1
                                    [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1
-                                   [&_li]:leading-relaxed [&_li]:text-[#4a5a44]
-                                   [&_blockquote]:border-l-4 [&_blockquote]:border-[#5fcf6e]
-                                   [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#7a9a7a]
+                                   [&_li]:leading-relaxed [&_li]:text-neutral-700
+                                   [&_blockquote]:border-l-4 [&_blockquote]:border-forest-400
+                                   [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-neutral-500
                                    [&_blockquote]:my-3
-                                   [&_hr]:border-[#dde8d5] [&_hr]:my-4"
+                                   [&_hr]:border-forest-200 [&_hr]:my-4"
                         dangerouslySetInnerHTML={{
                           __html: marked(topico.conteudo ?? '') as string
                         }}
                       />
                     ) : (
-                      <p className="text-sm text-[#7a9a7a] italic pt-4 font-normal">
+                      <p className="text-sm text-neutral-500 italic pt-4 font-normal">
                         Conteúdo em breve.
                       </p>
                     )}

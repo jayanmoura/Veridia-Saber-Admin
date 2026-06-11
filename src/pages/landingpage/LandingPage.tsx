@@ -14,7 +14,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-950">
       <FallingLeaves />
       {/* Navbar Fixa */}
       <Navbar />

@@ -322,7 +322,7 @@ export default function ProjectDetailsPage() {
     if (loading) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center">
-                <Loader2 className="animate-spin text-emerald-600" size={48} />
+                <Loader2 className="animate-spin text-forest-600" size={48} />
                 <p className="mt-4 text-gray-500">Carregando detalhes do projeto...</p>
             </div>
         );
@@ -338,7 +338,7 @@ export default function ProjectDetailsPage() {
                 <p className="text-gray-500 max-w-md mb-4">{error || 'Projeto não encontrado.'}</p>
                 <button
                     onClick={() => navigate('/projects')}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
                 >
                     <ArrowLeft size={18} />
                     Voltar para Projetos
@@ -354,7 +354,7 @@ export default function ProjectDetailsPage() {
             <div className="flex items-center gap-4">
                 <button
                     onClick={() => navigate('/projects')}
-                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    className="p-2 text-gray-500 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
                     title="Voltar"
                 >
                     <ArrowLeft size={24} />
@@ -391,18 +391,18 @@ export default function ProjectDetailsPage() {
                                     onClick={() => handleTabChange(tab.id)}
                                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-medium transition-colors relative
                                         ${activeTab === tab.id
-                                            ? 'text-emerald-600 bg-emerald-50/50'
+                                            ? 'text-forest-600 bg-forest-50/50'
                                             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     <tab.icon size={18} />
                                     <span className="hidden sm:inline">{tab.label}</span>
                                     <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs font-semibold
-                                        ${activeTab === tab.id ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                                        ${activeTab === tab.id ? 'bg-forest-100 text-forest-700' : 'bg-gray-100 text-gray-600'}`}>
                                         {tab.count}
                                     </span>
                                     {activeTab === tab.id && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-forest-600" />
                                     )}
                                 </button>
                             ))}
@@ -412,7 +412,7 @@ export default function ProjectDetailsPage() {
                         <div className="p-5 min-h-[400px]">
                             {tabLoading ? (
                                 <div className="flex items-center justify-center h-64">
-                                    <Loader2 className="animate-spin text-emerald-600" size={32} />
+                                    <Loader2 className="animate-spin text-forest-600" size={32} />
                                 </div>
                             ) : (
                                 <>
@@ -526,7 +526,7 @@ export default function ProjectDetailsPage() {
                         <p className="text-gray-500 mb-6">O projeto foi excluído com sucesso.</p>
                         <button
                             onClick={handleSuccessClose}
-                            className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                            className="w-full px-4 py-2.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors font-medium"
                         >
                             Voltar para Projetos
                         </button>

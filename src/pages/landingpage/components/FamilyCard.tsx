@@ -27,10 +27,10 @@ export function FamilyCard({ family, onClick }: FamilyCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group flex flex-col bg-white rounded-2xl border border-[#dde8d5] shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 overflow-hidden h-full text-left cursor-pointer"
+      className="group flex flex-col bg-white rounded-2xl border border-forest-200 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 overflow-hidden h-full text-left cursor-pointer"
     >
       {/* Imagem/Fallback */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#f0f5ee]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-forest-50">
         {url_image ? (
           <img
             src={url_image}
@@ -39,7 +39,7 @@ export function FamilyCard({ family, onClick }: FamilyCardProps) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#4a7c5a]">
+          <div className="w-full h-full flex items-center justify-center text-forest-600">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10">
               <path d="M12 2C6 2 2 8 2 12c0 5.5 4.5 9 10 9s10-3.5 10-9C22 8 18 2 12 2z"/>
               <path d="M12 2v19M2 12h20"/>
@@ -49,7 +49,7 @@ export function FamilyCard({ family, onClick }: FamilyCardProps) {
 
         {/* Badge de contador de espécies */}
         <div className="absolute top-3 left-3">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#5fcf6e]/15 text-[#4a7c5a]">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-earth-200 text-earth-800">
             {species_count} {species_count === 1 ? 'espécie' : 'espécies'}
           </span>
         </div>
@@ -58,7 +58,7 @@ export function FamilyCard({ family, onClick }: FamilyCardProps) {
       {/* Conteúdo */}
       <div className="p-5 flex flex-col flex-grow justify-between">
         <div>
-          <h3 className="text-lg font-bold text-[#1a3a1f] group-hover:text-emerald-700 transition-colors">
+          <h3 className="text-lg font-bold text-forest-900 group-hover:text-forest-800 transition-colors">
             {name}
           </h3>
           {shortDesc && (
@@ -68,7 +68,7 @@ export function FamilyCard({ family, onClick }: FamilyCardProps) {
           )}
         </div>
 
-        <div className="pt-4 mt-4 border-t border-[#dde8d5] flex items-center justify-between text-[#5fcf6e] font-semibold text-xs">
+        <div className="pt-4 mt-4 border-t border-forest-200 flex items-center justify-between text-forest-400 font-semibold text-xs">
           <span>Ver espécies</span>
           <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform">→</span>
         </div>

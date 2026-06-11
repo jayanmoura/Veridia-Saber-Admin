@@ -228,24 +228,24 @@ export default function CatalogoEspecies() {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-950">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
         {/* Header da Página */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-[#1a3a1f]">
+          <h1 className="text-3xl font-bold text-forest-900">
             Espécies Botânicas
           </h1>
-          <p className="text-[#4a7c5a] mt-2 text-sm sm:text-base">
+          <p className="text-forest-600 mt-2 text-sm sm:text-base">
             Explore a diversidade taxonômica catalogada no acervo público do Veridia Saber.
           </p>
         </div>
 
         {/* Barra de Filtros e Busca */}
-        <div className="bg-white p-4 rounded-2xl border border-[#dde8d5] shadow-xs mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:max-w-md flex items-center bg-[#f8faf6] border border-[#dde8d5] rounded-xl px-3 py-2 focus-within:ring-1 focus-within:ring-[#5fcf6e] focus-within:border-[#5fcf6e] transition-all">
-            <Search className="text-[#4a7c5a] w-4 h-4 mr-2" />
+        <div className="bg-white p-4 rounded-2xl border border-forest-200 shadow-xs mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:max-w-md flex items-center bg-forest-50 border border-forest-200 rounded-xl px-3 py-2 focus-within:ring-1 focus-within:ring-forest-400 focus-within:border-forest-400 transition-all">
+            <Search className="text-forest-600 w-4 h-4 mr-2" />
             <input
               type="text"
               placeholder="Buscar por nome científico ou popular..."
@@ -256,12 +256,12 @@ export default function CatalogoEspecies() {
           </div>
 
           <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full justify-end">
-            <div className="flex items-center gap-2 bg-[#f8faf6] border border-[#dde8d5] rounded-xl px-3 py-2">
-              <SlidersHorizontal className="text-[#4a7c5a] w-4 h-4" />
+            <div className="flex items-center gap-2 bg-forest-50 border border-forest-200 rounded-xl px-3 py-2">
+              <SlidersHorizontal className="text-forest-600 w-4 h-4" />
               <select
                 value={familyId}
                 onChange={handleFamilyChange}
-                className="bg-transparent text-xs text-[#1a3a1f] font-semibold outline-none border-none focus:ring-0 cursor-pointer min-w-[150px]"
+                className="bg-transparent text-xs text-forest-900 font-semibold outline-none border-none focus:ring-0 cursor-pointer min-w-[150px]"
               >
                 <option value="">Todas as famílias</option>
                 {families.map((fam) => (
@@ -275,7 +275,7 @@ export default function CatalogoEspecies() {
             {(search.trim() || familyId) && (
               <button
                 onClick={handleClearFilters}
-                className="px-4 py-2 border border-[#dde8d5] hover:bg-[#f8faf6] text-stone-600 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 border border-forest-200 hover:bg-forest-50 text-stone-600 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
                 Limpar
               </button>
@@ -284,7 +284,7 @@ export default function CatalogoEspecies() {
         </div>
 
         {/* Contador e Resultados */}
-        <div className="mb-6 flex justify-between items-center text-xs sm:text-sm font-semibold text-[#4a7c5a]">
+        <div className="mb-6 flex justify-between items-center text-xs sm:text-sm font-semibold text-forest-600">
           <span>{totalCount} {totalCount === 1 ? 'espécie encontrada' : 'espécies encontradas'}</span>
         </div>
 
@@ -296,20 +296,20 @@ export default function CatalogoEspecies() {
             ))}
           </div>
         ) : species.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-[#dde8d5] rounded-3xl p-8 max-w-md mx-auto space-y-4">
-            <div className="w-12 h-12 rounded-full bg-[#f8faf6] flex items-center justify-center mx-auto text-[#4a7c5a]">
+          <div className="text-center py-20 bg-white border border-forest-200 rounded-3xl p-8 max-w-md mx-auto space-y-4">
+            <div className="w-12 h-12 rounded-full bg-forest-50 flex items-center justify-center mx-auto text-forest-600">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6">
                 <path d="M12 2C6 2 2 8 2 12c0 5.5 4.5 9 10 9s10-3.5 10-9C22 8 18 2 12 2z"/>
                 <path d="M12 2v19M2 12h20"/>
               </svg>
             </div>
-            <h3 className="text-base font-bold text-[#1a3a1f]">Nenhuma espécie encontrada</h3>
-            <p className="text-xs text-[#4a7c5a] max-w-xs mx-auto leading-relaxed">
+            <h3 className="text-base font-bold text-forest-900">Nenhuma espécie encontrada</h3>
+            <p className="text-xs text-forest-600 max-w-xs mx-auto leading-relaxed">
               Não encontramos resultados para {search.trim() ? `"${search}"` : 'os filtros selecionados'}. Tente refinar sua busca ou limpe os filtros.
             </p>
             <button
               onClick={handleClearFilters}
-              className="px-4 py-2 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer inline-block"
+              className="px-4 py-2 bg-forest-900 hover:bg-forest-800 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer inline-block"
             >
               Limpar Filtros
             </button>
@@ -321,7 +321,7 @@ export default function CatalogoEspecies() {
                 <Link
                   to={`/catalogo/especie/${item.id}`}
                   key={item.id}
-                  className="block bg-white rounded-2xl border border-[#dde8d5] overflow-hidden hover:shadow-md hover:border-[#5fcf6e] transition-all duration-200 cursor-pointer"
+                  className="block bg-white rounded-2xl border border-forest-200 overflow-hidden hover:shadow-md hover:border-forest-400 transition-all duration-200 cursor-pointer"
                 >
                   {/* imagem sem badge */}
                   <div className="aspect-[4/3] overflow-hidden">
@@ -329,18 +329,18 @@ export default function CatalogoEspecies() {
                       <img src={item.url_micro} alt={item.name_scientific}
                            className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#2d5a3d]">
+                      <div className="w-full h-full flex items-center justify-center bg-forest-800">
                         <span className="text-3xl">🌿</span>
                       </div>
                     )}
                   </div>
                   {/* conteúdo textual */}
                   <div className="p-4">
-                    <p className="font-semibold italic text-[#1a3a1f]">{item.name_scientific}</p>
+                    <p className="font-semibold italic text-forest-900">{item.name_scientific}</p>
                     {item.name_popular && (
-                      <p className="text-sm text-[#4a7c5a] mt-1">{item.name_popular}</p>
+                      <p className="text-sm text-forest-600 mt-1">{item.name_popular}</p>
                     )}
-                    <p className="text-sm text-[#5fcf6e] mt-3 font-semibold">Ver detalhes →</p>
+                    <p className="text-sm text-forest-400 mt-3 font-semibold">Ver detalhes →</p>
                   </div>
                 </Link>
               ))}
@@ -352,17 +352,17 @@ export default function CatalogoEspecies() {
                 <button
                   onClick={() => setPage(p => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className="p-2 border border-[#dde8d5] rounded-xl hover:bg-[#f0f5ee] disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-[#1a3a1f] bg-white cursor-pointer"
+                  className="p-2 border border-forest-200 rounded-xl hover:bg-forest-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-forest-900 bg-white cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div className="text-xs sm:text-sm text-[#4a7c5a] font-semibold">
-                  Página <span className="text-[#1a3a1f] font-bold">{page}</span> de {totalPages}
+                <div className="text-xs sm:text-sm text-forest-600 font-semibold">
+                  Página <span className="text-forest-900 font-bold">{page}</span> de {totalPages}
                 </div>
                 <button
                   onClick={() => setPage(p => Math.min(p + 1, totalPages))}
                   disabled={page === totalPages}
-                  className="p-2 border border-[#dde8d5] rounded-xl hover:bg-[#f0f5ee] disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-[#1a3a1f] bg-white cursor-pointer"
+                  className="p-2 border border-forest-200 rounded-xl hover:bg-forest-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-forest-900 bg-white cursor-pointer"
                 >
                   <ChevronRight size={20} />
                 </button>

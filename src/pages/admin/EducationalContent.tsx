@@ -313,7 +313,7 @@ export default function EducationalContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <BookOpen className="text-emerald-600" />
+                        <BookOpen className="text-forest-600" />
                         Conteúdo Didático do App
                     </h1>
                     <p className="text-gray-500">Gerencie os textos educativos exibidos na seção "Aprenda Mais" do aplicativo.</p>
@@ -328,7 +328,7 @@ export default function EducationalContent() {
                     </button>
                     <button
                         onClick={openNewModal}
-                        className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="flex items-center justify-center gap-2 bg-forest-600 text-white px-4 py-2 rounded-lg hover:bg-forest-700 transition-colors shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-forest-500"
                     >
                         <Plus size={18} />
                         Novo Conteúdo
@@ -342,7 +342,7 @@ export default function EducationalContent() {
                         key={tab}
                         onClick={() => setSelectedTab(tab)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedTab === tab
-                                ? 'bg-emerald-100 text-emerald-700'
+                                ? 'bg-forest-100 text-forest-700'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                             }`}
                     >
@@ -378,7 +378,7 @@ export default function EducationalContent() {
                                         <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.titulo}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.orgao === 'Raiz' ? 'bg-amber-100 text-amber-800' :
-                                                    item.orgao === 'Folha' ? 'bg-emerald-100 text-emerald-800' :
+                                                    item.orgao === 'Folha' ? 'bg-forest-100 text-forest-800' :
                                                         item.orgao === 'Flor' ? 'bg-pink-100 text-pink-800' :
                                                             item.orgao === 'Fruto' ? 'bg-orange-100 text-orange-800' :
                                                                 'bg-slate-100 text-slate-800'
@@ -390,7 +390,7 @@ export default function EducationalContent() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => openEditModal(item)}
-                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-forest-600 hover:bg-forest-200 rounded-lg transition-colors"
                                                     title="Editar"
                                                 >
                                                     <Pencil size={16} />
@@ -431,7 +431,7 @@ export default function EducationalContent() {
                                     <select
                                         value={formData.orgao}
                                         onChange={(e) => setFormData(prev => ({ ...prev, orgao: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                                     >
                                         {ORGAOS.map(o => <option key={o} value={o}>{o}</option>)}
                                     </select>
@@ -442,7 +442,7 @@ export default function EducationalContent() {
                                         type="number"
                                         value={formData.ordem}
                                         onChange={(e) => setFormData(prev => ({ ...prev, ordem: parseInt(e.target.value) }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                                     />
                                 </div>
                             </div>
@@ -453,7 +453,7 @@ export default function EducationalContent() {
                                     type="text"
                                     value={formData.titulo}
                                     onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                                     placeholder="Ex: Estrutura Interna da Raiz"
                                 />
                             </div>
@@ -481,7 +481,7 @@ export default function EducationalContent() {
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
+                                className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors font-medium flex items-center gap-2"
                             >
                                 <Save size={18} />
                                 Salvar Conteúdo
@@ -553,7 +553,7 @@ export default function EducationalContent() {
                                     </button>
                                 )}
                                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <Folder className="text-emerald-600" />
+                                    <Folder className="text-forest-600" />
                                     {currentFolder ? `Arquivos: ${currentFolder}` : 'Gerenciador de Arquivos'}
                                </h2>
                             </div>
@@ -574,9 +574,9 @@ export default function EducationalContent() {
                                         <button
                                             key={pasta}
                                             onClick={() => openFolder(pasta)}
-                                            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-colors group"
+                                            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-forest-500 hover:shadow-md transition-colors group"
                                         >
-                                            <Folder size={40} className="text-gray-300 group-hover:text-emerald-500 mb-3 transition-colors" />
+                                            <Folder size={40} className="text-gray-300 group-hover:text-forest-500 mb-3 transition-colors" />
                                             <span className="font-semibold text-gray-700">{pasta}</span>
                                             <span className="text-xs text-gray-400 mt-1">
                                                 {folderCounts[pasta] || 0} arquivo{folderCounts[pasta] !== 1 && 's'}
@@ -596,7 +596,7 @@ export default function EducationalContent() {
                                             <p className="text-sm text-gray-500">{folderFiles.length} imagens encontradas</p>
                                             <button 
                                                 onClick={toggleSelectAll} 
-                                                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                                                className="text-sm font-medium text-forest-600 hover:text-forest-700 hover:underline"
                                             >
                                                 {selectedFiles.size === folderFiles.length ? 'Desmarcar todas' : 'Selecionar todas'}
                                             </button>
@@ -607,11 +607,11 @@ export default function EducationalContent() {
                                                     key={file.id} 
                                                     onClick={() => toggleFileSelection(file.name)}
                                                     className={`bg-white rounded-lg overflow-hidden group relative aspect-square cursor-pointer transition-colors border-2 ${
-                                                        selectedFiles.has(file.name) ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500 ring-offset-1' : 'border-gray-200 hover:border-emerald-300'
+                                                        selectedFiles.has(file.name) ? 'border-forest-500 shadow-md ring-2 ring-forest-500 ring-offset-1' : 'border-gray-200 hover:border-forest-300'
                                                     }`}
                                                 >
                                                     <div className={`absolute top-2 left-2 z-10 w-6 h-6 rounded flex items-center justify-center transition-colors ${
-                                                        selectedFiles.has(file.name) ? 'bg-emerald-500 border-none' : 'bg-white/80 border border-gray-300 opacity-0 group-hover:opacity-100'
+                                                        selectedFiles.has(file.name) ? 'bg-forest-500 border-none' : 'bg-white/80 border border-gray-300 opacity-0 group-hover:opacity-100'
                                                     }`}>
                                                         {selectedFiles.has(file.name) && <Check size={14} className="text-white" />}
                                                     </div>
@@ -640,7 +640,7 @@ export default function EducationalContent() {
                                         disabled={isDownloading || isDeletingFiles}
                                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 font-medium"
                                     >
-                                        {isDownloading ? <Loader2 size={18} className="animate-spin text-emerald-600"/> : <Download size={18} />}
+                                        {isDownloading ? <Loader2 size={18} className="animate-spin text-forest-600"/> : <Download size={18} />}
                                         Baixar
                                     </button>
                                     <button 

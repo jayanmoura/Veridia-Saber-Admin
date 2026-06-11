@@ -18,15 +18,15 @@ function AccordionItem({ title, icon, children, isWarning = false, defaultOpen =
   const baseClasses = "w-full rounded-2xl border transition-all duration-300 overflow-hidden";
   const warningClasses = isWarning
     ? "border-amber-200 bg-amber-50/50"
-    : "border-[#dde8d5] bg-white";
+    : "border-forest-200 bg-white";
 
   const headerWarningClasses = isWarning
     ? "hover:bg-amber-100/30"
-    : "hover:bg-[#f8faf6]";
+    : "hover:bg-forest-50";
 
   const iconContainerClasses = isWarning
     ? "bg-amber-100 text-amber-600"
-    : "bg-[#f0f5ee] text-[#4a7c5a]";
+    : "bg-forest-100 text-forest-600";
 
   return (
     <div className={`${baseClasses} ${warningClasses} text-left`}>
@@ -38,15 +38,15 @@ function AccordionItem({ title, icon, children, isWarning = false, defaultOpen =
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconContainerClasses}`}>
             {icon}
           </div>
-          <h3 className={`text-base sm:text-lg font-bold ${isWarning ? 'text-amber-900' : 'text-[#1a3a1f]'}`}>
+          <h3 className={`text-base sm:text-lg font-bold ${isWarning ? 'text-amber-900' : 'text-forest-900'}`}>
             {title}
           </h3>
         </div>
         <div className={`transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
           {isOpen ? (
-            <ChevronUp size={20} className="text-stone-500" />
+            <ChevronUp size={20} className="text-neutral-500" />
           ) : (
-            <ChevronDown size={20} className="text-stone-500" />
+            <ChevronDown size={20} className="text-neutral-500" />
           )}
         </div>
       </button>
@@ -57,7 +57,7 @@ function AccordionItem({ title, icon, children, isWarning = false, defaultOpen =
         }`}
       >
         <div className="px-5 pb-5">
-          <div className={`pt-4 border-t ${isWarning ? 'border-amber-200' : 'border-[#dde8d5]/65'}`}>
+          <div className={`pt-4 border-t ${isWarning ? 'border-amber-200' : 'border-forest-200/65'}`}>
             {children}
           </div>
         </div>
@@ -89,10 +89,10 @@ export default function Disclaimer() {
           icon={<BookOpen size={20} />}
           defaultOpen={true}
         >
-          <p className="text-[#4a5a44] text-sm sm:text-base leading-relaxed">
+          <p className="text-neutral-700 text-sm sm:text-base leading-relaxed">
             O Veridia Saber é uma ferramenta destinada ao registro, catalogação e auxílio na identificação botânica.
             Embora busquemos a máxima precisão taxonômica através de curadoria, as informações aqui contidas{' '}
-            <strong className="text-[#1a3a1f] font-bold">não substituem a análise de um especialista</strong> in loco.
+            <strong className="text-forest-900 font-bold">não substituem a análise de um especialista</strong> in loco.
             A taxonomia é uma ciência dinâmica e sujeita a revisões.
           </p>
         </AccordionItem>
@@ -117,13 +117,13 @@ export default function Disclaimer() {
                 </p>
               </div>
             </div>
-            <p className="text-[#4a5a44] text-sm sm:text-base leading-relaxed">
+            <p className="text-neutral-700 text-sm sm:text-base leading-relaxed">
               A identificação incorreta de plantas pode levar a intoxicações graves ou fatais.{' '}
               <strong className="text-red-700 font-bold">
                 Nunca ingira ou utilize uma planta baseando-se apenas em informações deste aplicativo.
               </strong>
             </p>
-            <p className="text-stone-500 text-xs italic">
+            <p className="text-neutral-500 text-xs italic">
               Sempre consulte um especialista qualificado (botânico, agrônomo, farmacêutico) antes de qualquer uso medicinal ou alimentar.
             </p>
           </div>
@@ -134,14 +134,14 @@ export default function Disclaimer() {
           title="3. Conteúdo Colaborativo (Crowdsourcing)"
           icon={<Users size={20} />}
         >
-          <p className="text-[#4a5a44] text-sm sm:text-base leading-relaxed">
+          <p className="text-neutral-700 text-sm sm:text-base leading-relaxed">
             Parte do acervo é construído de forma colaborativa. O Veridia Saber não se responsabiliza pela titularidade
             de direitos autorais de imagens enviadas por terceiros, embora nos reservemos o direito de remover conteúdo que
             viole propriedades intelectuais mediante denúncia.
           </p>
-          <p className="text-stone-500 text-xs mt-3">
+          <p className="text-neutral-500 text-xs mt-3">
             Para reportar violações de direitos autorais, entre em contato:{' '}
-            <a href="mailto:contatos@veridiasaber.com.br" className="text-[#5fcf6e] hover:text-[#4eb85c] underline font-medium">
+            <a href="mailto:contatos@veridiasaber.com.br" className="text-forest-400 hover:text-forest-500 underline font-medium">
               contatos@veridiasaber.com.br
             </a>
           </p>
@@ -152,29 +152,29 @@ export default function Disclaimer() {
           title="4. Disponibilidade do Serviço"
           icon={<Server size={20} />}
         >
-          <p className="text-[#4a5a44] text-sm sm:text-base leading-relaxed">
-            O serviço é fornecido <strong className="text-[#1a3a1f] font-bold">"como está"</strong> (as is), sem garantias de
+          <p className="text-neutral-700 text-sm sm:text-base leading-relaxed">
+            O serviço é fornecido <strong className="text-forest-900 font-bold">"como está"</strong> (as is), sem garantias de
             disponibilidade ininterrupta. Podemos realizar manutenções programadas ou emergenciais que podem
             temporariamente afetar o acesso ao aplicativo.
           </p>
-          <p className="text-stone-500 text-xs mt-3">
+          <p className="text-neutral-500 text-xs mt-3">
             O Veridia Saber não se responsabiliza por perdas de dados ou interrupções de serviço fora de nosso controle.
           </p>
         </AccordionItem>
       </div>
 
       {/* Action Button */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-[#dde8d5]">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-forest-200">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center justify-center gap-2 px-8 py-3 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-semibold rounded-full transition-all shadow-md hover:scale-102 active:scale-98 cursor-pointer text-sm"
+          className="flex items-center justify-center gap-2 px-8 py-3 bg-forest-900 hover:bg-forest-800 text-white font-semibold rounded-full transition-all shadow-md hover:scale-102 active:scale-98 cursor-pointer text-sm"
         >
-          <CheckCircle size={18} className="text-[#5fcf6e]" />
+          <CheckCircle size={18} className="text-forest-400" />
           <span>Entendi</span>
         </button>
         <Link
           to="/"
-          className="flex items-center justify-center gap-2 px-6 py-3 text-stone-600 hover:text-stone-900 font-semibold transition-colors text-sm"
+          className="flex items-center justify-center gap-2 px-6 py-3 text-neutral-600 hover:text-neutral-900 font-semibold transition-colors text-sm"
         >
           <ArrowLeft size={16} />
           <span>Voltar para o Início</span>

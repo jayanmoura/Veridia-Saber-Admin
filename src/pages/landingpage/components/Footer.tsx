@@ -6,7 +6,7 @@ export function Footer() {
   const adminUrl = isLocalhost ? '/login' : 'https://painel-admin.veridiasaber.com.br';
 
   return (
-    <footer className="bg-[#0d2410] border-t border-white/[0.06] py-6 px-6">
+    <footer className="bg-forest-950 border-t border-white/[0.06] py-6 px-6">
       <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Esquerda: Logo e Marca */}
@@ -16,18 +16,18 @@ export function Footer() {
         </Link>
 
         {/* Centro: Links Inline */}
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-[#6a9a6a] font-normal">
-          <Link to="/privacidade" className="hover:text-[#a0c8a8] transition-colors">Privacidade</Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-forest-600 font-normal">
+          <Link to="/privacidade" className="hover:text-forest-400 transition-colors">Privacidade</Link>
           <span>·</span>
-          <Link to="/termos" className="hover:text-[#a0c8a8] transition-colors">Termos</Link>
+          <Link to="/termos" className="hover:text-forest-400 transition-colors">Termos</Link>
           <span>·</span>
-          <Link to="/isencao" className="hover:text-[#a0c8a8] transition-colors">Isenção</Link>
+          <Link to="/isencao" className="hover:text-forest-400 transition-colors">Isenção</Link>
           <span>·</span>
           <a
             href={adminUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-[#a0c8a8] transition-colors inline-flex items-center gap-0.5"
+            className="hover:text-forest-400 transition-colors inline-flex items-center gap-0.5"
           >
             <span>Admin</span>
             <span className="text-[10px]">↗</span>
@@ -35,7 +35,7 @@ export function Footer() {
         </div>
 
         {/* Direita: Assinatura */}
-        <span className="text-xs text-[#4a6a4a] font-normal flex-shrink-0">
+        <span className="text-xs text-forest-600/70 font-normal flex-shrink-0">
           &copy; 2026 Veridia Saber
         </span>
 

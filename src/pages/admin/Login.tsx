@@ -120,7 +120,7 @@ export default function Login() {
                             <input
                                 type="email"
                                 required
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500 outline-none transition-colors"
                                 placeholder="seu@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -135,7 +135,7 @@ export default function Login() {
                             <input
                                 type="password"
                                 required
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500 outline-none transition-colors"
                                 placeholder="Sua senha"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -146,7 +146,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={loading || googleLoading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-forest-600 hover:bg-forest-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Entrando...' : 'Acessar Painel'}
                     </button>
@@ -182,7 +182,7 @@ export default function Login() {
                     <div className="text-center pt-4">
                         <Link
                             to="/disclaimer"
-                            className="text-sm text-slate-500 hover:text-emerald-600 transition-colors"
+                            className="text-sm text-slate-500 hover:text-forest-600 transition-colors"
                         >
                             Isenção de Responsabilidade
                         </Link>

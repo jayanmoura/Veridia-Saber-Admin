@@ -61,12 +61,12 @@ export default function MorfologiaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 border-4 border-[#5fcf6e] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[#4a7c5a] font-medium text-sm animate-pulse">Carregando morfologia vegetal...</p>
+            <div className="w-12 h-12 border-4 border-forest-400 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-forest-600 font-medium text-sm animate-pulse">Carregando morfologia vegetal...</p>
           </div>
         </div>
         <Footer />
@@ -76,17 +76,17 @@ export default function MorfologiaPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex flex-col items-center justify-center py-20 px-6 text-center">
           <ShieldAlert className="text-red-500 w-16 h-16 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-[#1a3a1f]">Erro ao carregar conteúdo</h2>
-          <p className="text-[#4a7c5a] mt-2 max-w-sm text-sm">
+          <h2 className="text-2xl font-bold text-forest-900">Erro ao carregar conteúdo</h2>
+          <p className="text-forest-600 mt-2 max-w-sm text-sm">
             {error}
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-6 px-6 py-3 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
+            className="mt-6 px-6 py-3 bg-forest-900 hover:bg-forest-800 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
           >
             Tentar Novamente
           </button>
@@ -111,24 +111,24 @@ export default function MorfologiaPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
         {/* Header da página */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#f0f5ee] to-[#f8faf6] border border-[#dde8d5] p-8 md:p-10 mb-12 flex items-center justify-between shadow-xs">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-forest-100 to-forest-50 border border-forest-200 p-8 md:p-10 mb-12 flex items-center justify-between shadow-xs">
           <div className="max-w-2xl z-10">
-            <span className="text-xs uppercase tracking-widest text-[#4a7c5a] font-bold">
+            <span className="text-xs uppercase tracking-widest text-forest-600 font-bold">
               Estudo Botânico
             </span>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#1a3a1f] mt-1">
+            <h1 className="text-3xl md:text-4xl font-bold text-forest-900 mt-1">
               Morfologia Vegetal
             </h1>
-            <p className="text-[#4a7c5a] text-sm md:text-base mt-2 leading-relaxed font-normal">
+            <p className="text-forest-600 text-sm md:text-base mt-2 leading-relaxed font-normal">
               Estude a estrutura externa das plantas — raízes, caules, folhas, flores, frutos e sementes. Compreenda a anatomia descritiva que auxilia na identificação das espécies botânicas no campo.
             </p>
           </div>
-          <div className="hidden md:block text-[#5fcf6e]/15 flex-shrink-0 mr-4 z-0">
+          <div className="hidden md:block text-forest-400/15 flex-shrink-0 mr-4 z-0">
             <svg
               width="100"
               height="100"
@@ -150,9 +150,9 @@ export default function MorfologiaPage() {
 
         {/* Órgãos Cadastrados */}
         {Object.keys(porOrgao).length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-[#dde8d5] shadow-xs">
-            <Leaf size={48} className="mx-auto text-stone-300 mb-3 animate-pulse" />
-            <p className="text-sm text-stone-500 italic">
+          <div className="text-center py-20 bg-white rounded-3xl border border-forest-200 shadow-xs">
+            <Leaf size={48} className="mx-auto text-neutral-300 mb-3 animate-pulse" />
+            <p className="text-sm text-neutral-500 italic">
               Nenhum conteúdo de morfologia disponível no momento.
             </p>
           </div>
@@ -165,19 +165,19 @@ export default function MorfologiaPage() {
                 <Link
                   to={`/morfologia/${encodeURIComponent(orgao)}`}
                   key={orgao}
-                  className="group bg-white rounded-2xl border border-[#dde8d5] p-6 hover:shadow-lg hover:border-[#5fcf6e] hover:scale-[1.005] transition-all duration-300 cursor-pointer flex items-start gap-5 text-left"
+                  className="group bg-white rounded-2xl border border-stone-200 p-6 hover:shadow-lg hover:border-emerald-500 hover:scale-[1.005] transition-all duration-300 cursor-pointer flex items-start gap-5 text-left"
                 >
                   {/* Ícone */}
-                  <div className="w-14 h-14 rounded-xl bg-[#f0f5ee] flex items-center justify-center text-2xl flex-shrink-0 group-hover:bg-[#5fcf6e]/10 transition-colors duration-300">
+                  <div className="w-14 h-14 rounded-xl bg-stone-100 flex items-center justify-center text-2xl flex-shrink-0 group-hover:bg-emerald-50 transition-colors duration-300">
                     {emoji}
                   </div>
 
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-[#1a3a1f] group-hover:text-[#2d5a3d] transition-colors leading-snug">
+                    <h2 className="text-xl font-bold text-forest-900 group-hover:text-forest-800 transition-colors leading-snug">
                       {orgao}
                     </h2>
-                    <p className="text-xs text-[#7a9a7a] mt-1 font-semibold">
+                    <p className="text-xs text-neutral-500 mt-1 font-semibold">
                       {topicos.length} tópico{topicos.length !== 1 ? 's' : ''}
                     </p>
                     
@@ -186,20 +186,20 @@ export default function MorfologiaPage() {
                       {topicos.slice(0, 3).map((t) => (
                         <span
                           key={t.id}
-                          className="text-[10px] bg-[#f0f5ee] text-[#4a7c5a] px-2 py-0.5 rounded-full font-medium"
+                          className="text-[10px] bg-forest-100 text-forest-600 px-2 py-0.5 rounded-full font-medium"
                         >
                           {t.titulo}
                         </span>
                       ))}
                       {topicos.length > 3 && (
-                        <span className="text-[10px] text-[#7a9a7a] font-medium self-center">
+                        <span className="text-[10px] text-neutral-500 font-medium self-center">
                           +{topicos.length - 3} mais
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <span className="text-[#5fcf6e] text-xl font-bold self-center transform translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300">
+                  <span className="text-forest-400 text-xl font-bold self-center transform translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300">
                     →
                   </span>
                 </Link>

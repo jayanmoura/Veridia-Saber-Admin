@@ -14,16 +14,16 @@ export default function Terms() {
       tag="Termos"
       updatedAt="Última atualização: Janeiro de 2026"
     >
-      <p className="text-[#4a5a44] leading-relaxed">
+      <p className="text-neutral-700 leading-relaxed">
         Ao baixar ou usar o aplicativo Veridia Saber, você concorda automaticamente com estes termos.
       </p>
 
-      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">1. Uso do Aplicativo</h2>
-      <p className="text-[#4a5a44] leading-relaxed">
+      <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">1. Uso do Aplicativo</h2>
+      <p className="text-neutral-700 leading-relaxed">
         O Veridia Saber é uma ferramenta educacional e de auxílio à pesquisa de campo. Você concorda em usar o aplicativo apenas para fins legais e éticos.
       </p>
 
-      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">2. Isenção de Responsabilidade</h2>
+      <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">2. Isenção de Responsabilidade</h2>
 
       {/* Warning Alert */}
       <div className="bg-amber-50 border-l-4 border-amber-500 p-4 my-6 rounded-r-lg text-left">
@@ -38,27 +38,27 @@ export default function Terms() {
         </div>
       </div>
 
-      <ul className="list-disc pl-5 space-y-4 text-[#4a5a44]">
-        <li className="marker:text-[#5fcf6e]">
-          <strong className="text-[#1a3a1f] font-semibold">Identificação de Espécies:</strong> O Veridia Saber fornece ferramentas para auxiliar na identificação de plantas, mas não garante 100% de precisão. A identificação botânica é complexa e sujeita a erros.
+      <ul className="list-disc pl-5 space-y-4 text-neutral-700">
+        <li className="marker:text-forest-400">
+          <strong className="text-forest-900 font-semibold">Identificação de Espécies:</strong> O Veridia Saber fornece ferramentas para auxiliar na identificação de plantas, mas não garante 100% de precisão. A identificação botânica é complexa e sujeita a erros.
         </li>
-        <li className="marker:text-[#5fcf6e]">
-          <strong className="text-[#1a3a1f] font-semibold">Segurança e Saúde:</strong> O aplicativo NÃO deve ser usado como única fonte para determinar se uma planta é comestível, medicinal ou tóxica.
+        <li className="marker:text-forest-400">
+          <strong className="text-forest-900 font-semibold">Segurança e Saúde:</strong> O aplicativo NÃO deve ser usado como única fonte para determinar se uma planta é comestível, medicinal ou tóxica.
         </li>
       </ul>
 
-      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">3. Propriedade Intelectual</h2>
-      <p className="text-[#4a5a44] leading-relaxed">
+      <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">3. Propriedade Intelectual</h2>
+      <p className="text-neutral-700 leading-relaxed">
         Todo o código, design e marca "Veridia Saber" são propriedade intelectual do desenvolvedor. Você não tem permissão para copiar, modificar ou fazer engenharia reversa do aplicativo.
       </p>
 
-      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">4. Conteúdo do Usuário</h2>
-      <p className="text-[#4a5a44] leading-relaxed">
+      <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">4. Conteúdo do Usuário</h2>
+      <p className="text-neutral-700 leading-relaxed">
         Você é responsável pelas fotos e informações que cadastra no aplicativo. Não envie conteúdo ofensivo, ilegal ou que viole direitos autorais de terceiros.
       </p>
 
-      <h2 className="text-lg font-semibold text-[#1a3a1f] mt-8 mb-3">5. Alterações nos Termos</h2>
-      <p className="text-[#4a5a44] leading-relaxed">
+      <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">5. Alterações nos Termos</h2>
+      <p className="text-neutral-700 leading-relaxed">
         Podemos atualizar estes termos periodicamente. Recomendamos que você revise esta página regularmente.
       </p>
     </LegalPageLayout>

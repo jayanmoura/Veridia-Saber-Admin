@@ -60,16 +60,16 @@ export function SpeciesSection() {
       <div className="container mx-auto max-w-6xl space-y-10">
         
         {/* Section Header */}
-        <div className="flex items-end justify-between pb-4 border-b border-[#dde8d5]">
+        <div className="flex items-end justify-between pb-4 border-b border-forest-200">
           <div className="text-left">
-            <span className="text-[#4a7c5a] text-xs font-bold uppercase tracking-widest block mb-2">O QUE É O VERIDIA SABER</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1a3a1f]">
+            <span className="text-forest-600 text-xs font-bold uppercase tracking-widest block mb-2">O QUE É O VERIDIA SABER</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-forest-900">
               Espécies em Destaque
             </h2>
           </div>
           <Link
             to="/catalogo"
-            className="flex items-center gap-1 text-sm font-bold text-[#5fcf6e] hover:text-[#4eb85c] transition-colors"
+            className="flex items-center gap-1 text-sm font-bold text-forest-400 hover:text-forest-600 transition-colors"
           >
             <span>Ver todas</span>
             <ArrowRight className="w-4 h-4" />
@@ -94,11 +94,11 @@ export function SpeciesSection() {
               Array.from({ length: placeholdersNeeded }).map((_, idx) => (
                 <div 
                   key={`placeholder-${idx}`} 
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-[#dde8d5] rounded-2xl p-6 bg-transparent h-full min-h-[350px] text-center text-[#4a7c5a]/60"
+                  className="flex flex-col items-center justify-center border-2 border-dashed border-forest-200 rounded-2xl p-6 bg-transparent h-full min-h-[350px] text-center text-forest-600/60"
                 >
                   <span className="text-3xl mb-2" role="img" aria-label="Planta">🌱</span>
-                  <p className="text-sm font-bold text-[#1a3a1f]">Mais espécies em breve</p>
-                  <p className="text-xs text-[#4a7c5a]/70 mt-1">Coleção sob constante catalogação de campo.</p>
+                  <p className="text-sm font-bold text-forest-900">Mais espécies em breve</p>
+                  <p className="text-xs text-forest-600/70 mt-1">Coleção sob constante catalogação de campo.</p>
                 </div>
               ))
             }

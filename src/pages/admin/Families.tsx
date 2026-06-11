@@ -115,13 +115,13 @@ export default function Families() {
                         </button>
                         <button
                             onClick={() => setActiveTab('pending')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'pending' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'pending' ? 'bg-white text-forest-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             <FileQuestion size={16} />
                             Sugestões de Campo
                             {pendingFamilies.length > 0 && (
-                                <span className="ml-1 bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-full">
+                                <span className="ml-1 bg-forest-100 text-forest-700 text-xs px-1.5 py-0.5 rounded-full">
                                     {pendingFamilies.length}
                                 </span>
                             )}
@@ -131,7 +131,7 @@ export default function Families() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCard title="Total de Famílias" value={stats.total} icon={TreeDeciduous} color="emerald" loading={loading} />
+                    <StatCard title="Total de Famílias" value={stats.total} icon={TreeDeciduous} color="forest" loading={loading} />
                     <StatCard
                         title="Família Mais Rica"
                         value={loading ? "..." : (stats.richest ? `${stats.richest.name} (${stats.richest.count})` : '-')}
@@ -152,7 +152,7 @@ export default function Families() {
                                 <input
                                     type="text"
                                     placeholder="Buscar por nome..."
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none transition-colors"
                                     value={search}
                                     onChange={handleSearch}
                                 />
@@ -170,7 +170,7 @@ export default function Families() {
                                 )}
                                 <button
                                     onClick={handleNewFamily}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 sm:flex-none"
+                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm flex-1 sm:flex-none"
                                 >
                                     <Plus size={18} />
                                     <span>Nova Família</span>
@@ -222,7 +222,7 @@ export default function Families() {
                                         <button
                                             onClick={() => actions.handleApproveFamily(pending.name)}
                                             disabled={actions.approveLoading === pending.name}
-                                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors disabled:opacity-50"
                                         >
                                             {actions.approveLoading === pending.name ? (
                                                 <Loader2 size={14} className="animate-spin" />

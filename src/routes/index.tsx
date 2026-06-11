@@ -25,8 +25,8 @@ const Unauthorized = lazy(() => import('../pages/Unauthorized'));
 // Global admin route permission matrix.
 // Dashboard, project detail, and local/project-scoped routes remain under PrivateRoute only.
 const GLOBAL_MANAGEMENT_ROLES = ['Curador Mestre', 'Coordenador Científico'];
-const SCIENTIFIC_CATALOG_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
-const GLOBAL_MAP_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo'];
+const SCIENTIFIC_CATALOG_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo', 'Taxonomista de Campo'];
+const GLOBAL_MAP_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo', 'Taxonomista de Campo'];
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { session, loading, profile } = useAuth();

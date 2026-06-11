@@ -341,7 +341,7 @@ export default function Users() {
                         title="Equipe Taxonômica"
                         value={stats.taxonomists}
                         icon={UserCheck}
-                        color="emerald"
+                        color="forest-800"
                         loading={loading}
                     />
                 </div>
@@ -379,7 +379,7 @@ export default function Users() {
                             <input
                                 type="text"
                                 placeholder="Buscar membro..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -389,7 +389,7 @@ export default function Users() {
                         {myLevel === 4 && (
                             <button
                                 onClick={() => setIsInviteModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap"
+                                className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm whitespace-nowrap"
                             >
                                 <Plus size={18} />
                                 <span className="hidden sm:inline">Adicionar</span>
@@ -571,7 +571,7 @@ export default function Users() {
                                     value={editRole}
                                     onChange={(e) => setEditRole(e.target.value as UserRole)}
                                     disabled={isReadOnly}
-                                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none bg-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <option value="">Selecione um cargo</option>
                                     {ROLES_LIST.map((role) => {
@@ -602,7 +602,7 @@ export default function Users() {
                                         value={isGlobalRole(editRole) ? '' : (editProjectId || '')}
                                         onChange={(e) => setEditProjectId(e.target.value || null)}
                                         disabled={isReadOnly || isGlobalRole(editRole)}
-                                        className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white ${(isReadOnly || isGlobalRole(editRole)) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                                        className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none bg-white ${(isReadOnly || isGlobalRole(editRole)) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
                                     >
                                         <option value="">
                                             {isGlobalRole(editRole) ? '🌐 Global (Veridia Saber)' : 'Selecione um local'}
@@ -614,7 +614,7 @@ export default function Users() {
                                         ))}
                                     </select>
                                     {isGlobalRole(editRole) && (
-                                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                                        <p className="text-xs text-forest-600 mt-1 flex items-center gap-1">
                                             <span>✓</span> Cargos globais atuam em toda a plataforma Veridia Saber.
                                         </p>
                                     )}
@@ -640,7 +640,7 @@ export default function Users() {
                                 <button
                                     onClick={handleEditSave}
                                     disabled={editLoading || !editRole}
-                                    className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {editLoading ? (
                                         <>
@@ -731,7 +731,7 @@ export default function Users() {
                         </button>
 
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <div className="w-12 h-12 rounded-full bg-forest-100 flex items-center justify-center text-forest-600">
                                 <Mail size={24} />
                             </div>
                             <div>
@@ -750,7 +750,7 @@ export default function Users() {
                                     placeholder="usuario@email.com"
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     O usuário será vinculado ao seu projeto como Taxonomista.
@@ -776,7 +776,7 @@ export default function Users() {
                                     }, 500);
                                 }}
                                 disabled={inviteLoading || !inviteEmail}
-                                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors font-medium shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {inviteLoading ? (
                                     <>
@@ -796,12 +796,12 @@ export default function Users() {
             {/* Toast Notification */}
             {toast && (
                 <div
-                    className={`fixed top-5 right-5 z-[200] bg-white shadow-lg rounded-lg p-4 flex items-center gap-3 border-l-4 animate-fade-in-up ${toast.type === 'success' ? 'border-emerald-500' : 'border-red-500'
+                    className={`fixed top-5 right-5 z-[200] bg-white shadow-lg rounded-lg p-4 flex items-center gap-3 border-l-4 animate-fade-in-up ${toast.type === 'success' ? 'border-forest-500' : 'border-red-500'
                         }`}
                     style={{ minWidth: '300px' }}
                 >
                     {toast.type === 'success' ? (
-                        <CheckCircle className="text-emerald-500 flex-shrink-0" size={24} />
+                        <CheckCircle className="text-forest-500 flex-shrink-0" size={24} />
                     ) : (
                         <AlertTriangle className="text-red-500 flex-shrink-0" size={24} />
                     )}

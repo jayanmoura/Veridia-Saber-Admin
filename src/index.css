@@ -1,17 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-    --color-primary-50: #f0fdf4;
-    --color-primary-100: #dcfce7;
-    --color-primary-500: #22c55e;
-    --color-primary-600: #16a34a;
-    --color-primary-700: #15803d;
-    --color-primary-900: #14532d;
+  /* === VERDE BOTÂNICO — escala principal === */
+  --color-forest-950: #0d2410;   /* verde quase preto — backgrounds escuros, navbar, footer */
+  --color-forest-900: #1a3a1f;   /* verde base — títulos, CTAs primários, logo */
+  --color-forest-800: #2d5a3d;   /* verde hover — estados interativos */
+  --color-forest-600: #4a7c5a;   /* verde médio — texto secundário, ícones */
+  --color-forest-400: #7ab08a;   /* verde claro — bordas, divisores sutis */
+  --color-forest-200: #c4deca;   /* verde muito claro — fundos de seção alternados */
+  --color-forest-50:  #f0f7f2;   /* verde quase branco — background padrão de página */
+
+  /* === TERRA — tom complementar (usa com parcimônia) === */
+  --color-earth-800: #4a3520;    /* terra escuro — badges de família, metadados científicos */
+  --color-earth-600: #7a5c3a;    /* terra médio — hover de elementos terra */
+  --color-earth-200: #e8d5b8;    /* terra claro — fundo de badges, chips de tag */
+  --color-earth-50:  #faf6f0;    /* terra quase branco — fundo alternativo cálido */
+
+  /* === NEUTROS === */
+  --color-neutral-950: #0f1410;  /* preto botânico — texto principal */
+  --color-neutral-700: #374038;  /* cinza esverdeado — texto secundário */
+  --color-neutral-400: #8a9e8c;  /* cinza claro — placeholders, desabilitados */
+  --color-neutral-100: #f4f7f4;  /* fundo neutro claro — cards, inputs */
+  --color-neutral-50:  #fafcfa;  /* branco botânico — fundo base */
+
+  /* === SEMÂNTICOS (mapeiam para os acima) === */
+  --color-primary:          var(--color-forest-900);
+  --color-primary-hover:    var(--color-forest-800);
+  --color-primary-subtle:   var(--color-forest-200);
+  --color-primary-bg:       var(--color-forest-50);
+  --color-accent:           var(--color-earth-800);
+  --color-accent-subtle:    var(--color-earth-200);
+  --color-text-base:        var(--color-neutral-950);
+  --color-text-muted:       var(--color-neutral-700);
+  --color-surface:          var(--color-neutral-50);
+  --color-surface-alt:      var(--color-forest-50);
+  --color-border:           var(--color-forest-400);
+  --color-border-subtle:    var(--color-forest-200);
+
+  /* === ALIASES DE COMPATIBILIDADE — remover gradualmente === */
+  --color-primary-50:  var(--color-forest-50);
+  --color-primary-100: var(--color-forest-200);
+  --color-primary-500: var(--color-forest-600);
+  --color-primary-600: var(--color-forest-800);
+  --color-primary-700: var(--color-forest-900);
+  --color-primary-900: var(--color-forest-950);
 }
 
 /* Custom Utilities if needed */
 body {
-    @apply bg-slate-50 text-slate-900;
+    background-color: var(--color-surface-alt);
+    color: var(--color-text-base);
 }
 
 /* Landing Page Animations */
@@ -75,72 +113,62 @@ body {
 /* ─── Modo Escuro / Dark Mode ────────────────────────────────────────── */
 html.dark,
 html.dark body {
-    background-color: #0b150d !important;
-    color: #e2ebd5 !important;
+    background-color: var(--color-forest-950) !important;
+    color: var(--color-forest-200) !important;
 }
 
 html.dark nav,
 html.dark footer,
 html.dark .bg-white {
-    background-color: #122416 !important;
-    border-color: #243f2a !important;
+    background-color: var(--color-forest-900) !important;
+    border-color: var(--color-forest-800) !important;
 }
 
 /* Substituição das cores botânicas no dark mode */
-html.dark .text-\[\#1a3a1f\] {
-    color: #5fcf6e !important;
+html.dark .text-primary {
+    color: var(--color-forest-400) !important;
 }
-html.dark .text-\[\#4a7c5a\] {
-    color: #a2cfa9 !important;
+html.dark .text-forest-600 {
+    color: var(--color-forest-400) !important;
 }
-html.dark .text-\[\#4a5a44\] {
-    color: #bacab4 !important;
+html.dark .bg-surface-alt {
+    background-color: var(--color-forest-950) !important;
 }
-html.dark .bg-\[\#f8faf6\] {
-    background-color: #0b150d !important;
+html.dark .bg-primary-subtle {
+    background-color: var(--color-forest-800) !important;
 }
-html.dark .bg-\[\#dde8d5\] {
-    background-color: #1e3623 !important;
+html.dark .border-primary-subtle {
+    border-color: var(--color-forest-800) !important;
 }
-html.dark .border-\[\#dde8d5\],
-html.dark .border-b-\[\#dde8d5\] {
-    border-color: #243f2a !important;
+html.dark .bg-primary {
+    background-color: var(--color-forest-600) !important;
+    color: white !important;
 }
-html.dark .bg-\[\#1a3a1f\] {
-    background-color: #225c31 !important;
-    color: #ffffff !important;
+html.dark .hover\:bg-primary-hover:hover {
+    background-color: var(--color-forest-600) !important;
 }
-html.dark .hover\:bg-\[\#2d5a3d\]:hover {
-    background-color: #2d7d42 !important;
-}
-html.dark .border-\[\#1a3a1f\] {
-    border-color: #5fcf6e !important;
-}
-html.dark .hover\:bg-\[\#f0f5ee\]:hover {
-    background-color: #1e3623 !important;
+html.dark .border-primary {
+    border-color: var(--color-forest-400) !important;
 }
 
 /* Tabelas e Accordions em Dark Mode */
-html.dark .bg-stone-50 {
-    background-color: #162c1b !important;
+html.dark .bg-neutral-50 {
+    background-color: var(--color-forest-950) !important;
 }
-html.dark .bg-stone-100 {
-    background-color: #1e3623 !important;
+html.dark .bg-neutral-100 {
+    background-color: var(--color-forest-900) !important;
 }
-html.dark .border-stone-100 {
-    border-color: #243f2a !important;
+html.dark .border-neutral-100 {
+    border-color: var(--color-forest-800) !important;
 }
-html.dark .text-stone-800 {
-    color: #e2ebd5 !important;
+html.dark .text-neutral-800 {
+    color: var(--color-forest-50) !important;
 }
-html.dark .text-stone-700 {
-    color: #bacab4 !important;
+html.dark .text-neutral-700 {
+    color: var(--color-forest-200) !important;
 }
-html.dark .text-stone-600 {
-    color: #a2cfa9 !important;
-}
-html.dark .text-stone-500 {
-    color: #8bb292 !important;
+html.dark .text-neutral-600 {
+    color: var(--color-forest-400) !important;
 }
 
 /* ─── Alto Contraste (Modo Claro) ─────────────────────────────────────── */
@@ -153,40 +181,37 @@ html.contrast:not(.dark) body {
 html.contrast:not(.dark) nav,
 html.contrast:not(.dark) footer,
 html.contrast:not(.dark) .bg-white,
-html.contrast:not(.dark) .bg-stone-50,
-html.contrast:not(.dark) .bg-stone-100 {
+html.contrast:not(.dark) .bg-neutral-50,
+html.contrast:not(.dark) .bg-neutral-100 {
     background-color: #ffffff !important;
     border-color: #000000 !important;
 }
 
-html.contrast:not(.dark) .text-\[\#1a3a1f\],
-html.contrast:not(.dark) .text-\[\#4a7c5a\],
-html.contrast:not(.dark) .text-\[\#4a5a44\],
-html.contrast:not(.dark) .text-stone-800,
-html.contrast:not(.dark) .text-stone-700,
-html.contrast:not(.dark) .text-stone-600 {
+html.contrast:not(.dark) .text-primary,
+html.contrast:not(.dark) .text-forest-600,
+html.contrast:not(.dark) .text-neutral-800,
+html.contrast:not(.dark) .text-neutral-700,
+html.contrast:not(.dark) .text-neutral-600 {
     color: #000000 !important;
 }
 
-html.contrast:not(.dark) .bg-\[\#f8faf6\] {
+html.contrast:not(.dark) .bg-surface-alt,
+html.contrast:not(.dark) .bg-primary-subtle {
     background-color: #ffffff !important;
 }
-html.contrast:not(.dark) .bg-\[\#dde8d5\] {
-    background-color: #ffffff !important;
-}
-html.contrast:not(.dark) .border-\[\#dde8d5\],
-html.contrast:not(.dark) .border-b-\[\#dde8d5\] {
+html.contrast:not(.dark) .border-primary-subtle,
+html.contrast:not(.dark) .border-neutral-100 {
     border-color: #000000 !important;
 }
 
-html.contrast:not(.dark) .bg-\[\#1a3a1f\] {
+html.contrast:not(.dark) .bg-primary {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
-html.contrast:not(.dark) .border-\[\#1a3a1f\] {
+html.contrast:not(.dark) .border-primary {
     border-color: #000000 !important;
 }
-html.contrast:not(.dark) .hover\:bg-\[\#f0f5ee\]:hover {
+html.contrast:not(.dark) .hover\:bg-primary-subtle:hover {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
@@ -201,39 +226,45 @@ html.contrast.dark body {
 html.contrast.dark nav,
 html.contrast.dark footer,
 html.contrast.dark .bg-white,
-html.contrast.dark .bg-stone-50,
-html.contrast.dark .bg-stone-100 {
+html.contrast.dark .bg-neutral-50,
+html.contrast.dark .bg-neutral-100 {
     background-color: #000000 !important;
     border-color: #ffffff !important;
 }
 
-html.contrast.dark .text-\[\#1a3a1f\],
-html.contrast.dark .text-\[\#4a7c5a\],
-html.contrast.dark .text-\[\#4a5a44\],
-html.contrast.dark .text-stone-800,
-html.contrast.dark .text-stone-700,
-html.contrast.dark .text-stone-600 {
+html.contrast.dark .text-primary,
+html.contrast.dark .text-forest-600,
+html.contrast.dark .text-forest-900,
+html.contrast.dark .text-forest-800,
+html.contrast.dark .text-neutral-800,
+html.contrast.dark .text-neutral-700,
+html.contrast.dark .text-neutral-600 {
     color: #ffffff !important;
 }
 
-html.contrast.dark .bg-\[\#f8faf6\],
-html.contrast.dark .bg-\[\#dde8d5\] {
+html.contrast.dark .bg-surface-alt,
+html.contrast.dark .bg-forest-50,
+html.contrast.dark .bg-primary-subtle {
     background-color: #000000 !important;
 }
-html.contrast.dark .border-\[\#dde8d5\],
-html.contrast.dark .border-b-\[\#dde8d5\],
-html.contrast.dark .border-stone-100 {
+html.contrast.dark .border-primary-subtle,
+html.contrast.dark .border-forest-200,
+html.contrast.dark .border-b-forest-200,
+html.contrast.dark .border-neutral-100 {
     border-color: #ffffff !important;
 }
 
-html.contrast.dark .bg-\[\#1a3a1f\] {
+html.contrast.dark .bg-primary,
+html.contrast.dark .bg-forest-900 {
     background-color: #ffffff !important;
     color: #000000 !important;
 }
-html.contrast.dark .border-\[\#1a3a1f\] {
+html.contrast.dark .border-primary,
+html.contrast.dark .border-forest-900 {
     border-color: #ffffff !important;
 }
-html.contrast.dark .hover\:bg-\[\#f0f5ee\]:hover {
+html.contrast.dark .hover\:bg-primary-subtle:hover,
+html.contrast.dark .hover\:bg-forest-50:hover {
     background-color: #ffffff !important;
     color: #000000 !important;
 }

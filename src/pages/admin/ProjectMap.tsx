@@ -20,11 +20,11 @@ const createProjectCenterIcon = (name: string) => {
         className: 'bg-transparent border-0',
         html: `
             <div class="relative transform -translate-x-1/2 -translate-y-full -mt-3 group cursor-pointer" style="width: max-content;">
-                <div class="bg-emerald-600 px-3 py-2 rounded-lg shadow-lg border border-emerald-700 flex items-center gap-2 max-w-[200px]">
+                <div class="bg-forest-600 px-3 py-2 rounded-lg shadow-lg border border-forest-700 flex items-center gap-2 max-w-[200px]">
                     <div class="w-2 h-2 rounded-full bg-white flex-shrink-0"></div>
                     <span class="font-bold text-white text-sm truncate block">${name}</span>
                 </div>
-                <div class="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1 w-3 h-3 bg-emerald-600 rotate-45 border-r border-b border-emerald-700 z-10"></div>
+                <div class="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1 w-3 h-3 bg-forest-600 rotate-45 border-r border-b border-forest-700 z-10"></div>
             </div>
         `,
         iconSize: [0, 0],
@@ -103,7 +103,7 @@ export default function ProjectMap() {
         if (currentUserId && createdBy === currentUserId) {
             return '#F97316'; // Orange-500 for user's own plants
         }
-        return '#10B981'; // Emerald-500 for other plants
+        return '#065f46'; // Forest-800 for other plants
     };
 
     useEffect(() => {
@@ -259,7 +259,7 @@ export default function ProjectMap() {
             {/* Header Controls */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <div className="p-2 bg-forest-50 text-forest-600 rounded-lg">
                         <MapPinned size={20} />
                     </div>
                     <div>
@@ -270,10 +270,10 @@ export default function ProjectMap() {
 
                 <div className="flex items-center gap-4">
                     {/* Species count badge */}
-                    <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full">
-                        <Leaf size={16} className="text-emerald-600" />
-                        <span className="font-medium text-emerald-700">{validSpecies.length}</span>
-                        <span className="text-sm text-emerald-600">espécimes mapeados</span>
+                    <div className="flex items-center gap-2 bg-forest-50 px-3 py-1.5 rounded-full">
+                        <Leaf size={16} className="text-forest-600" />
+                        <span className="font-medium text-forest-700">{validSpecies.length}</span>
+                        <span className="text-sm text-forest-600">espécimes mapeados</span>
                     </div>
 
                     {/* Style Switcher */}
@@ -287,7 +287,7 @@ export default function ProjectMap() {
                         </button>
                         <button
                             onClick={() => setMapStyle('satellite')}
-                            className={`p-1.5 rounded-md transition-colors ${mapStyle === 'satellite' ? 'bg-emerald-600 text-white shadow' : ''}`}
+                            className={`p-1.5 rounded-md transition-colors ${mapStyle === 'satellite' ? 'bg-forest-600 text-white shadow' : ''}`}
                             title="Satélite"
                         >
                             <Layers size={14} />
@@ -302,7 +302,7 @@ export default function ProjectMap() {
                                 <select
                                     value={selectedTaxonomist}
                                     onChange={(e) => setSelectedTaxonomist(e.target.value)}
-                                    className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none appearance-none bg-white min-w-[180px]"
+                                    className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-forest-500 outline-none appearance-none bg-white min-w-[180px]"
                                     disabled={taxonomists.length === 0}
                                 >
                                     {taxonomists.length === 0 ? (
@@ -320,7 +320,7 @@ export default function ProjectMap() {
                             {selectedTaxonomist && (
                                 <button
                                     onClick={generateReport}
-                                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                    className="flex items-center gap-2 px-3 py-2 bg-forest-600 hover:bg-forest-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                                     title="Gerar relatório PDF"
                                 >
                                     <FileText size={16} />
@@ -336,7 +336,7 @@ export default function ProjectMap() {
             <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0">
                 {loading && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/90">
-                        <Loader2 className="animate-spin text-emerald-600" size={40} />
+                        <Loader2 className="animate-spin text-forest-600" size={40} />
                     </div>
                 )}
 
@@ -350,7 +350,7 @@ export default function ProjectMap() {
                                 <span className="text-xs text-gray-600">Cadastro por Mim</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white shadow-sm"></div>
+                                <div className="w-3 h-3 rounded-full bg-forest-500 border border-white shadow-sm"></div>
                                 <span className="text-xs text-gray-600">Cadastros da Instituição</span>
                             </div>
                         </div>
@@ -413,12 +413,12 @@ export default function ProjectMap() {
                                     <div className="py-1.5 text-xs">
                                         {/* Família */}
                                         {sp.especie?.familia?.familia_nome && (
-                                            <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Família: </span><span className="text-emerald-600">{sp.especie.familia.familia_nome}</span></p>
+                                            <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Família: </span><span className="text-forest-600">{sp.especie.familia.familia_nome}</span></p>
                                         )}
                                         {/* Espécie */}
-                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Espécie: </span><span className="text-emerald-600 italic">{sp.especie?.nome_cientifico || 'Desconhecida'}</span></p>
+                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Espécie: </span><span className="text-forest-600 italic">{sp.especie?.nome_cientifico || 'Desconhecida'}</span></p>
                                         {/* Localização */}
-                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Local: </span><span className="text-emerald-600">{sp.latitude?.toFixed(5)}, {sp.longitude?.toFixed(5)}</span></p>
+                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Local: </span><span className="text-forest-600">{sp.latitude?.toFixed(5)}, {sp.longitude?.toFixed(5)}</span></p>
 
                                         {/* Tombo */}
                                         {sp.tombo_codigo && (

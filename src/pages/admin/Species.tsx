@@ -221,9 +221,9 @@ export default function SpeciesPage() {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8">
                 <div className="bg-red-50 p-4 rounded-full mb-4">
-                    <AlertTriangle className="text-red-500" size={48} />
+                    <AlertTriangle className="text-forest-300" size={48} />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">Acesso Negado</h1>
+                <h1 className="text-2xl font-bold text-forest-800 mb-2">Acesso Negado</h1>
                 <p className="text-gray-500 max-w-md">Você não tem permissão para acessar esta área.</p>
             </div>
         );
@@ -239,7 +239,7 @@ export default function SpeciesPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total de Espécies" value={stats.total} icon={Leaf} color="emerald" loading={loading} />
+                <StatCard title="Total de Espécies" value={stats.total} icon={Leaf} color="forest-100" loading={loading} />
                 <StatCard
                     title="Top Gênero"
                     value={loading ? "..." : (stats.topGenus ? `${stats.topGenus.name} (${stats.topGenus.count})` : '-')}
@@ -258,7 +258,7 @@ export default function SpeciesPage() {
                         <input
                             type="text"
                             placeholder="Buscar espécie..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                             value={search}
                             onChange={handleSearch}
                         />
@@ -266,7 +266,7 @@ export default function SpeciesPage() {
                     <div className="relative w-full sm:w-48">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <select
-                            className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none appearance-none bg-white"
+                            className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none appearance-none bg-white"
                             value={selectedFamily}
                             onChange={handleFamilyChange}
                         >
@@ -285,7 +285,7 @@ export default function SpeciesPage() {
                             <button
                                 onClick={actions.handleExportSpecies}
                                 disabled={actions.exportLoading}
-                                className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 md:flex-none disabled:opacity-50"
+                                className="flex items-center justify-center gap-2 px-4 py-2 text-forest-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex-1 md:flex-none disabled:opacity-50"
                             >
                                 {actions.exportLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                                 <span className="hidden sm:inline">{actions.exportLoading ? 'Gerando...' : 'Exportar'}</span>
@@ -295,7 +295,7 @@ export default function SpeciesPage() {
                     {hasMinLevel(profile?.role as any, 4) ? (
                         <button
                             onClick={handleNewSpecies}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm flex-1 md:flex-none"
                         >
                             <Plus size={18} />
                             <span className="whitespace-nowrap">Nova Espécie</span>
@@ -303,7 +303,7 @@ export default function SpeciesPage() {
                     ) : (
                         <button
                             onClick={() => window.location.href = '/specimens?action=new'} // Or simpler navigation logic
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm flex-1 md:flex-none"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm flex-1 md:flex-none"
                         >
                             <Plus size={18} />
                             <span className="whitespace-nowrap">Adicionar Espécime</span>

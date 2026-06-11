@@ -376,7 +376,7 @@ export default function Specimens() {
                     <button
                         onClick={handleGenerateProjectReport}
                         disabled={actionLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-forest-50 hover:text-forest-700 hover:border-forest-200 transition-colors"
                         title="Baixar Relatório PDF"
                     >
                         {actionLoading ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
@@ -385,7 +385,7 @@ export default function Specimens() {
 
                     <button
                         onClick={() => openNewModal()}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm"
                     >
                         <Plus size={20} />
                         <span className="hidden sm:inline">Novo Espécime</span>
@@ -400,7 +400,7 @@ export default function Specimens() {
                     <input
                         type="text"
                         placeholder="Buscar por espécie, projeto ou coletor..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                         value={search}
                         onChange={handleSearch}
                     />
@@ -413,7 +413,7 @@ export default function Specimens() {
                             <select
                                 value={selectedProject}
                                 onChange={handleProjectFilterChange}
-                                className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none appearance-none bg-white text-gray-700 cursor-pointer"
+                                className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none appearance-none bg-white text-gray-700 cursor-pointer"
                             >
                                 <option value="">Todos os Projetos</option>
                                 {projects.map(p => (
@@ -431,7 +431,7 @@ export default function Specimens() {
             {/* List */}
             {loading ? (
                 <div className="flex justify-center py-12">
-                    <Loader2 className="animate-spin text-emerald-600" size={32} />
+                    <Loader2 className="animate-spin text-forest-600" size={32} />
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
@@ -490,7 +490,7 @@ export default function Specimens() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-forest-50 text-forest-700 border border-forest-100">
                                                 {item.locais?.nome || 'N/A'}
                                             </span>
                                         </td>
@@ -505,7 +505,7 @@ export default function Specimens() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {item.latitude && item.longitude ? (
-                                                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-1 rounded cursor-help" title={`${item.latitude}, ${item.longitude} `}>
+                                                <span className="text-xs font-mono text-forest-600 bg-forest-50 px-2 py-1 rounded cursor-help" title={`${item.latitude}, ${item.longitude} `}>
                                                     GPS OK
                                                 </span>
                                             ) : (
@@ -516,7 +516,7 @@ export default function Specimens() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handlePrintLabel(item)}
-                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
                                                     title="Gerar Etiqueta"
                                                     disabled={labelLoading === item.id}
                                                 >
@@ -524,7 +524,7 @@ export default function Specimens() {
                                                 </button>
                                                 <button
                                                     onClick={() => openEditModal(item)}
-                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
                                                     title="Editar"
                                                 >
                                                     <Edit2 size={16} />

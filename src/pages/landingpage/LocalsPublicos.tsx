@@ -80,31 +80,31 @@ export default function LocalsPublicos() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
         {/* Header da Página */}
         <div className="mb-10 animate-fade-in">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#5fcf6e]/15 text-[#4a7c5a] mb-3">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-forest-400/15 text-forest-600 mb-3">
             Rede de Projetos
           </span>
-          <h1 className="text-3xl font-bold text-[#1a3a1f]">
+          <h1 className="text-3xl font-bold text-forest-900">
             Locais de Ocorrência
           </h1>
-          <p className="text-[#4a7c5a] mt-2 text-sm sm:text-base">
+          <p className="text-forest-600 mt-2 text-sm sm:text-base">
             Conheça os locais, reservas e parques monitorados pelo ecossistema científico do Veridia Saber.
           </p>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white p-4 rounded-2xl border border-[#dde8d5] shadow-xs mb-8 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex items-center gap-2 bg-[#f8faf6] border border-[#dde8d5] rounded-xl px-3 py-2 w-full sm:w-auto">
-            <SlidersHorizontal className="text-[#4a7c5a] w-4 h-4" />
+        <div className="bg-white p-4 rounded-2xl border border-forest-200 shadow-xs mb-8 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-2 bg-forest-50 border border-forest-200 rounded-xl px-3 py-2 w-full sm:w-auto">
+            <SlidersHorizontal className="text-forest-600 w-4 h-4" />
             <select
               value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
-              className="bg-transparent text-xs text-[#1a3a1f] font-semibold outline-none border-none focus:ring-0 cursor-pointer min-w-[180px] w-full"
+              className="bg-transparent text-xs text-forest-900 font-semibold outline-none border-none focus:ring-0 cursor-pointer min-w-[180px] w-full"
             >
               <option value="">Todos os tipos de locais</option>
               {tiposUnicos.map((tipo) => (
@@ -114,7 +114,7 @@ export default function LocalsPublicos() {
               ))}
             </select>
           </div>
-          <span className="text-xs font-semibold text-[#4a7c5a]">
+          <span className="text-xs font-semibold text-forest-600">
             {locaisFiltrados.length} {locaisFiltrados.length === 1 ? 'local listado' : 'locais listados'}
           </span>
         </div>
@@ -123,24 +123,24 @@ export default function LocalsPublicos() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#dde8d5] p-6 space-y-4 animate-pulse h-48">
+              <div key={i} className="bg-white rounded-2xl border border-forest-200 p-6 space-y-4 animate-pulse h-48">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-stone-200"></div>
+                  <div className="w-10 h-10 rounded-full bg-neutral-200"></div>
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-stone-200 rounded-md w-2/3"></div>
-                    <div className="h-3 bg-stone-150 rounded-md w-1/3"></div>
+                    <div className="h-4 bg-neutral-200 rounded-md w-2/3"></div>
+                    <div className="h-3 bg-neutral-200 rounded-md w-1/3"></div>
                   </div>
                 </div>
-                <div className="h-3 bg-stone-250 rounded-md w-full"></div>
-                <div className="h-3 bg-stone-150 rounded-md w-5/6"></div>
+                <div className="h-3 bg-neutral-300 rounded-md w-full"></div>
+                <div className="h-3 bg-neutral-200 rounded-md w-5/6"></div>
               </div>
             ))}
           </div>
         ) : locaisFiltrados.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-[#dde8d5] rounded-3xl p-8 max-w-sm mx-auto space-y-4">
-            <MapPin className="w-12 h-12 text-stone-300 mx-auto animate-bounce" />
-            <h3 className="text-base font-bold text-[#1a3a1f]">Nenhum local cadastrado</h3>
-            <p className="text-xs text-[#4a7c5a]">
+          <div className="text-center py-20 bg-white border border-forest-200 rounded-3xl p-8 max-w-sm mx-auto space-y-4">
+            <MapPin className="w-12 h-12 text-neutral-300 mx-auto animate-bounce" />
+            <h3 className="text-base font-bold text-forest-900">Nenhum local cadastrado</h3>
+            <p className="text-xs text-forest-600">
               Não encontramos nenhum local correspondente ao filtro aplicado.
             </p>
           </div>
@@ -150,10 +150,10 @@ export default function LocalsPublicos() {
               <Link
                 to={`/locais-publico/${local.id}`}
                 key={local.id}
-                className="group bg-white rounded-2xl border border-[#dde8d5] overflow-hidden hover:shadow-md hover:border-[#5fcf6e] transition-all duration-200 cursor-pointer flex flex-col h-full"
+                className="group bg-white rounded-2xl border border-forest-200 overflow-hidden hover:shadow-md hover:border-forest-400 transition-all duration-200 cursor-pointer flex flex-col h-full"
               >
                 {/* Imagem de Capa */}
-                <div className="h-48 w-full overflow-hidden relative bg-[#2d5a3d] flex items-center justify-center text-white flex-shrink-0">
+                <div className="h-48 w-full overflow-hidden relative bg-forest-800 flex items-center justify-center text-white flex-shrink-0">
                   {local.imagem_capa ? (
                     <img
                       src={local.imagem_capa}
@@ -161,7 +161,7 @@ export default function LocalsPublicos() {
                       className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
                     />
                   ) : (
-                    <MapPin size={48} className="text-[#5fcf6e]/60" />
+                    <MapPin size={48} className="text-forest-400/60" />
                   )}
                 </div>
 
@@ -170,11 +170,11 @@ export default function LocalsPublicos() {
                   <div className="space-y-3">
                     {/* Badge tipo e sigla */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#f0f5ee] text-[#4a7c5a]">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-forest-100 text-forest-600">
                         {local.tipo || 'Geral'}
                       </span>
                       {local.sigla && (
-                        <span className="text-xs text-[#4a7c5a] font-mono font-bold">
+                        <span className="text-xs text-forest-600 font-mono font-bold">
                           {local.sigla}
                         </span>
                       )}
@@ -182,10 +182,10 @@ export default function LocalsPublicos() {
 
                     {/* Nome e Cidade/Estado */}
                     <div>
-                      <h3 className="font-semibold text-[#1a3a1f] text-base group-hover:text-[#4eb85c] transition-colors leading-snug">
+                      <h3 className="font-semibold text-forest-900 text-base group-hover:text-forest-500 transition-colors leading-snug">
                         {local.nome}
                       </h3>
-                      <p className="text-sm text-[#7a9a7a] mt-1 font-medium">
+                      <p className="text-sm text-neutral-500 mt-1 font-medium">
                         {local.cidade && local.estado
                           ? `${local.cidade}, ${local.estado}`
                           : local.cidade || local.estado || 'Localização não informada'}
@@ -194,15 +194,15 @@ export default function LocalsPublicos() {
 
                     {/* Descrição */}
                     {local.descricao && (
-                      <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed font-normal">
+                      <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed font-normal">
                         {local.descricao}
                       </p>
                     )}
                   </div>
 
                   {/* Rodapé Card */}
-                  <div className="pt-4 mt-6 border-t border-[#dde8d5]">
-                    <span className="text-sm text-[#5fcf6e] group-hover:text-[#4eb85c] transition-colors font-semibold flex items-center gap-1">
+                  <div className="pt-4 mt-6 border-t border-forest-200">
+                    <span className="text-sm text-forest-400 group-hover:text-forest-500 transition-colors font-semibold flex items-center gap-1">
                       Ver detalhes
                       <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform">→</span>
                     </span>

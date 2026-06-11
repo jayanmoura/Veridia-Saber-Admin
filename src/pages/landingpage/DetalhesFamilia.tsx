@@ -276,12 +276,12 @@ export default function DetalhesFamilia() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 border-4 border-[#5fcf6e] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[#4a7c5a] font-medium text-sm animate-pulse">Carregando detalhes da família...</p>
+            <div className="w-12 h-12 border-4 border-forest-400 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-forest-600 font-medium text-sm animate-pulse">Carregando detalhes da família...</p>
           </div>
         </div>
         <Footer />
@@ -291,17 +291,17 @@ export default function DetalhesFamilia() {
 
   if (error || !family) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex flex-col items-center justify-center py-20 px-6 text-center">
           <ShieldAlert className="text-red-500 w-16 h-16 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-[#1a3a1f]">Família botânica não encontrada</h2>
-          <p className="text-[#4a7c5a] mt-2 max-w-sm text-sm">
+          <h2 className="text-2xl font-bold text-forest-900">Família botânica não encontrada</h2>
+          <p className="text-forest-600 mt-2 max-w-sm text-sm">
             {error || 'A família que você tentou acessar não foi localizada ou foi removida do sistema de referência.'}
           </p>
           <button
             onClick={() => navigate('/familias-catalogo')}
-            className="mt-6 px-6 py-3 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
+            className="mt-6 px-6 py-3 bg-forest-900 hover:bg-forest-800 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
           >
             Voltar para Famílias
           </button>
@@ -312,7 +312,7 @@ export default function DetalhesFamilia() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
@@ -320,7 +320,7 @@ export default function DetalhesFamilia() {
         <div className="mb-6">
           <button
             onClick={() => navigate('/familias-catalogo')}
-            className="flex items-center gap-2 text-sm font-semibold text-[#4a7c5a] hover:text-[#1a3a1f] transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-sm font-semibold text-forest-600 hover:text-forest-900 transition-colors cursor-pointer"
           >
             <span>← Voltar para Famílias</span>
           </button>
@@ -339,13 +339,13 @@ export default function DetalhesFamilia() {
               <>
                 <button
                   onClick={prevSlide}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-stone-850 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-neutral-800 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
                 >
                   ‹
                 </button>
                 <button
                   onClick={nextSlide}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-stone-850 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-neutral-800 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
                 >
                   ›
                 </button>
@@ -372,18 +372,18 @@ export default function DetalhesFamilia() {
             )}
           </div>
         ) : (
-          <div className="w-full h-[480px] bg-[#2d5a3d] rounded-2xl flex flex-col items-center justify-center text-white mb-8 shadow-xs">
-            <Leaf size={64} className="text-[#5fcf6e] mb-2 animate-pulse" />
-            <span className="text-xs uppercase font-bold tracking-wider text-[#5fcf6e]/80">Sem imagens de referência</span>
+          <div className="w-full h-[480px] bg-forest-800 rounded-2xl flex flex-col items-center justify-center text-white mb-8 shadow-xs">
+            <Leaf size={64} className="text-forest-400 mb-2 animate-pulse" />
+            <span className="text-xs uppercase font-bold tracking-wider text-forest-400/80">Sem imagens de referência</span>
           </div>
         )}
 
         {/* D. Header da família */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a3a1f] flex items-baseline gap-2 flex-wrap">
+          <h1 className="text-3xl font-bold text-forest-900 flex items-baseline gap-2 flex-wrap">
             <span>{family.familia_nome}</span>
             {family.autoria_taxonomica && (
-              <span className="text-sm text-[#7a9a7a] font-normal">
+              <span className="text-sm text-neutral-500 font-normal">
                 {family.autoria_taxonomica}
               </span>
             )}
@@ -396,8 +396,8 @@ export default function DetalhesFamilia() {
             {/* E. Descrição da Família */}
             {family.descricao_familia && (
               <div className="space-y-3">
-                <h2 className="text-xl font-bold text-[#1a3a1f]">Descrição da Família</h2>
-                <div className="text-[#4a7c5a] text-sm leading-relaxed space-y-4 font-normal">
+                <h2 className="text-xl font-bold text-forest-900">Descrição da Família</h2>
+                <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
                   {family.descricao_familia.split('\n').map((line, idx) => (
                     <p key={idx}>{line}</p>
                   ))}
@@ -407,9 +407,9 @@ export default function DetalhesFamilia() {
 
             {/* F. Características Botânicas */}
             {family.caracteristicas && family.caracteristicas !== family.descricao_familia && (
-              <div className="space-y-3 pt-6 border-t border-[#dde8d5]">
-                <h2 className="text-xl font-bold text-[#1a3a1f]">Características Botânicas</h2>
-                <p className="text-[#4a7c5a] text-sm leading-relaxed font-normal whitespace-pre-line">
+              <div className="space-y-3 pt-6 border-t border-forest-200">
+                <h2 className="text-xl font-bold text-forest-900">Características Botânicas</h2>
+                <p className="text-forest-600 text-sm leading-relaxed font-normal whitespace-pre-line">
                   {family.caracteristicas}
                 </p>
               </div>
@@ -418,29 +418,29 @@ export default function DetalhesFamilia() {
 
           {/* Dados rápidos / Distribuição */}
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-[#dde8d5] p-6 shadow-xs text-left">
-              <h3 className="text-sm font-bold text-[#1a3a1f] mb-4 flex items-center gap-2">
-                <Info size={16} className="text-[#5fcf6e]" />
+            <div className="bg-white rounded-2xl border border-forest-200 p-6 shadow-xs text-left">
+              <h3 className="text-sm font-bold text-forest-900 mb-4 flex items-center gap-2">
+                <Info size={16} className="text-forest-400" />
                 Resumo Taxonômico
               </h3>
 
               <div className="space-y-4 text-xs">
                 <div>
-                  <span className="font-semibold text-stone-400 block mb-0.5">Família</span>
-                  <span className="text-[#1a3a1f] font-bold text-sm">{family.familia_nome}</span>
+                  <span className="font-semibold text-neutral-400 block mb-0.5">Família</span>
+                  <span className="text-forest-900 font-bold text-sm">{family.familia_nome}</span>
                 </div>
 
                 {family.autoria_taxonomica && (
                   <div>
-                    <span className="font-semibold text-stone-400 block mb-0.5">Autoria Taxonômica</span>
-                    <span className="text-[#4a7c5a] font-medium">{family.autoria_taxonomica}</span>
+                    <span className="font-semibold text-neutral-400 block mb-0.5">Autoria Taxonômica</span>
+                    <span className="text-forest-600 font-medium">{family.autoria_taxonomica}</span>
                   </div>
                 )}
 
                 {family.distribuicao_geografica && (
-                  <div className="pt-3 border-t border-[#dde8d5]">
-                    <span className="font-semibold text-stone-400 block mb-0.5">Distribuição Geográfica</span>
-                    <span className="text-[#4a7c5a] font-medium leading-relaxed block">
+                  <div className="pt-3 border-t border-forest-200">
+                    <span className="font-semibold text-neutral-400 block mb-0.5">Distribuição Geográfica</span>
+                    <span className="text-forest-600 font-medium leading-relaxed block">
                       {family.distribuicao_geografica}
                     </span>
                   </div>
@@ -453,10 +453,10 @@ export default function DetalhesFamilia() {
 
         {/* Mapa de ocorrências da família */}
         {(especimesMap ?? []).length > 0 && (
-          <section className="mb-12 pt-10 border-t border-[#dde8d5]">
+          <section className="mb-12 pt-10 border-t border-forest-200">
             {/* Header da seção */}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[#1a3a1f] flex items-center gap-2">
+              <h2 className="text-xl font-bold text-forest-900 flex items-center gap-2">
                 📍 Distribuição e Ocorrências
               </h2>
 
@@ -464,7 +464,7 @@ export default function DetalhesFamilia() {
                 <select
                   value={especieFiltro}
                   onChange={e => setEspecieFiltro(e.target.value)}
-                  className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 bg-white text-[#1a3a1f] focus:outline-none focus:border-[#5fcf6e] cursor-pointer"
+                  className="text-sm border border-forest-200 rounded-lg px-3 py-2 bg-white text-forest-900 focus:outline-none focus:border-forest-400 cursor-pointer"
                 >
                   <option value="todas">Todas as espécies</option>
                   {especiesComPontos.map(esp => {
@@ -480,7 +480,7 @@ export default function DetalhesFamilia() {
             </div>
 
             {/* Mapa Leaflet */}
-            <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-[#dde8d5] shadow-xs relative z-0">
+            <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-forest-200 shadow-xs relative z-0">
               <MapContainer
                 center={[-22.74, -43.70]}
                 zoom={12}
@@ -499,31 +499,31 @@ export default function DetalhesFamilia() {
                     >
                       <Popup>
                         <div style={{ minWidth: 180 }} className="text-left font-sans">
-                          <strong className="italic text-[#1a3a1f]">
+                          <strong className="italic text-forest-900">
                             {especie?.nome_cientifico ?? 'Espécie'}
                           </strong>
                           {especie?.nome_popular && (
-                            <div className="text-[#4a7c5a] text-xs font-semibold mt-0.5">
+                            <div className="text-forest-600 text-xs font-semibold mt-0.5">
                               {especie.nome_popular}
                             </div>
                           )}
                           {ponto.tombo_codigo && (
-                            <div className="text-stone-500 text-xs mt-1">
+                            <div className="text-neutral-500 text-xs mt-1">
                               <strong>Tombo:</strong> {ponto.tombo_codigo}
                             </div>
                           )}
                           {ponto.descricao_ocorrencia && (
-                            <div className="text-stone-600 text-xs mt-1 border-t border-stone-100 pt-1 leading-relaxed">
+                            <div className="text-neutral-600 text-xs mt-1 border-t border-stone-100 pt-1 leading-relaxed">
                               {ponto.descricao_ocorrencia}
                             </div>
                           )}
                           {ponto.detalhes_localizacao && (
-                            <div className="text-stone-400 text-[10px] mt-1 leading-normal">
+                            <div className="text-neutral-400 text-[10px] mt-1 leading-normal">
                               <strong>Localização:</strong> {ponto.detalhes_localizacao}
                             </div>
                           )}
                           {ponto.coletor && (
-                            <div className="text-stone-400 text-[10px] mt-0.5">
+                            <div className="text-neutral-400 text-[10px] mt-0.5">
                               <strong>Coletor:</strong> {ponto.coletor}
                             </div>
                           )}
@@ -537,7 +537,7 @@ export default function DetalhesFamilia() {
             </div>
 
             {/* Legenda: total de registros visíveis */}
-            <p className="text-xs text-[#7a9a7a] mt-3 font-medium">
+            <p className="text-xs text-neutral-500 mt-3 font-medium">
               {pontosFiltrados.length} registro(s) de ocorrência exibido(s)
               {especieFiltro !== 'todas' && ` para ${species.find(e => e.id === especieFiltro)?.nome_cientifico}`}
             </p>
@@ -545,14 +545,14 @@ export default function DetalhesFamilia() {
         )}
 
         {/* G. Catálogo de espécies com busca interna */}
-        <div className="pt-10 border-t border-[#dde8d5]">
+        <div className="pt-10 border-t border-forest-200">
           <div className="flex items-center justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-[#1a3a1f] flex items-center gap-2 flex-shrink-0">
+            <h2 className="text-xl font-bold text-forest-900 flex items-center gap-2 flex-shrink-0">
               🌿 Espécies catalogadas nesta família
             </h2>
 
             <div className="flex items-center gap-3">
-              <span className="text-sm bg-[#f0f5ee] text-[#4a7c5a] rounded-full px-3 py-1 flex-shrink-0">
+              <span className="text-sm bg-forest-100 text-forest-600 rounded-full px-3 py-1 flex-shrink-0">
                 {species?.length ?? 0} espécie{(species?.length ?? 0) !== 1 ? 's' : ''}
               </span>
 
@@ -561,22 +561,22 @@ export default function DetalhesFamilia() {
                 value={searchEspecie}
                 onChange={e => setSearchEspecie(e.target.value)}
                 placeholder="Filtrar espécies..."
-                className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 w-48 bg-white text-[#1a3a1f] placeholder-[#b0c8b0] focus:outline-none focus:border-[#5fcf6e]"
+                className="text-sm border border-forest-200 rounded-lg px-3 py-2 w-48 bg-white text-forest-900 placeholder-neutral-400 focus:outline-none focus:border-forest-400"
               />
             </div>
           </div>
 
           {species.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-[#dde8d5] shadow-xs">
-              <Leaf size={40} className="mx-auto text-stone-300 mb-2 animate-pulse" />
-              <p className="text-sm text-stone-500 italic">
+            <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
+              <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
+              <p className="text-sm text-neutral-500 italic">
                 Nenhuma espécie catalogada nesta família ainda.
               </p>
             </div>
           ) : especiesFiltradas.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-[#dde8d5] shadow-xs flex flex-col items-center justify-center">
-              <Leaf size={40} className="text-[#7a9a7a] mb-2 animate-pulse" />
-              <p className="text-sm text-stone-500 italic">
+            <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs flex flex-col items-center justify-center">
+              <Leaf size={40} className="text-neutral-500 mb-2 animate-pulse" />
+              <p className="text-sm text-neutral-500 italic">
                 Nenhuma espécie encontrada para '{searchEspecie}'.
               </p>
             </div>
@@ -590,10 +590,10 @@ export default function DetalhesFamilia() {
                   <Link
                     to={`/catalogo/especie/${especie.id}`}
                     key={especie.id}
-                    className="block bg-white rounded-2xl border border-[#dde8d5] overflow-hidden hover:shadow-md hover:border-[#5fcf6e] transition-all duration-200 cursor-pointer text-left"
+                    className="block bg-white rounded-2xl border border-forest-200 overflow-hidden hover:shadow-md hover:border-forest-400 transition-all duration-200 cursor-pointer text-left"
                   >
                     {/* imagem */}
-                    <div className="aspect-[4/3] overflow-hidden bg-[#2d5a3d]/10 relative">
+                    <div className="aspect-[4/3] overflow-hidden bg-forest-800/10 relative">
                       {hasImg ? (
                         <img
                           src={img.micro || img.thumbnail || ''}
@@ -602,7 +602,7 @@ export default function DetalhesFamilia() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#2d5a3d] text-white">
+                        <div className="w-full h-full flex items-center justify-center bg-forest-800 text-white">
                           <span className="text-3xl" role="img" aria-label="Planta">🌿</span>
                         </div>
                       )}
@@ -610,15 +610,15 @@ export default function DetalhesFamilia() {
 
                     {/* conteúdo textual — SEM badge da família */}
                     <div className="p-4">
-                      <p className="font-semibold italic text-[#1a3a1f] truncate" title={especie.nome_cientifico}>
+                      <p className="font-semibold italic text-forest-900 truncate" title={especie.nome_cientifico}>
                         {especie.nome_cientifico}
                       </p>
                       {especie.nome_popular && (
-                        <p className="text-sm text-[#4a7c5a] mt-1 truncate" title={especie.nome_popular}>
+                        <p className="text-sm text-forest-600 mt-1 truncate" title={especie.nome_popular}>
                           {especie.nome_popular}
                         </p>
                       )}
-                      <p className="text-sm text-[#5fcf6e] mt-3 font-semibold">Ver detalhes →</p>
+                      <p className="text-sm text-forest-400 mt-3 font-semibold">Ver detalhes →</p>
                     </div>
                   </Link>
                 );
@@ -640,7 +640,7 @@ export default function DetalhesFamilia() {
           }}
         >
           <button
-            className="absolute top-6 right-6 text-white hover:text-stone-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
+            className="absolute top-6 right-6 text-white hover:text-neutral-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
               setLightboxOpen(false);

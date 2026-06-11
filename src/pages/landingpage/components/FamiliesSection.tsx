@@ -280,27 +280,27 @@ export function FamiliesSection() {
       <div className="container mx-auto max-w-6xl space-y-6">
 
         {/* Título e Dropdowns Alinhados */}
-        <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-[#dde8d5] mb-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-forest-200 mb-6">
           {/* Esquerda: tag + título */}
           <div className="text-left">
-            <p className="text-xs uppercase tracking-widest text-[#4a7c5a] mb-1 font-bold">
+            <p className="text-xs uppercase tracking-widest text-forest-600 mb-1 font-bold">
               FILOGENIA E DISTRIBUIÇÃO
             </p>
-            <h2 className="text-2xl font-bold text-[#1a3a1f]">Explore o Acervo</h2>
+            <h2 className="text-2xl font-bold text-forest-900">Explore o Acervo</h2>
           </div>
 
           {/* Direita: dropdowns */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Dropdown 1: Tipo de visualização */}
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-[#4a7c5a]">Explorar:</label>
+              <label className="text-sm font-medium text-forest-600">Explorar:</label>
               <select
                 value={activeTab}
                 onChange={e => {
                   setActiveTab(e.target.value as 'familias' | 'especies' | 'projetos');
                   setChipSelecionado(null);
                 }}
-                className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 bg-white text-[#1a3a1f] focus:outline-none focus:border-[#5fcf6e] cursor-pointer font-medium"
+                className="text-sm border border-forest-200 rounded-lg px-3 py-2 bg-white text-forest-900 focus:outline-none focus:border-forest-400 cursor-pointer font-medium"
               >
                 <option value="familias">Famílias</option>
                 <option value="especies">Espécies</option>
@@ -311,7 +311,7 @@ export function FamiliesSection() {
             {/* Dropdown 2: filtro por item específico */}
             {!loading && chips.length > 0 && (
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-[#4a7c5a]">Filtrar:</label>
+                <label className="text-sm font-medium text-forest-600">Filtrar:</label>
                 <select
                   value={chipSelecionado ?? ''}
                   onChange={e => {
@@ -331,7 +331,7 @@ export function FamiliesSection() {
                       }
                     }
                   }}
-                  className="text-sm border border-[#dde8d5] rounded-lg px-3 py-2 bg-white text-[#1a3a1f] focus:outline-none focus:border-[#5fcf6e] cursor-pointer font-medium max-w-[200px]"
+                  className="text-sm border border-forest-200 rounded-lg px-3 py-2 bg-white text-forest-900 focus:outline-none focus:border-forest-400 cursor-pointer font-medium max-w-[200px]"
                 >
                   <option value="">Todos</option>
                   {chips.map(chip => (
@@ -346,16 +346,16 @@ export function FamiliesSection() {
         </div>
 
         {/* Mapa Leaflet */}
-        <div className="w-full h-[480px] rounded-2xl overflow-hidden border border-[#dde8d5] relative z-0">
+        <div className="w-full h-[480px] rounded-2xl overflow-hidden border border-forest-200 relative z-0">
           {loading && (
-            <div className="absolute inset-0 z-50 bg-[#e8f0e4] animate-pulse rounded-2xl flex items-center justify-center">
-              <span className="text-xs font-semibold text-[#4a7c5a]">Carregando mapa interativo...</span>
+            <div className="absolute inset-0 z-50 bg-forest-200 animate-pulse rounded-2xl flex items-center justify-center">
+              <span className="text-xs font-semibold text-forest-600">Carregando mapa interativo...</span>
             </div>
           )}
 
           {!loading && activePins.length === 0 && (
-            <div className="absolute inset-0 z-[1000] bg-[#1a3a1f]/5 backdrop-blur-xs flex items-center justify-center pointer-events-none">
-              <div className="bg-white border border-[#dde8d5] rounded-xl px-5 py-3 shadow-md text-xs sm:text-sm font-semibold text-[#1a3a1f]">
+            <div className="absolute inset-0 z-[1000] bg-forest-900/5 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+              <div className="bg-white border border-forest-200 rounded-xl px-5 py-3 shadow-md text-xs sm:text-sm font-semibold text-forest-900">
                 Nenhum espécime georreferenciado ainda
               </div>
             </div>

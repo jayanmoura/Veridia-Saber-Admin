@@ -121,7 +121,7 @@ export default function DetalhesEspecie() {
         .from('imagens')
         .select('url_thumbnail, creditos')
         .eq('especie_id', especieId)
-        .is('especime_id', null)
+        .is('especie_id', null)
         .not('url_thumbnail', 'is', null)
         .order('created_at', { ascending: true })
         .limit(1)
@@ -254,12 +254,12 @@ export default function DetalhesEspecie() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 border-4 border-[#5fcf6e] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[#4a7c5a] font-medium text-sm animate-pulse">Carregando informações da espécie...</p>
+            <div className="w-12 h-12 border-4 border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-neutral-600 font-medium text-sm animate-pulse">Carregando informações da espécie...</p>
           </div>
         </div>
         <Footer />
@@ -269,17 +269,17 @@ export default function DetalhesEspecie() {
 
   if (error || !species) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+      <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-800">
         <Navbar />
         <div className="flex-grow flex flex-col items-center justify-center py-20 px-6 text-center">
           <ShieldAlert className="text-red-500 w-16 h-16 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-[#1a3a1f]">Espécie não encontrada</h2>
-          <p className="text-[#4a7c5a] mt-2 max-w-sm text-sm">
+          <h2 className="text-2xl font-bold text-neutral-900">Espécie não encontrada</h2>
+          <p className="text-neutral-600 mt-2 max-w-sm text-sm">
             {error || 'O registro taxonômico que você tentou acessar não foi localizado ou foi removido.'}
           </p>
           <button
             onClick={() => navigate('/catalogo')}
-            className="mt-6 px-6 py-3 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
+            className="mt-6 px-6 py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer text-sm"
           >
             Voltar para o Catálogo
           </button>
@@ -290,7 +290,7 @@ export default function DetalhesEspecie() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf6] text-stone-850">
+    <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-800">
       <Navbar />
 
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
@@ -304,7 +304,7 @@ export default function DetalhesEspecie() {
                 navigate('/familias-catalogo');
               }
             }}
-            className="flex items-center gap-2 text-sm font-semibold text-[#4a7c5a] hover:text-[#1a3a1f] transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
           >
             <span>
               {species.familia?.familia_nome
@@ -316,7 +316,7 @@ export default function DetalhesEspecie() {
           {species.familia && (
             <Link
               to={`/familias-catalogo/${species.familia.id}`}
-              className="text-xs bg-[#f0f5ee] text-[#4a7c5a] hover:bg-[#e2edd8] transition-colors rounded-full px-3 py-1 font-semibold"
+              className="text-xs bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors rounded-full px-3 py-1 font-semibold"
             >
               Família: {species.familia.familia_nome}
             </Link>
@@ -325,7 +325,7 @@ export default function DetalhesEspecie() {
 
         {/* B. Carrossel de imagens (TOPO) */}
         {imagensCarrossel.length > 0 ? (
-          <div className="w-full h-[480px] rounded-2xl overflow-hidden relative mb-8 bg-stone-100 shadow-xs">
+          <div className="w-full h-[480px] rounded-2xl overflow-hidden relative mb-8 bg-neutral-600 shadow-xs">
             <img
               src={imagensCarrossel[currentIndex]?.src}
               alt={species.nome_popular || species.nome_cientifico}
@@ -336,13 +336,13 @@ export default function DetalhesEspecie() {
               <>
                 <button
                   onClick={prevSlide}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-stone-850 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-neutral-800 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
                 >
                   ‹
                 </button>
                 <button
                   onClick={nextSlide}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-stone-850 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-neutral-800 hover:text-black w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-md cursor-pointer transition-all z-10 select-none"
                 >
                   ›
                 </button>
@@ -369,9 +369,9 @@ export default function DetalhesEspecie() {
             )}
           </div>
         ) : (
-          <div className="w-full h-[400px] bg-[#2d5a3d] rounded-2xl flex flex-col items-center justify-center text-white mb-8 shadow-xs">
-            <Leaf size={64} className="text-[#5fcf6e] mb-2 animate-pulse" />
-            <span className="text-xs uppercase font-bold tracking-wider text-[#5fcf6e]/80">Sem imagens de referência</span>
+          <div className="w-full h-[400px] bg-forest-800 rounded-2xl flex flex-col items-center justify-center text-white mb-8 shadow-xs">
+            <Leaf size={64} className="text-forest-400 mb-2 animate-pulse" />
+            <span className="text-xs uppercase font-bold tracking-wider text-forest-400/80">Sem imagens de referência</span>
           </div>
         )}
 
@@ -379,54 +379,54 @@ export default function DetalhesEspecie() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start mb-12">
           {/* Coluna Esquerda: Nomenclatura */}
           <div className="md:col-span-2 space-y-3">
-            <h1 className="text-3xl font-bold text-[#1a3a1f] flex items-baseline gap-2 flex-wrap leading-tight">
+            <h1 className="text-3xl font-bold text-forest-900 flex items-baseline gap-2 flex-wrap leading-tight">
               <span className="italic font-serif">{species.nome_cientifico}</span>
               {species.autor && (
-                <span className="text-sm text-[#7a9a7a] font-normal font-sans block sm:inline sm:ml-2">
+                <span className="text-sm text-neutral-500 font-normal font-sans block sm:inline sm:ml-2">
                   {species.autor}
                 </span>
               )}
             </h1>
             {species.nome_popular && (
-              <h2 className="text-base font-medium text-[#5fcf6e] capitalize">
+              <h2 className="text-base font-medium text-forest-400 capitalize">
                 {species.nome_popular}
               </h2>
             )}
           </div>
 
           {/* Coluna Direita: Resumo Taxonômico */}
-          <div className="bg-[#f0f5ee] rounded-2xl border border-[#dde8d5] p-5 text-xs text-left space-y-3">
-            <h3 className="font-bold text-[#1a3a1f] text-sm pb-2 border-b border-[#dde8d5] flex items-center gap-1.5">
-              <Info size={14} className="text-[#4a7c5a]" />
+          <div className="bg-forest-100 rounded-2xl border border-forest-200 p-5 text-xs text-left space-y-3">
+            <h3 className="font-bold text-forest-900 text-sm pb-2 border-b border-forest-200 flex items-center gap-1.5">
+              <Info size={14} className="text-forest-600" />
               Resumo Taxonômico
             </h3>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center py-1">
-                <span className="font-semibold text-stone-500">Família</span>
+                <span className="font-semibold text-neutral-500">Família</span>
                 {species.familia ? (
                   <Link
                     to={`/familias-catalogo/${species.familia.id}`}
-                    className="font-bold text-[#1a3a1f] hover:underline"
+                    className="font-bold text-forest-900 hover:underline"
                   >
                     {species.familia.familia_nome}
                   </Link>
                 ) : (
-                  <span className="text-stone-400">Não associada</span>
+                  <span className="text-neutral-400">Não associada</span>
                 )}
               </div>
 
-              <div className="flex justify-between items-center py-1 border-t border-[#dde8d5]/40">
-                <span className="font-semibold text-stone-500">Autor</span>
-                <span className="text-[#4a7c5a] font-medium text-right max-w-[150px] truncate" title={species.autor || ''}>
+              <div className="flex justify-between items-center py-1 border-t border-forest-200/40">
+                <span className="font-semibold text-neutral-500">Autor</span>
+                <span className="text-forest-600 font-medium text-right max-w-[150px] truncate" title={species.autor || ''}>
                   {species.autor || 'Não informado'}
                 </span>
               </div>
 
               {species.codigo_vs && (
-                <div className="flex justify-between items-center py-1 border-t border-[#dde8d5]/40">
-                  <span className="font-semibold text-stone-500">Código VS</span>
-                  <span className="text-[#4a7c5a] font-mono font-bold bg-white px-2 py-0.5 rounded border border-[#dde8d5]">
+                <div className="flex justify-between items-center py-1 border-t border-forest-200/40">
+                  <span className="font-semibold text-neutral-500">Código VS</span>
+                  <span className="text-forest-600 font-mono font-bold bg-white px-2 py-0.5 rounded border border-forest-200">
                     {species.codigo_vs}
                   </span>
                 </div>
@@ -438,8 +438,8 @@ export default function DetalhesEspecie() {
         {/* D. Descrição Botânica */}
         {species.descricao_especie && (
           <div className="mb-12 space-y-4">
-            <h2 className="text-xl font-bold text-[#1a3a1f]">Descrição Botânica</h2>
-            <div className="text-[#4a7c5a] text-sm leading-relaxed space-y-4 font-normal">
+            <h2 className="text-xl font-bold text-forest-900">Descrição Botânica</h2>
+            <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
               {species.descricao_especie.split('\n').map((paragraph, idx) => (
                 <p key={idx}>{paragraph}</p>
               ))}
@@ -451,15 +451,15 @@ export default function DetalhesEspecie() {
         {especimes.length > 0 && (
           <section className="mt-10 mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[#1a3a1f] flex items-center gap-2">
+              <h2 className="text-xl font-bold text-forest-900 flex items-center gap-2">
                 📍 Ocorrências Registradas
               </h2>
-              <span className="text-sm text-[#7a9a7a]">
+              <span className="text-sm text-neutral-500">
                 {especimes.length} registro{especimes.length !== 1 ? 's' : ''}
               </span>
             </div>
 
-            <div className="h-[380px] w-full rounded-2xl overflow-hidden border border-[#dde8d5] shadow-xs relative z-0">
+            <div className="h-[380px] w-full rounded-2xl overflow-hidden border border-forest-200 shadow-xs relative z-0">
               <MapContainer
                 center={[-22.74, -43.70]}
                 zoom={14}
@@ -476,31 +476,31 @@ export default function DetalhesEspecie() {
                   >
                     <Popup>
                       <div style={{ minWidth: 180 }} className="text-left font-sans">
-                        <strong className="italic text-[#1a3a1f]">
+                        <strong className="italic text-forest-900">
                           {species?.nome_cientifico}
                         </strong>
                         {ponto.local_id && localNomeMap[ponto.local_id] && (
-                          <div style={{ color: '#4a7c5a', fontSize: 12, marginTop: 4 }}>
+                          <div className="text-forest-600 text-xs mt-1">
                             📍 {localNomeMap[ponto.local_id]}
                           </div>
                         )}
                         {ponto.tombo_codigo && (
-                          <div style={{ fontSize: 12, marginTop: 4 }}>
+                          <div className="text-xs mt-1">
                             Tombo: {ponto.tombo_codigo}
                           </div>
                         )}
                         {ponto.descricao_ocorrencia && (
-                          <div style={{ fontSize: 12, marginTop: 4 }}>
+                          <div className="text-xs mt-1">
                             {ponto.descricao_ocorrencia}
                           </div>
                         )}
                         {ponto.detalhes_localizacao && (
-                          <div style={{ fontSize: 11, color: '#7a9a7a', marginTop: 2 }}>
+                          <div className="text-[11px] text-neutral-500 mt-0.5">
                             {ponto.detalhes_localizacao}
                           </div>
                         )}
                         {ponto.coletor && (
-                          <div style={{ fontSize: 11, color: '#7a9a7a' }}>
+                          <div className="text-[11px] text-neutral-500">
                             Coletor: {ponto.coletor}
                           </div>
                         )}
@@ -515,14 +515,14 @@ export default function DetalhesEspecie() {
         )}
 
         {/* F. Galeria Botânica — REFORMULAR */}
-        <div className="pt-10 border-t border-[#dde8d5]">
+        <div className="pt-10 border-t border-forest-200">
           {galeriaCompleta.length > 0 ? (
             <>
               <div className="mb-6 flex items-center gap-3">
-                <h2 className="text-xl font-bold text-[#1a3a1f]">
+                <h2 className="text-xl font-bold text-forest-900">
                   Galeria Botânica da Espécie
                 </h2>
-                <span className="inline-flex px-2.5 py-1 bg-[#f0f5ee] border border-[#dde8d5] text-[#4a7c5a] text-xs font-bold rounded-lg">
+                <span className="inline-flex px-2.5 py-1 bg-forest-100 border border-forest-200 text-forest-600 text-xs font-bold rounded-lg">
                   {galeriaCompleta.length} {galeriaCompleta.length === 1 ? 'foto' : 'fotos'}
                 </span>
               </div>
@@ -531,7 +531,7 @@ export default function DetalhesEspecie() {
                 {galeriaCompleta.map((img, idx) => (
                   <div
                     key={img.id || idx}
-                    className="aspect-square rounded-xl overflow-hidden cursor-pointer border border-[#dde8d5] bg-stone-50 hover:brightness-90 transition duration-300"
+                    className="aspect-square rounded-xl overflow-hidden cursor-pointer border border-forest-200 bg-stone-50 hover:brightness-90 transition duration-300"
                     onClick={() => setGalleryLightboxIndex(idx)}
                   >
                     <img
@@ -545,9 +545,9 @@ export default function DetalhesEspecie() {
               </div>
             </>
           ) : (
-            <div className="text-center py-16 bg-white rounded-3xl border border-[#dde8d5] shadow-xs flex flex-col items-center justify-center">
-              <Leaf size={40} className="text-stone-300 mb-2 animate-pulse" />
-              <p className="text-sm text-stone-500 italic">
+            <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs flex flex-col items-center justify-center">
+              <Leaf size={40} className="text-neutral-300 mb-2 animate-pulse" />
+              <p className="text-sm text-neutral-500 italic">
                 Nenhuma imagem de espécime cadastrada ainda.
               </p>
             </div>
@@ -566,7 +566,7 @@ export default function DetalhesEspecie() {
           onClick={() => setGalleryLightboxIndex(null)}
         >
           <button
-            className="absolute top-6 right-6 text-white hover:text-stone-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
+            className="absolute top-6 right-6 text-white hover:text-neutral-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
               setGalleryLightboxIndex(null);

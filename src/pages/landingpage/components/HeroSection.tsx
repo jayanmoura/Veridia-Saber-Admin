@@ -67,7 +67,7 @@ export function HeroSection() {
 
         {/* Tag Superior */}
         <div className="space-y-2">
-          <span className="text-xs uppercase tracking-widest text-[#a0c8a8] font-bold block">
+          <span className="text-xs uppercase tracking-widest text-forest-400 font-bold block">
             PORTAL BOTÂNICO · veridiasaber.com.br
           </span>
         </div>
@@ -75,28 +75,28 @@ export function HeroSection() {
         {/* Título Principal */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
           <span className="text-white block">Veridia Saber:</span>
-          <span className="text-[#5fcf6e] block mt-2">Sua enciclopédia botânica de bolso.</span>
+          <span className="text-forest-400 block mt-2">Sua enciclopédia botânica de bolso.</span>
         </h1>
 
         {/* Subtítulo */}
-        <p className="text-[#a0c8a8] text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+        <p className="text-forest-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
           Catálogo científico de espécies e famílias botânicas.
         </p>
 
         {/* Barra de Busca (Estilo GBIF) */}
         <div className="max-w-2xl w-full mx-auto mt-4">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-            <Search className="absolute left-5 text-[#4a7c5a] w-5 h-5 flex-shrink-0" />
+            <Search className="absolute left-5 text-forest-600 w-5 h-5 flex-shrink-0" />
             <input
               type="text"
               placeholder="Buscar por nome científico, popular ou família..."
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="w-full bg-white text-stone-800 placeholder-stone-400 rounded-full pl-12 pr-36 py-4.5 shadow-2xl border border-white/10 text-base focus:outline-hidden focus:ring-2 focus:ring-[#5fcf6e]/50 focus:border-[#5fcf6e] transition-all"
+              className="w-full bg-white text-stone-800 placeholder-stone-400 rounded-full pl-12 pr-36 py-4.5 shadow-2xl border border-white/10 text-base focus:outline-hidden focus:ring-2 focus:ring-forest-400/50 focus:border-forest-400 transition-all"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1a3a1f] hover:bg-[#2d5a3d] text-white font-bold rounded-full px-6 py-3 text-sm transition-all shadow-md cursor-pointer hover:scale-102 active:scale-98"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-forest-900 hover:bg-forest-800 text-white font-bold rounded-full px-6 py-3 text-sm transition-all shadow-md cursor-pointer hover:scale-102 active:scale-98"
             >
               Buscar
             </button>
@@ -115,7 +115,7 @@ export function HeroSection() {
                 {stats.especies.toLocaleString('pt-BR')}
               </div>
             )}
-            <div className="text-[#a0c8a8] text-xs uppercase tracking-widest font-semibold mt-1">
+            <div className="text-forest-400 text-xs uppercase tracking-widest font-semibold mt-1">
               Registros de Dados
             </div>
           </div>
@@ -132,7 +132,7 @@ export function HeroSection() {
                 {stats.familias.toLocaleString('pt-BR')}
               </div>
             )}
-            <div className="text-[#a0c8a8] text-xs uppercase tracking-widest font-semibold mt-1">
+            <div className="text-forest-400 text-xs uppercase tracking-widest font-semibold mt-1">
               Conjuntos de Dados
             </div>
           </div>
@@ -143,7 +143,7 @@ export function HeroSection() {
         <div className="flex flex-wrap gap-4 justify-center mt-4">
           <button
             onClick={() => navigate('/catalogo')}
-            className="px-8 py-3 bg-[#5fcf6e] hover:bg-[#4eb85c] text-[#0d2410] font-bold rounded-full transition-all duration-300 shadow-md cursor-pointer hover:scale-102 active:scale-98 text-sm"
+            className="px-8 py-3 bg-forest-400 hover:bg-forest-600 text-forest-950 font-bold rounded-full transition-all duration-300 shadow-md cursor-pointer hover:scale-102 active:scale-98 text-sm"
           >
             Ver Catálogo
           </button>

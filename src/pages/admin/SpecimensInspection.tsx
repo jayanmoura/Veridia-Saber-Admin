@@ -752,7 +752,7 @@ export default function SpecimensInspection() {
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                         <p className="text-xs text-gray-500">Com Imagens</p>
-                        <p className="text-2xl font-bold text-emerald-600">{withImages}</p>
+                        <p className="text-2xl font-bold text-forest-600">{withImages}</p>
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                         <p className="text-xs text-gray-500">Sem Imagens</p>
@@ -814,7 +814,7 @@ export default function SpecimensInspection() {
                                     <th className="text-center px-6 py-4 font-semibold text-gray-700">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-forest-50">
                                 {filteredSpecimens.map((specimen, index) => (
                                     <tr
                                         key={specimen.id}
@@ -839,7 +839,7 @@ export default function SpecimensInspection() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${(specimen.imageCount || 0) > 0
-                                                ? 'bg-emerald-100 text-emerald-700'
+                                                ? 'bg-forest-100 text-forest-700'
                                                 : 'bg-gray-100 text-gray-500'
                                                 }`}>
                                                 {specimen.imageCount || 0}
@@ -857,7 +857,7 @@ export default function SpecimensInspection() {
                                                     Sem determinador
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-forest-100 text-forest-700">
                                                     OK
                                                 </span>
                                             )}
