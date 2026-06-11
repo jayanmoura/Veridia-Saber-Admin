@@ -1,19 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import React, { lazy } from 'react';
-import LandingPage from '../pages/landingpage/LandingPage';
-import Privacy from '../pages/landingpage/Privacy';
-import Terms from '../pages/landingpage/Terms';
 import Disclaimer from '../pages/landingpage/Disclaimer';
 import EmailConfirmed from '../pages/landingpage/EmailConfirmed';
-import CatalogoEspecies from '../pages/landingpage/CatalogoEspecies';
-import DetalhesEspecie from '../pages/landingpage/DetalhesEspecie';
-import CatalogoFamilias from '../pages/landingpage/CatalogoFamilias';
-import DetalhesFamilia from '../pages/landingpage/DetalhesFamilia';
-import LocalsPublicos from '../pages/landingpage/LocalsPublicos';
-import DetalhesLocal from '../pages/landingpage/DetalhesLocal';
-import SobrePage from '../pages/landingpage/SobrePage';
-import CriadorPage from '../pages/landingpage/CriadorPage';
 import { DashboardLayout } from '../components/Layout/DashboardLayout';
+import { RequireRole } from '../components/RequireRole';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = lazy(() => import('../pages/admin/Login'));
@@ -30,6 +20,13 @@ const AuditLogs = lazy(() => import('../pages/admin/AuditLogs'));
 const ProjectMap = lazy(() => import('../pages/admin/ProjectMap'));
 const GlobalMap = lazy(() => import('../pages/admin/GlobalMap'));
 const ProjectMapViz = lazy(() => import('../components/Maps/ProjectMapViz').then(m => ({ default: m.ProjectMapViz })));
+const Unauthorized = lazy(() => import('../pages/Unauthorized'));
+
+// Global admin route permission matrix.
+// Dashboard, project detail, and local/project-scoped routes remain under PrivateRoute only.
+const GLOBAL_MANAGEMENT_ROLES = ['Curador Mestre', 'Coordenador Científico'];
+const SCIENTIFIC_CATALOG_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
+const GLOBAL_MAP_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo'];
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { session, loading, profile } = useAuth();
@@ -70,73 +67,6 @@ export function OnlyGlobalAdmin({ children }: { children: React.ReactNode }) {
     );
 }
 
-export const publicRouter = createBrowserRouter([
-    {
-        path: '/',
-        element: <LandingPage />,
-    },
-    {
-        path: '/catalogo',
-        element: <CatalogoEspecies />,
-    },
-    {
-        path: '/catalogo/especie/:id',
-        element: <DetalhesEspecie />,
-    },
-    {
-        path: '/familias-catalogo',
-        element: <CatalogoFamilias />,
-    },
-    {
-        path: '/familias-catalogo/:id',
-        element: <DetalhesFamilia />,
-    },
-    {
-        path: '/locais-publico',
-        element: <LocalsPublicos />,
-    },
-    {
-        path: '/locais-publico/:id',
-        element: <DetalhesLocal />,
-    },
-    {
-        path: '/sobre',
-        element: <SobrePage />,
-    },
-    {
-        path: '/criador',
-        element: <CriadorPage />,
-    },
-    {
-        path: '/privacidade',
-        element: <Privacy />,
-    },
-    {
-        path: '/politica',
-        element: <Privacy />,
-    },
-    {
-        path: '/termos',
-        element: <Terms />,
-    },
-    {
-        path: '/isencao',
-        element: <Disclaimer />,
-    },
-    {
-        path: '/disclaimer',
-        element: <Disclaimer />,
-    },
-    {
-        path: '/email-confirmed',
-        element: <EmailConfirmed />,
-    },
-    {
-        path: '*',
-        element: <Navigate to="/" replace />
-    }
-]);
-
 export const adminRouter = createBrowserRouter([
     {
         path: '/login',
@@ -173,64 +103,75 @@ export const adminRouter = createBrowserRouter([
                 element: <Overview />,
             },
             {
-                path: 'users',
-                element: <Users />,
+                path: 'dashboard',
+                element: <Navigate to="/" replace />,
             },
             {
-                path: 'families',
-                element: <Families />,
-            },
-            {
-                path: 'species',
-                element: <Species />,
-            },
-            {
-                path: 'projects',
-                element: <Projects />,
+                path: 'unauthorized',
+                element: <Unauthorized />,
             },
             {
                 path: 'projects/:id',
                 element: <ProjectDetails />,
             },
             {
-                path: 'specimens',
-                element: <Specimens />,
-            },
-            {
-                path: 'conteudo-didatico',
-                element: <EducationalContent />,
-            },
-            {
-                path: 'seguranca/logs',
-                element: (
-                    <OnlyGlobalAdmin>
-                        <AuditLogs />
-                    </OnlyGlobalAdmin>
-                ),
-            },
-            {
-                path: 'mapa-global',
-                element: <GlobalMap />,
-            },
-            {
-                path: 'mapa-projetos',
-                element: (
-                    <OnlyGlobalAdmin>
-                        <ProjectMapViz />
-                    </OnlyGlobalAdmin>
-                ),
-            },
-            {
                 path: 'project-map',
                 element: <ProjectMap />,
             },
             {
-                path: 'specimens-inspection',
-                element: (
-                    <OnlyGlobalAdmin>
-                        <SpecimensInspection />
-                    </OnlyGlobalAdmin>
-                ),
+                element: <RequireRole allowedRoles={GLOBAL_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
+                children: [
+                    {
+                        path: 'users',
+                        element: <Users />,
+                    },
+                    {
+                        path: 'projects',
+                        element: <Projects />,
+                    },
+                    {
+                        path: 'conteudo-didatico',
+                        element: <EducationalContent />,
+                    },
+                    {
+                        path: 'seguranca/logs',
+                        element: <AuditLogs />,
+                    },
+                    {
+                        path: 'mapa-projetos',
+                        element: <ProjectMapViz />,
+                    },
+                    {
+                        path: 'specimens-inspection',
+                        element: <SpecimensInspection />,
+                    },
+                ],
+            },
+            {
+                element: <RequireRole allowedRoles={SCIENTIFIC_CATALOG_ROLES} redirectTo="/unauthorized" />,
+                children: [
+                    {
+                        path: 'families',
+                        element: <Families />,
+                    },
+                    {
+                        path: 'species',
+                        element: <Species />,
+                    },
+                    {
+                        path: 'specimens',
+                        element: <Specimens />,
+                    },
+                ],
+            },
+            {
+                element: <RequireRole allowedRoles={GLOBAL_MAP_ROLES} redirectTo="/unauthorized" />,
+                children: [
+                    {
+                        path: 'mapa-global',
+                        element: <GlobalMap />,
+                    },
+                ],
             },
         ],
     },

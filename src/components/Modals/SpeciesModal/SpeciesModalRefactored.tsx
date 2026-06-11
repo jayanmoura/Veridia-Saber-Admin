@@ -16,7 +16,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
-import { SpeciesDataTab } from './index';
+import { SpeciesDataTab } from './SpeciesDataTab';
 import { LabelDataTab } from './LabelDataTab';
 import { ImageUploadZone } from '../../Forms/ImageUploadZone';
 import { X, Loader2, Image as ImageIcon, FileText, Leaf } from 'lucide-react';
