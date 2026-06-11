@@ -67,33 +67,41 @@ O painel estará disponível em `http://localhost:5173`.
 |---|---|
 | `VITE_SUPABASE_URL` | URL do projeto Supabase (ex: `https://xyz.supabase.co`) |
 | `VITE_SUPABASE_ANON_KEY` | Chave pública anônima (`anon key`) do projeto Supabase |
+| `VITE_STORAGE_URL` | URL base do servidor de storage self-hosted (ex: `https://storage.veridiasaber.com.br`) |
+| `VITE_UPLOAD_API_URL` | URL da API de upload/delete no servidor self-hosted |
+| `VITE_UPLOAD_SECRET` | Chave secreta para autenticar chamadas à API de upload |
 
 ## Estrutura de Diretórios
 
 ```
 src/
-├── pages/             # Páginas da aplicação (Login, Overview, Species, Specimens, etc.)
-│   ├── admin/         # Páginas do painel administrativo
-│   └── landingpage/   # Páginas da landing page pública
+├── pages/             # Páginas da aplicação
+│   ├── admin/         # Painel administrativo (Login, Overview, Species, Specimens, etc.)
+│   └── landingpage/   # Landing page pública (catálogos, morfologia, locais, sobre)
 ├── components/        # Componentes reutilizáveis
 │   ├── Cards/         # Cards de exibição de dados
 │   ├── Dashboard/     # Widgets do dashboard
 │   ├── Forms/         # Formulários compartilhados
 │   ├── Layout/        # Sidebar, Header, estrutura visual
 │   ├── Maps/          # Componentes de mapa (Leaflet)
-│   ├── Modals/        # Modais (espécies, famílias, confirmação, etc.)
-│   ├── Overview/      # Componentes da tela de visão geral
-│   ├── ProjectDetails/# Detalhes de projetos
-│   └── Tables/        # Tabelas de listagem
-├── hooks/             # Custom hooks (useSpecies, useFamilies, useProjects, etc.)
+│   ├── Modals/        # Modais (espécies, famílias, espécimes, galeria, analytics, etc.)
+│   ├── Overview/      # Views por papel (GlobalAdmin, Cataloger, Senior, Field, LocalAdmin)
+│   ├── ProjectDetails/# Header e abas de detalhes de projetos (usuários, espécies)
+│   └── Tables/        # Tabelas de listagem com ordenação
+├── hooks/             # Custom hooks (useSpecies, useFamilies, useProjects, useSpecimens, etc.)
 ├── contexts/          # Contextos React (AuthContext)
 ├── lib/               # Configuração do cliente Supabase
 ├── routes/            # Definição de rotas e guards de autenticação
-├── services/          # Camada de serviços para chamadas ao backend
-├── types/             # Interfaces e tipos TypeScript
-├── config/            # Configurações da aplicação
-├── database/          # Scripts e utilitários de banco de dados
-└── utils/             # Utilitários (geração de PDF, formatação, etc.)
+├── services/          # Repositórios de dados (speciesRepo, specimenRepo)
+├── types/             # Interfaces e tipos TypeScript (RBAC, auth)
+├── config/            # Configurações da aplicação (institution.ts)
+├── database/          # Scripts e utilitários de banco de dados legados
+└── utils/
+    ├── storage.ts     # Upload/delete/URL para storage self-hosted (Pi)
+    ├── imageCompressor.ts  # Otimização de imagens antes do upload
+    ├── csvGenerator.ts     # Exportação de dados em CSV
+    ├── sorting.ts          # Utilitários de ordenação de tabelas
+    └── pdf/           # Geração de relatórios PDF (espécies, espécimes, famílias, projetos)
 ```
 
 ## Papéis de Usuário (RBAC)
@@ -179,17 +187,55 @@ Uma mesma espécie pode possuir múltiplos espécimes distribuídos por diferent
 
 ## Funcionalidades Principais
 
+### Painel Administrativo
 - **Catálogo de Espécies** — CRUD completo com busca, filtros por família e paginação
 - **Gestão de Espécimes** — Cadastro georreferenciado com galeria de imagens
-- **Mapas Interativos** — Visualização de espécimes no mapa via Leaflet
-- **Projetos de Campo** — Administração de locais com detalhamento de acervo
-- **Relatórios PDF** — Fichas técnicas individuais e relatórios gerais com gráficos
+- **Mapas Interativos** — Visualização de espécimes no mapa via Leaflet (mapa por projeto e mapa global)
+- **Projetos de Campo** — Administração de locais com detalhamento de acervo, usuários e espécies
+- **Relatórios PDF** — Fichas técnicas individuais, etiquetas de espécimes e relatórios gerais com gráficos
 - **Conteúdo Educacional** — Editor rich text (TipTap) com upload de imagens por órgão vegetal
-- **Logs de Auditoria** — Rastreamento de alterações realizadas no sistema
+- **Logs de Auditoria** — Rastreamento de alterações realizadas no sistema (Curador Mestre e Coordenador Científico)
 - **PWA** — Instalável como aplicativo em dispositivos móveis
 - **Galeria de Fotos** — Visualização em pastas por espécie com seleção e download em lote (ZIP)
 - **Inspeção de Espécimes** — Auditoria global de espécimes por projeto (somente leitura, Curador Mestre)
 - **Análise de Storage** — Painel de uso real de imagens com tamanhos por versão e evolução mensal
+
+### Landing Page Pública
+- **Catálogo Público de Espécies** — Busca e navegação sem autenticação
+- **Catálogo de Famílias** — Listagem com nomes científicos e populares
+- **Locais Públicos** — Visualização de projetos e espécimes publicados
+- **Morfologia Botânica** — Páginas educativas por órgão vegetal
+- **Detalhes de Espécime** — Página pública individual com foto, localização e dados taxonômicos
+
+## Storage Self-Hosted
+
+O sistema migrou do Supabase Storage para um servidor próprio (Raspberry Pi). O utilitário `src/utils/storage.ts` abstrai essa camada e suporta tanto URLs legadas do Supabase quanto as novas URLs do servidor self-hosted.
+
+**Buckets disponíveis:**
+
+| Bucket | Uso |
+|---|---|
+| `imagens-plantas` | Fotos de espécies (thumbnail, medium, original) |
+| `fotos-das-colecoes` | Fotos de espécimes de campo |
+| `imagens_conteudo` | Imagens do editor de conteúdo educacional (TipTap) |
+| `arquivos-gerais` | Outros arquivos do sistema |
+
+> As variáveis `VITE_STORAGE_URL` e `VITE_UPLOAD_API_URL` devem apontar para o servidor self-hosted.
+> A variável `VITE_UPLOAD_SECRET` é usada para autenticar requisições de upload e delete.
+
+## Migrações do Supabase
+
+As migrações ficam em `supabase/migrations/` e devem ser aplicadas em ordem:
+
+| Arquivo | Conteúdo |
+|---|---|
+| `001_rls_policies.sql` | Políticas RLS base de todas as tabelas |
+| `002_beta_testers.sql` | Tabela e lógica de beta testers |
+| `003_fix_especie_local_delete.sql` | Correção de permissões de exclusão de espécimes |
+| `004` a `010` | Ajustes incrementais de RLS e funções |
+| `011_allow_anon_read_public_tables.sql` | Leitura anônima para a landing page pública |
+
+A Edge Function `login-proxy` em `supabase/functions/login-proxy/` é necessária para o fluxo de autenticação OAuth.
 
 ## Documentação Adicional
 
