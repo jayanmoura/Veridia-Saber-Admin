@@ -37,10 +37,7 @@ export interface Species {
     autor?: string | null;
     nome_popular?: string | null;
     familia_id?: string;
-    familia?: { 
-        id?: number | string; 
-        familia_nome: string; 
-    } | null;
+    familia?: { id?: string | number; familia_nome: string } | null;
     descricao_especie?: string | null;
     cuidados_luz?: string | null;
     cuidados_agua?: string | null;

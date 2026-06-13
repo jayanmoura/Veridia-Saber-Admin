@@ -250,8 +250,12 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
                 .limit(5);
 
             if (error) throw error;
-            setSuggestions(data || []);
-            setShowSuggestions((data || []).length > 0);
+            const normalizedData = (data || []).map(s => ({
+                ...s,
+                familia: Array.isArray(s.familia) ? s.familia[0] : s.familia
+            })) as Species[];
+            setSuggestions(normalizedData);
+            setShowSuggestions(normalizedData.length > 0);
         } catch (err) {
             console.error('Erro ao buscar espécies:', err);
             setSuggestions([]);

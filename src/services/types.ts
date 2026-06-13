@@ -1,4 +1,4 @@
-import type { Species, Specimen } from '../types/domain';
+export type { Species, Specimen } from '../types/domain';
 
 export interface SpecimenFilters {
     localId?: number | string;

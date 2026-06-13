@@ -1,9 +1,11 @@
 // Re-export all hooks for simpler imports
 export { useSpecies } from './useSpecies';
-export type { Species, FamilyOption, SpeciesStats, UseSpeciesOptions, UseSpeciesReturn } from './useSpecies';
+export type { Species } from '../types/domain';
+export type { FamilyOption, SpeciesStats, UseSpeciesOptions, UseSpeciesReturn } from './useSpecies';
 
 export { useFamilies } from './useFamilies';
-export type { Family, FamilyStats, PendingFamily, UseFamiliesOptions, UseFamiliesReturn } from './useFamilies';
+export type { Family } from '../types/domain';
+export type { FamilyStats, PendingFamily, UseFamiliesOptions, UseFamiliesReturn } from './useFamilies';
 
 export { useProjects } from './useProjects';
 export type { Project, ProjectStats, UseProjectsReturn } from './useProjects';
@@ -12,8 +14,8 @@ export { useSpeciesImages } from './useSpeciesImages';
 export type { ExistingImage, UseSpeciesImagesOptions, UseSpeciesImagesReturn, UploadOptions } from './useSpeciesImages';
 
 export { useSpeciesForm } from './useSpeciesForm';
+export type { Species as SpeciesFormData } from '../types/domain';
 export type {
-    Species as SpeciesFormData,
     FamilyOption as FormFamilyOption,
     LocalOption,
     LocalData,

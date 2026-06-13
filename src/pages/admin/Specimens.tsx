@@ -139,7 +139,7 @@ export default function Specimens() {
     // Filter Logic (Client-side search, Repo handles project filter)
     const filtered = specimens.filter(s =>
         s.especie?.nome_cientifico.toLowerCase().includes(search.toLowerCase()) ||
-        s.locais?.nome.toLowerCase().includes(search.toLowerCase()) ||
+        s.locais?.nome?.toLowerCase().includes(search.toLowerCase()) ||
         s.coletor?.toLowerCase().includes(search.toLowerCase()) ||
         s.numero_coletor?.includes(search)
     );
@@ -170,14 +170,14 @@ export default function Specimens() {
     }, [filtered, sortKey, sortDir]);
 
     const handlePrintLabel = async (specimen: Specimen) => {
-        setLabelLoading(specimen.id);
+        setLabelLoading(Number(specimen.id));
         try {
             // Format data for label generator
             const formatDate = (dateStr?: string | null) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
 
             const labelData = {
                 scientificName: specimen.especie?.nome_cientifico || 'Sem Identificação',
-                author: specimen.especie?.autor || undefined,
+                author: (specimen.especie as any)?.autor || undefined,
                 family: specimen.especie?.familia?.familia_nome || 'INDETERMINADA',
                 popularName: specimen.especie?.nome_popular || undefined,
                 collector: specimen.coletor || 'Sem Coletor',
@@ -222,7 +222,7 @@ export default function Specimens() {
             // Client-side filter if search is active
             const finalData = search ? allData.filter(s =>
                 s.especie?.nome_cientifico.toLowerCase().includes(search.toLowerCase()) ||
-                s.locais?.nome.toLowerCase().includes(search.toLowerCase()) ||
+                s.locais?.nome?.toLowerCase().includes(search.toLowerCase()) ||
                 s.coletor?.toLowerCase().includes(search.toLowerCase()) ||
                 s.numero_coletor?.includes(search)
             ) : allData;
@@ -239,7 +239,7 @@ export default function Specimens() {
                 especie_nome_cientifico: s.especie?.nome_cientifico || 'Indeterminada',
                 familia_nome: s.especie?.familia?.familia_nome || 'Indeterminada',
                 coletor_nome: s.coletor || 'Sem Coletor',
-                data_coleta: s.created_at,
+                data_coleta: s.created_at ?? '',
                 coords_lat: s.latitude ? parseFloat(s.latitude as unknown as string) : undefined,
                 coords_lng: s.longitude ? parseFloat(s.longitude as unknown as string) : undefined
             }));
@@ -322,7 +322,7 @@ export default function Specimens() {
             let savedId: number | null = null;
 
             if (editingSpecimen) {
-                const updated = await specimenRepo.updateSpecimen(editingSpecimen.id, payload);
+                const updated = await specimenRepo.updateSpecimen(Number(editingSpecimen.id), payload);
                 savedId = updated?.id || editingSpecimen.id;
             } else {
                 const created = await specimenRepo.createSpecimen(payload);
@@ -503,7 +503,7 @@ export default function Specimens() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500">
-                                            {formatDate(item.created_at)}
+                                            {formatDate(item.created_at ?? null)}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {item.latitude && item.longitude ? (
@@ -532,7 +532,7 @@ export default function Specimens() {
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => { setDeleteId(item.id); setIsDeleteOpen(true); }}
+                                                    onClick={() => { setDeleteId(Number(item.id)); setIsDeleteOpen(true); }}
                                                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Excluir"
                                                 >
@@ -558,7 +558,7 @@ export default function Specimens() {
                 isEdit={!!editingSpecimen}
                 initialSpeciesName={editingSpecimen?.especie?.nome_cientifico} // Access via relation
                 initialProjectName={editingSpecimen?.locais?.nome}
-                specimenId={editingSpecimen?.id}
+                specimenId={editingSpecimen ? Number(editingSpecimen.id) : undefined}
             />
 
             <ConfirmDeleteModal
