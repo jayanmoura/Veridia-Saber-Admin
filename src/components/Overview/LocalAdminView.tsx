@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { ProjectData, LocalStats, RecentLocalSpecies, LocalFamily } from '../../hooks';
 import { uploadFile } from '../../utils/storage';
+import { useToast } from '../../hooks/useToast';
 
 interface LocalAdminViewProps {
     projectData: ProjectData | null;
@@ -47,6 +48,7 @@ export function LocalAdminView({
     loading,
     refetch
 }: LocalAdminViewProps) {
+    const { showToast } = useToast();
     const { profile } = useAuth();
 
     // Modal states
@@ -118,7 +120,7 @@ export function LocalAdminView({
 
         } catch (error: any) {
             console.error('Error saving project:', error);
-            alert('Erro ao salvar: ' + error.message);
+            showToast('Erro ao salvar: ' + error.message, 'error');
         } finally {
             setSavingProject(false);
         }

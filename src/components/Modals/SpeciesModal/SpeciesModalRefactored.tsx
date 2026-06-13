@@ -16,29 +16,14 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
+import { useToast } from '../../../hooks/useToast';
 import { SpeciesDataTab } from './SpeciesDataTab';
 import { LabelDataTab } from './LabelDataTab';
 import { ImageUploadZone } from '../../Forms/ImageUploadZone';
 import { X, Loader2, Image as ImageIcon, FileText, Leaf } from 'lucide-react';
 
 // ============ TYPES ============
-interface Species {
-  id?: string;
-  nome_cientifico: string;
-  autor?: string | null;
-  nome_popular?: string | null;
-  familia_id: string;
-  descricao_especie?: string | null;
-  cuidados_luz?: string | null;
-  cuidados_agua?: string | null;
-  cuidados_temperatura?: string | null;
-  cuidados_substrato?: string | null;
-  cuidados_nutrientes?: string | null;
-  local_id?: string | null;
-  created_at?: string | null;
-  created_by?: string | null;
-  creator?: { full_name: string } | { full_name: string }[] | null;
-}
+import type { Species } from '../../../types/domain';
 
 interface SpeciesModalProps {
   isOpen: boolean;
@@ -56,6 +41,7 @@ const STAGE_LABEL: Record<Exclude<UploadStage, 'idle'>, string> = {
 };
 
 export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }: SpeciesModalProps) {
+  const { showToast } = useToast();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle');
@@ -87,11 +73,11 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
     isSubmitting.current = true;
 
     if (!form.formData.nome_cientifico.trim()) {
-      alert('O nome científico é obrigatório.');
+      showToast('O nome científico é obrigatório.', 'warning');
       return;
     }
     if (!form.formData.familia_id) {
-      alert('Selecione uma família.');
+      showToast('Selecione uma família.', 'warning');
       return;
     }
 
@@ -183,7 +169,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
 
         if (!targetInstitutionId) {
           console.error('Erro: institution_id não encontrado');
-          alert('Erro: Não foi possível identificar a instituição. Contate o administrador.');
+          showToast('Erro: Não foi possível identificar a instituição. Contate o administrador.', 'error');
         } else {
           const localPayload = {
             especie_id: speciesId,
@@ -208,7 +194,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
           if (localError) {
             console.error('Error saving local data:', localError);
             if (localError.code === '42501') {
-              alert('Erro de permissão: Verifique suas credenciais com o administrador.');
+              showToast('Erro de permissão: Verifique suas credenciais com o administrador.', 'error');
             }
           }
         }
@@ -269,7 +255,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
     } catch (error: unknown) {
       const err = error as { message?: string };
       console.error('Save error:', error);
-      alert(err.message || 'Erro ao salvar espécie.');
+      showToast(err.message || 'Erro ao salvar espécie.', 'error');
     } finally {
       setLoading(false);
       setUploadStage('idle');
@@ -433,7 +419,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
                     formData={{
                       nome_cientifico: form.formData.nome_cientifico,
                       autor: form.formData.autor,
-                      familia_id: form.formData.familia_id,
+                      familia_id: form.formData.familia_id || '',
                     }}
                     families={form.families}
                   />

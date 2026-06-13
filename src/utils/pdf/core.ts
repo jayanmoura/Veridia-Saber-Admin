@@ -42,7 +42,7 @@ export function addHeader(doc: jsPDF, options: Pick<PDFGeneratorOptions, 'title'
     if (logoBase64) {
         try {
             doc.addImage(logoBase64, 'PNG', 14, 10, 18, 18);
-        } catch (e) {
+        } catch {
             // Fallback if logo fails
         }
     }
@@ -155,7 +155,7 @@ export function drawHorizontalBarChart(
     doc.setTextColor(COLORS.text);
     doc.text(title, pageWidth / 2, startY, { align: 'center' });
 
-    let currentY = startY + 10;
+    const currentY = startY + 10;
 
     // Draw bars
     chartData.forEach((item, index) => {

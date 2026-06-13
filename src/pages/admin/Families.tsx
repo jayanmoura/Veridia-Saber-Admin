@@ -25,13 +25,7 @@ import {
     CheckCircle
 } from 'lucide-react';
 
-interface Family {
-    id: string;
-    familia_nome: string;
-    imagem_referencia: string | null;
-    quantidade_especies: number;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-}
+import type { Family } from '../../types/domain';
 
 const ITEMS_PER_PAGE = 20;
 

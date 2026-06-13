@@ -6,22 +6,9 @@ import { X, Upload, Loader2, Info, List } from 'lucide-react';
 import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
 import { compressImage, compressForListing } from '../../utils/imageCompressor';
 import { uploadFile, getStorageUrl } from '../../utils/storage';
+import { useToast } from '../../hooks/useToast';
 
-interface Family {
-    id?: string;
-    familia_nome: string;
-    autoria_taxonomica?: string | null;
-    imagem_referencia?: string | null;
-    imagem_thumbnail?: string | null;
-    imagem_micro?: string | null;
-    caracteristicas?: string | null;
-    descricao_familia?: string | null;
-    fonte_referencia?: string | null;
-    link_referencia?: string | null;
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string } | { full_name: string }[] | null;
-}
+import type { Family } from '../../types/domain';
 
 interface FamilyModalProps {
     isOpen: boolean;
@@ -31,6 +18,7 @@ interface FamilyModalProps {
 }
 
 export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModalProps) {
+    const { showToast } = useToast();
     const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,6 +28,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
     // Form state
     const [formData, setFormData] = useState<Family>({
+        id: '',
         familia_nome: '',
         autoria_taxonomica: '',
         caracteristicas: '',
@@ -117,6 +106,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         if (isOpen) {
             if (initialData) {
                 setFormData({
+                    id: initialData.id,
                     familia_nome: initialData.familia_nome || '',
                     autoria_taxonomica: initialData.autoria_taxonomica || '',
                     caracteristicas: initialData.caracteristicas || '',
@@ -127,6 +117,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                 setImagePreview(initialData.imagem_thumbnail || initialData.imagem_referencia || null);
             } else {
                 setFormData({
+                    id: '',
                     familia_nome: '',
                     autoria_taxonomica: '',
                     caracteristicas: '',
@@ -170,7 +161,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
     const handleFile = (file: File) => {
         if (!file.type.startsWith('image/')) {
-            alert('Por favor, selecione apenas imagens.');
+            showToast('Por favor, selecione apenas imagens.', 'warning');
             return;
         }
         setImageFile(file);
@@ -229,13 +220,13 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         isSubmitting.current = true;
 
         if (!formData.familia_nome.trim()) {
-            alert('O nome da família é obrigatório.');
+            showToast('O nome da família é obrigatório.', 'warning');
             isSubmitting.current = false;
             return;
         }
 
         if (duplicateError) {
-            alert("Corrija o erro de nome duplicado antes de salvar.");
+            showToast("Corrija o erro de nome duplicado antes de salvar.", 'warning');
             isSubmitting.current = false;
             return;
         }
@@ -283,7 +274,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
             onClose();
         } catch (error: any) {
             console.error('Save error:', error);
-            alert(error.message || 'Erro ao salvar família.');
+            showToast(error.message || 'Erro ao salvar família.', 'error');
         } finally {
             setLoading(false);
             isSubmitting.current = false;

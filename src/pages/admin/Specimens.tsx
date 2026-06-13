@@ -7,6 +7,7 @@ import { generateHerbariumLabels } from '../../utils/pdf';
 import { SpecimenModal } from '../../components/Modals/SpecimenModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../hooks/useToast';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { ConfirmDeleteModal } from '../../components/Modals/ConfirmDeleteModal';
 import { SortableColumnHeader } from '../../components/Tables/SortableColumnHeader';
@@ -29,6 +30,7 @@ const INITIAL_FORM: SpecimenFormData = {
 };
 
 export default function Specimens() {
+    const { showToast } = useToast();
     const { profile } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [specimens, setSpecimens] = useState<Specimen[]>([]);
@@ -196,7 +198,7 @@ export default function Specimens() {
             generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
         } catch (error) {
             console.error('Error generating label:', error);
-            alert('Erro ao gerar etiqueta');
+            showToast('Erro ao gerar etiqueta', 'error');
         } finally {
             setLabelLoading(null);
         }
@@ -226,7 +228,7 @@ export default function Specimens() {
             ) : allData;
 
             if (finalData.length === 0) {
-                alert('Nenhum dado encontrado para gerar o relatório.');
+                showToast('Nenhum dado encontrado para gerar o relatório.', 'warning');
                 return;
             }
 
@@ -259,7 +261,7 @@ export default function Specimens() {
 
         } catch (error) {
             console.error('Report error:', error);
-            alert('Erro ao gerar relatório PDF.');
+            showToast('Erro ao gerar relatório PDF.', 'error');
         } finally {
             setActionLoading(false);
         }

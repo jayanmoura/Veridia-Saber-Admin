@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../hooks/useToast';
 
 interface Project {
     id: string;
@@ -29,29 +30,7 @@ interface Project {
     estado: string | null;
 }
 
-interface Specimen {
-    id: string;
-    local_id: string;
-    especie_id: string;
-    latitude: number | null;
-    longitude: number | null;
-    detalhes_localizacao: string | null;
-    descricao_ocorrencia: string | null;
-    coletor: string | null;
-    numero_coletor: string | null;
-    determinador: string | null;
-    data_determinacao: string | null;
-    created_at: string;
-    especie?: {
-        nome_cientifico: string;
-        nome_popular: string | null;
-        familia?: {
-            familia_nome: string;
-        };
-    };
-    imagens?: { id: string; url_imagem: string }[];
-    imageCount?: number;
-}
+import type { Specimen } from '../../types/domain';
 
 interface SpecimenDetailModalProps {
     specimen: Specimen | null;
@@ -98,7 +77,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
                             {specimen.especie?.nome_cientifico || 'Espécime sem espécie'}
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                            ID: {specimen.id.slice(0, 8)}... • {specimen.especie?.familia?.familia_nome || 'Sem família'}
+                            ID: {String(specimen.id).slice(0, 8)}... • {specimen.especie?.familia?.familia_nome || 'Sem família'}
                         </p>
                     </div>
                     <button
@@ -206,7 +185,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50">
                     <p className="text-xs text-gray-400 text-center">
-                        Visualização apenas leitura • Registrado em {new Date(specimen.created_at).toLocaleDateString('pt-BR')}
+                        Visualização apenas leitura • Registrado em {specimen.created_at ? new Date(specimen.created_at).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                     </p>
                 </div>
             </div>
@@ -226,6 +205,7 @@ interface ReportModalProps {
 }
 
 function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRole }: ReportModalProps) {
+    const { showToast } = useToast();
     const [format, setFormat] = useState<'pdf' | 'csv' | 'both'>('pdf');
     const [includeImageUrls, setIncludeImageUrls] = useState(false);
     const [imageFilter, setImageFilter] = useState<'all' | 'with' | 'without'>('all');
@@ -367,7 +347,7 @@ function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRo
             onClose();
         } catch (error) {
             console.error('Error generating report:', error);
-            alert('Erro ao gerar relatório. Tente novamente.');
+            showToast('Erro ao gerar relatório. Tente novamente.', 'error');
         } finally {
             setGenerating(false);
         }

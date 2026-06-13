@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateSingleSpeciesReport, generateHerbariumLabels, generateSpeciesReport } from '../utils/pdf';
-import { getRoleLevel } from '../types/auth';
+import { getRoleLevel, type UserRole } from '../types/auth';
+import { useToast } from './useToast';
+import type { Species } from '../types/domain';
 
 interface Profile {
     id: string;
@@ -9,15 +11,6 @@ interface Profile {
     local_id?: string;
     full_name?: string;
     institution_id?: string;
-}
-
-interface Species {
-    id: string;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular: string | null;
-    familia?: { familia_nome: string };
-    locais?: { nome: string; tipo?: string };
 }
 
 interface UseSpeciesActionsOptions {
@@ -73,7 +66,8 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
     const [genLabelsLoading, setGenLabelsLoading] = useState(false);
     const [singleLabelLoading, setSingleLabelLoading] = useState<string | null>(null);
 
-    const myLevel = getRoleLevel(profile?.role as any);
+        const myLevel = getRoleLevel(profile?.role as UserRole);
+    const { showToast } = useToast();
     const isGlobalAdmin = myLevel <= 3;
     const canGenerateReports = myLevel === 1 || myLevel === 2 || myLevel === 4;
 
@@ -93,8 +87,8 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 if (error) throw error;
                 speciesData = data || [];
             } else {
-                if (!profile?.local_id) {
-                    alert('Você não possui um projeto vinculado para exportar.');
+                                if (!profile?.local_id) {
+                    showToast('Você não possui um projeto vinculado para exportar.', 'warning');
                     return;
                 }
 
@@ -116,8 +110,8 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 speciesData = data || [];
             }
 
-            if (speciesData.length === 0) {
-                alert('Nenhuma espécie encontrada para exportar.');
+                        if (speciesData.length === 0) {
+                showToast('Nenhuma espécie encontrada para exportar.', 'warning');
                 return;
             }
 
@@ -125,16 +119,16 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 ? 'relatorio_especies_geral.pdf'
                 : `relatorio_especies_${(projectName || 'projeto').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.pdf`;
 
-            generateSpeciesReport(speciesData, fileName, {
+                        generateSpeciesReport(speciesData, fileName, {
                 isGlobalReport: isGlobalAdmin,
                 projectName
             }, {
                 userName: profile?.full_name,
                 userRole: profile?.role,
             });
-        } catch (error: any) {
+                } catch (error: unknown) {
             console.error('Export error:', error);
-            alert(error.message || 'Erro ao exportar relatório.');
+            showToast(error instanceof Error ? error.message : 'Erro ao exportar relatório.', 'error');
         } finally {
             setExportLoading(false);
         }
@@ -156,8 +150,8 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 .single();
 
             if (error) throw error;
-            if (!speciesData) {
-                alert('Espécie não encontrada.');
+                        if (!speciesData) {
+                showToast('Espécie não encontrada.', 'warning');
                 return;
             }
 
@@ -180,9 +174,9 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                 `ficha_${safeName}.pdf`,
                 { userName: profile?.full_name, userRole: profile?.role }
             );
-        } catch (error: any) {
+                } catch (error: unknown) {
             console.error('Single report error:', error);
-            alert(error.message || 'Erro ao gerar ficha técnica.');
+            showToast(error instanceof Error ? error.message : 'Erro ao gerar ficha técnica.', 'error');
         } finally {
             setSingleReportLoading(null);
         }
@@ -227,29 +221,43 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
             if (error) throw error;
 
             if (!data || data.length === 0) {
-                alert('Nenhuma espécie encontrada para gerar etiquetas.');
+                showToast('Nenhuma espécie encontrada para gerar etiquetas.', 'warning');
                 return;
             }
 
             const formatDate = (dateStr?: string) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : undefined;
 
-            const labels = data.map((sp: any) => {
+            const labels = (data as Array<{
+                nome_cientifico?: string | null;
+                autor?: string | null;
+                nome_popular?: string | null;
+                created_at?: string;
+                familia?: { familia_nome?: string } | { familia_nome?: string }[] | null;
+                locais?: { nome?: string; tipo?: string } | { nome?: string; tipo?: string }[] | null;
+                especie_local?: { 
+                    id?: string; tombo_codigo?: string; detalhes_localizacao?: string; determinador?: string; data_determinacao?: string; coletor?: string; numero_coletor?: string; morfologia?: string; habitat_ecologia?: string; created_at?: string;
+                } | { 
+                    id?: string; tombo_codigo?: string; detalhes_localizacao?: string; determinador?: string; data_determinacao?: string; coletor?: string; numero_coletor?: string; morfologia?: string; habitat_ecologia?: string; created_at?: string;
+                }[] | null;
+            }>).map(sp => {
                 const details = Array.isArray(sp.especie_local) ? sp.especie_local[0] : sp.especie_local;
+                const fam = Array.isArray(sp.familia) ? sp.familia[0] : sp.familia;
+                const loc = Array.isArray(sp.locais) ? sp.locais[0] : sp.locais;
                 return {
                     scientificName: sp.nome_cientifico || 'Sem Identificação',
                     author: sp.autor || undefined,
-                    family: sp.familia?.familia_nome || 'INDETERMINADA',
-                    popularName: sp.nome_popular,
-                    collector: details?.coletor || sp.locais?.nome || 'Veridia Saber',
-                    collectorNumber: details?.numero_coletor,
-                    date: formatDate(details?.created_at) || new Date(sp.created_at).toLocaleDateString('pt-BR'),
-                    location: sp.locais ? `${sp.locais.nome} (${sp.locais.tipo || 'Local'})` : 'Local não informado',
+                    family: fam?.familia_nome || 'INDETERMINADA',
+                    popularName: sp.nome_popular || undefined,
+                    collector: details?.coletor || loc?.nome || 'Veridia Saber',
+                    collectorNumber: details?.numero_coletor || undefined,
+                    date: formatDate(details?.created_at) || formatDate(sp.created_at) || new Date().toLocaleDateString('pt-BR'),
+                    location: loc ? `${loc.nome} (${loc.tipo || 'Local'})` : 'Local não informado',
                     notes: details?.detalhes_localizacao || '',
-                    morphology: details?.morfologia,
-                    habitat: details?.habitat_ecologia,
+                    morphology: details?.morfologia || undefined,
+                    habitat: details?.habitat_ecologia || undefined,
                     determinant: details?.determinador || 'Sistema Veridia',
-                    determinationDate: formatDate(details?.data_determinacao),
-                    tomboNumber: details?.tombo_codigo || details?.id
+                    determinationDate: formatDate(details?.data_determinacao) || undefined,
+                    tomboNumber: details?.tombo_codigo || details?.id || undefined
                 };
             });
 
@@ -257,11 +265,10 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
 
             // Persist labels
             if (profile?.id) {
-                const persistenceData = data
-                    .map((sp: any) => {
+                const persistenceData = (data as Array<{ especie_local?: { id?: string } | { id?: string }[] | null }>).map(sp => {
                         const details = Array.isArray(sp.especie_local) ? sp.especie_local[0] : sp.especie_local;
                         if (!details?.id) return null;
-                        const labelSnapshot = labels.find((l: any) => l.tomboNumber === details.id);
+                        const labelSnapshot = labels.find(l => l.tomboNumber === details.id);
                         return {
                             especie_local_id: details.id,
                             gerado_por: profile.id,
@@ -269,15 +276,15 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                             numero_tombo: details.id
                         };
                     })
-                    .filter((item: any) => item !== null);
+                    .filter((item: unknown) => item !== null);
 
                 if (persistenceData.length > 0) {
                     await supabase.from('etiquetas').insert(persistenceData);
                 }
             }
-        } catch (error: any) {
+                } catch (error: unknown) {
             console.error('Label gen error:', error);
-            alert('Erro ao gerar etiquetas.');
+            showToast('Erro ao gerar etiquetas.', 'error');
         } finally {
             setGenLabelsLoading(false);
         }
@@ -285,7 +292,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
 
     // Generate single herbarium label
     const handleGenerateSingleLabel = useCallback(async (species: Species) => {
-        setSingleLabelLoading(species.id);
+        setSingleLabelLoading(species.id!);
         try {
             const userLocalId = profile?.local_id;
 
@@ -296,7 +303,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                     determinador, data_determinacao,
                     coletor, numero_coletor, morfologia, habitat_ecologia
                 `)
-                .eq('especie_id', species.id);
+                .eq('especie_id', species.id!);
 
             if (userLocalId) query = query.eq('local_id', userLocalId);
 
@@ -333,9 +340,9 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
                     numero_tombo: details.id
                 });
             }
-        } catch (error: any) {
+                } catch (error: unknown) {
             console.error('Single label error:', error);
-            alert('Erro ao gerar etiqueta.');
+            showToast('Erro ao gerar etiqueta.', 'error');
         } finally {
             setSingleLabelLoading(null);
         }

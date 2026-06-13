@@ -86,7 +86,7 @@ export interface UseOverviewStatsReturn {
 
     // Senior stats
     recentWork: RecentWorkItem[];
-    pendingSpecies: any[];
+    pendingSpecies: Record<string, unknown>[];
 
     // Local stats
     projectData: ProjectData | null;
@@ -141,7 +141,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
 
     // Senior stats
     const [recentWork, setRecentWork] = useState<RecentWorkItem[]>([]);
-    const [pendingSpecies, setPendingSpecies] = useState<any[]>([]);
+    const [pendingSpecies, setPendingSpecies] = useState<Record<string, unknown>[]>([]);
 
     // Local stats
     const [projectData, setProjectData] = useState<ProjectData | null>(null);
@@ -284,17 +284,25 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 .limit(5);
 
             if (recentData) {
-                const mapped = recentData
-                    .filter((item: any) => item.especie)
-                    .map((item: any) => ({
-                        id: String(item.id),
-                        nome_cientifico: item.especie.nome_cientifico,
-                        nome_popular: item.especie.nome_popular || null,
-                        created_at: item.created_at,
-                        imagem_url: item.imagens?.[0]?.url_micro || null,
-                        imagem_thumbnail: item.imagens?.[0]?.url_thumbnail || null,
-                        imagem_original: item.imagens?.[0]?.url_imagem || null,
-                    }));
+                const mapped = (recentData as Array<{
+                    id: string | number;
+                    created_at: string;
+                    especie: { nome_cientifico: string; nome_popular?: string | null } | { nome_cientifico: string; nome_popular?: string | null }[] | null;
+                    imagens: { url_micro?: string; url_thumbnail?: string; url_imagem?: string }[] | null;
+                }>)
+                    .filter(item => item.especie)
+                    .map(item => {
+                        const esp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                        return {
+                            id: String(item.id),
+                            nome_cientifico: esp?.nome_cientifico || '',
+                            nome_popular: esp?.nome_popular || null,
+                            created_at: String(item.created_at),
+                            imagem_url: item.imagens?.[0]?.url_micro || null,
+                            imagem_thumbnail: item.imagens?.[0]?.url_thumbnail || null,
+                            imagem_original: item.imagens?.[0]?.url_imagem || null,
+                        };
+                    });
                 setRecentLocalSpecies(mapped);
             }
         } finally {
@@ -334,8 +342,12 @@ export function useOverviewStats(): UseOverviewStatsReturn {
 
             if (data) {
                 const familyCount: { [key: string]: number } = {};
-                data.forEach((item: any) => {
-                    const familyName = item.especie?.familia?.familia_nome;
+                (data as Array<{
+                    especie?: { familia?: { familia_nome?: string } | { familia_nome?: string }[] | null } | { familia?: { familia_nome?: string } | { familia_nome?: string }[] | null }[] | null;
+                }>).forEach(item => {
+                    const esp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                    const fam = Array.isArray(esp?.familia) ? esp?.familia[0] : esp?.familia;
+                    const familyName = fam?.familia_nome;
                     if (familyName) {
                         familyCount[familyName] = (familyCount[familyName] || 0) + 1;
                     }

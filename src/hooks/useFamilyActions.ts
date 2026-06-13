@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdf';
 import { deleteFile, parseStorageUrl } from '../utils/storage';
+import { useToast } from './useToast';
 
 interface Profile {
     id: string;
@@ -9,12 +10,7 @@ interface Profile {
     full_name?: string;
 }
 
-interface Family {
-    id: string;
-    familia_nome: string;
-    imagem_referencia: string | null;
-    quantidade_especies?: number;
-}
+import type { Family } from '../types/domain';
 
 interface UseFamilyActionsOptions {
     profile: Profile | null;
@@ -92,6 +88,7 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
     const [deletedFamilyName, setDeletedFamilyName] = useState('');
 
     // Permissions
+    const { showToast } = useToast();
     const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico' || profile?.role === 'Taxonomista Sênior';
     const canGenerateReports = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
 
@@ -108,8 +105,6 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
     const closeBlockModal = useCallback(() => setShowBlockModal(false), []);
     const closeSuccessModal = useCallback(() => setShowSuccessModal(false), []);
 
-
-
     // Export all families to PDF
     const handleExportAll = useCallback(async () => {
         setExportLoading(true);
@@ -121,11 +116,11 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
 
             if (error) throw error;
 
-            const reportData = (allFamilies || []).map((f: any) => ({
-                name: f.familia_nome,
-                autoria_taxonomica: f.autoria_taxonomica,
-                count: f.especie?.[0]?.count || 0,
-                createdAt: f.created_at ? new Date(f.created_at).toLocaleDateString('pt-BR') : '-'
+            const reportData = (allFamilies || []).map((f: Record<string, unknown>) => ({
+                name: String(f.familia_nome ?? ''),
+                autoria_taxonomica: typeof f.autoria_taxonomica === 'string' ? f.autoria_taxonomica : null,
+                count: (f.especie as Array<{ count: number }> | undefined)?.[0]?.count ?? 0,
+                createdAt: f.created_at ? new Date(String(f.created_at)).toLocaleDateString('pt-BR') : '-'
             }));
 
             generateFamiliesReportWithChart(reportData, 'relatorio_familias_geral.pdf', {
@@ -133,11 +128,11 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
             });
         } catch (error) {
             console.error('Export error:', error);
-            alert('Erro ao exportar relatório.');
+            showToast('Erro ao exportar relatório.', 'error');
         } finally {
             setExportLoading(false);
         }
-    }, []);
+    }, [profile?.full_name, showToast]);
 
     // Generate individual family report
     const generateFamilyReport = useCallback(async (family: Family) => {
@@ -184,11 +179,11 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
             );
         } catch (error) {
             console.error('Report error:', error);
-            alert('Erro ao gerar relatório.');
+            showToast('Erro ao gerar relatório.', 'error');
         } finally {
             setReportLoading(null);
         }
-    }, []);
+    }, [showToast]);
 
     // Delete family
     const confirmDelete = useCallback(async () => {
@@ -235,18 +230,19 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
             setDeletedFamilyName(familyName);
             setShowSuccessModal(true);
             onSuccess();
-        } catch (error: any) {
+                } catch (error: unknown) {
             console.error('Delete error:', error);
-            if (error.code === '23503') {
+            const errorCode = error instanceof Error ? (error as unknown as { code?: string }).code : undefined;
+            if (errorCode === '23503') {
                 setBlockedFamilyName(familyName);
                 setShowBlockModal(true);
             } else {
-                alert(error.message || 'Erro ao excluir família.');
+                showToast(error instanceof Error ? error.message : 'Erro ao excluir família.', 'error');
             }
         } finally {
             setDeleteLoading(null);
         }
-    }, [familyToDelete, profile, closeDeleteModal, onSuccess]);
+    }, [familyToDelete, profile, closeDeleteModal, onSuccess, showToast]);
 
     // Approve pending family
     const handleApproveFamily = useCallback(async (pendingName: string) => {
@@ -260,7 +256,7 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
                 .maybeSingle();
 
             if (existing) {
-                alert(`Família "${pendingName}" já existe no catálogo oficial.`);
+                showToast(`Família "${pendingName}" já existe no catálogo oficial.`, 'warning');
                 return;
             }
 
@@ -280,16 +276,16 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
                 .delete()
                 .eq('familia_nome', pendingName);
 
-            alert(`Família "${pendingName}" aprovada com sucesso!`);
+            showToast(`Família "${pendingName}" aprovada com sucesso!`, 'success');
             onSuccess();
             onPendingRefetch?.();
-        } catch (err: any) {
-            console.error('Approve error:', err);
-            alert('Erro ao aprovar família: ' + err.message);
+        } catch (error: unknown) {
+            console.error('Approve error:', error);
+            showToast('Erro ao aprovar família: ' + (error instanceof Error ? error.message : ''), 'error');
         } finally {
             setApproveLoading(null);
         }
-    }, [profile, onSuccess, onPendingRefetch]);
+    }, [profile, onSuccess, onPendingRefetch, showToast]);
 
     return {
         exportLoading,

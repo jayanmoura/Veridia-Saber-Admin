@@ -22,11 +22,7 @@ const GlobalMap = lazy(() => import('../pages/admin/GlobalMap'));
 const ProjectMapViz = lazy(() => import('../components/Maps/ProjectMapViz').then(m => ({ default: m.ProjectMapViz })));
 const Unauthorized = lazy(() => import('../pages/Unauthorized'));
 
-// Global admin route permission matrix.
-// Dashboard, project detail, and local/project-scoped routes remain under PrivateRoute only.
-const GLOBAL_MANAGEMENT_ROLES = ['Curador Mestre', 'Coordenador Científico'];
-const SCIENTIFIC_CATALOG_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo', 'Taxonomista de Campo'];
-const GLOBAL_MAP_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo', 'Taxonomista de Campo'];
+import { GLOBAL_MANAGEMENT_ROLES, SCIENTIFIC_CATALOG_ROLES, GLOBAL_MAP_ROLES, USER_MANAGEMENT_ROLES } from './roleConstants';
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { session, loading, profile } = useAuth();
@@ -119,12 +115,17 @@ export const adminRouter = createBrowserRouter([
                 element: <ProjectMap />,
             },
             {
-                element: <RequireRole allowedRoles={GLOBAL_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
+                element: <RequireRole allowedRoles={USER_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
                 children: [
                     {
                         path: 'users',
                         element: <Users />,
                     },
+                ],
+            },
+            {
+                element: <RequireRole allowedRoles={GLOBAL_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
+                children: [
                     {
                         path: 'projects',
                         element: <Projects />,

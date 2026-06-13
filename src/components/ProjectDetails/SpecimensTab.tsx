@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react';
 import { SortableColumnHeader } from '../Tables/SortableColumnHeader';
 import { extractCodeNumber } from '../../utils/sorting';
 import { generateHerbariumLabels } from '../../utils/pdf';
+import { useToast } from '../../hooks/useToast';
 
 interface SpecimensTabProps {
     projectId: string;
@@ -14,6 +15,7 @@ interface SpecimensTabProps {
 }
 
 export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps) {
+    const { showToast } = useToast();
     const { profile } = useAuth();
     const {
         specimens,
@@ -68,7 +70,7 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
             generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
         } catch (error) {
             console.error('Error generating label:', error);
-            alert('Erro ao gerar etiqueta');
+            showToast('Erro ao gerar etiqueta', 'error');
         } finally {
             setLabelLoading(null);
         }

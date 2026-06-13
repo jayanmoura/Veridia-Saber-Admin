@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage, compressForListing } from '../utils/imageCompressor';
 import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
+import { useToast } from './useToast';
 
 // ============ TYPES ============
 export interface ExistingImage {
@@ -57,6 +58,7 @@ export interface UploadOptions {
  * const { imagePreviews, handleDrop, existingImages } = useSpecimenImages()
  */
 export function useSpecimenImages(): UseSpecimenImagesReturn {
+    const { showToast } = useToast();
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
@@ -65,7 +67,10 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    // Reset all image state
+    // ==========================================
+    // 1. Funções Base (Sem dependência de outras funções locais)
+    // ==========================================
+
     const reset = useCallback(() => {
         // Revoke object URLs to prevent memory leaks
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -76,7 +81,6 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
         setEditedCredits({});
     }, [imagePreviews]);
 
-    // Load existing images for a specimen
     const loadExistingImages = useCallback(async (specimenId: number) => {
         // Clear stale images immediately so previous specimen's images don't flash
         setExistingImages([]);
@@ -104,7 +108,41 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
         }
     }, []);
 
-    // Drag handlers
+    const removeNewImage = useCallback((index: number) => {
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => {
+            URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
+        setNewImageCredits(prev => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const handleDeleteExistingImage = useCallback(async (imageId: string, imageUrl: string) => {
+        try {
+            const storageInfo = parseStorageUrl(imageUrl);
+            if (storageInfo) {
+                await deleteFile(storageInfo.bucket, storageInfo.path);
+            }
+
+            const { error: dbError } = await supabase
+                .from('imagens')
+                .delete()
+                .eq('id', imageId);
+
+            if (dbError) throw new Error(dbError.message);
+
+            setExistingImages(prev => prev.filter(img => img.id !== imageId));
+            setEditedCredits(prev => {
+                const updated = { ...prev };
+                delete updated[imageId];
+                return updated;
+            });
+        } catch (error: unknown) {
+            console.error('Erro ao excluir imagem:', error);
+            showToast('Erro ao excluir imagem: ' + (error instanceof Error ? error.message : 'Erro desconhecido'), 'error');
+        }
+    }, [showToast]);
+
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -112,21 +150,6 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
             setDragActive(true);
         } else if (e.type === 'dragleave') {
             setDragActive(false);
-        }
-    }, []);
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFiles(Array.from(e.dataTransfer.files));
-        }
-    }, []);
-
-    const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleFiles(Array.from(e.target.files));
         }
     }, []);
 
@@ -140,45 +163,25 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
         setNewImageCredits(prev => [...prev, ...defaultCredits]);
     }, []);
 
-    const removeNewImage = useCallback((index: number) => {
-        setImageFiles(prev => prev.filter((_, i) => i !== index));
-        setImagePreviews(prev => {
-            URL.revokeObjectURL(prev[index]);
-            return prev.filter((_, i) => i !== index);
-        });
-        setNewImageCredits(prev => prev.filter((_, i) => i !== index));
-    }, []);
+    // ==========================================
+    // 2. Funções Derivadas (Dependem das Base)
+    // ==========================================
 
-
-
-    // Delete existing image
-    const handleDeleteExistingImage = useCallback(async (imageId: string, imageUrl: string) => {
-        try {
-            const storageInfo = parseStorageUrl(imageUrl);
-            if (storageInfo) {
-                await deleteFile(storageInfo.bucket, storageInfo.path);
-            }
-
-            const { error: dbError } = await supabase
-                .from('imagens')
-                .delete()
-                .eq('id', imageId);
-
-            if (dbError) throw dbError;
-
-            setExistingImages(prev => prev.filter(img => img.id !== imageId));
-            setEditedCredits(prev => {
-                const updated = { ...prev };
-                delete updated[imageId];
-                return updated;
-            });
-        } catch (error: any) {
-            console.error('Erro ao excluir imagem:', error);
-            alert('Erro ao excluir imagem: ' + (error.message || 'Erro desconhecido'));
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFiles(Array.from(e.dataTransfer.files));
         }
-    }, []);
+    }, [handleFiles]);
 
-    // Upload images
+    const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
+        }
+    }, [handleFiles]);
+
     const uploadImages = useCallback(async (
         specimenId: number,
         options: UploadOptions
@@ -258,6 +261,10 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
 
         return results;
     }, [imageFiles, newImageCredits]);
+
+    // ==========================================
+    // 3. Return Statement
+    // ==========================================
 
     return {
         imageFiles,

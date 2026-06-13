@@ -1,16 +1,6 @@
 import { TreeDeciduous, Pencil, Trash2, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface Family {
-    id: string;
-    familia_nome: string;
-    autoria_taxonomica?: string | null;
-    imagem_referencia: string | null;
-    imagem_thumbnail: string | null;
-    imagem_micro: string | null;
-    quantidade_especies: number;
-    created_by_name?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-}
+import type { Family } from '../../types/domain';
 
 interface FamilyTableProps {
     families: Family[];

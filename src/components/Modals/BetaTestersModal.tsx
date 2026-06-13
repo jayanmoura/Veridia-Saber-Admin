@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { X, Plus, Trash2, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '../../hooks/useToast';
 
 interface BetaTester {
     id: string;
@@ -19,6 +20,7 @@ interface BetaTestersModalProps {
 }
 
 export function BetaTestersModal({ isOpen, onClose }: BetaTestersModalProps) {
+    const { showToast } = useToast();
     const [testers, setTesters] = useState<BetaTester[]>([]);
     const [loading, setLoading] = useState(true);
     const [newEmail, setNewEmail] = useState('');
@@ -63,7 +65,7 @@ export function BetaTestersModal({ isOpen, onClose }: BetaTestersModalProps) {
             fetchTesters();
         } catch (error: any) {
             console.error('Error adding tester:', error);
-            alert('Erro ao adicionar testador: ' + error.message);
+            showToast('Erro ao adicionar testador: ' + error.message, 'error');
         } finally {
             setAdding(false);
         }
@@ -82,7 +84,7 @@ export function BetaTestersModal({ isOpen, onClose }: BetaTestersModalProps) {
             setTesters(prev => prev.filter(t => t.id !== id));
         } catch (error: any) {
             console.error('Error deleting tester:', error);
-            alert('Erro ao remover: ' + error.message);
+            showToast('Erro ao remover: ' + error.message, 'error');
         }
     };
 

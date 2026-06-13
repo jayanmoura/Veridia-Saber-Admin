@@ -186,8 +186,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         try {
             const url = await uploadFile('arquivos-gerais', filePath, file);
             return url;
-        } catch (uploadError) {
-            console.error('Upload error:', uploadError);
+        } catch {
             return null;
         }
     };
@@ -357,8 +356,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                         if (storageInfo) {
                             await deleteFile(storageInfo.bucket, storageInfo.path);
                         }
-                    } catch (err) {
-                        console.error('Error deleting old image:', err);
+                    } catch {
                         // Continue even if delete fails, as we have the new image
                     }
                 }
@@ -395,7 +393,6 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 // If verification fails, it might be RLS or trigger issue.
                 // We log it but maybe we shouldn't crash the UI if it's intermittent?
                 // But for this user, crashing is better than lying.
-                console.error('Update verification failed:', { expected: imageUrl, actual: verifyData?.imagem_capa });
                 throw new Error('A atualização não foi salva no banco de dados (bloqueio de permissão ou erro interno).');
             }
 

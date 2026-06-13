@@ -3,19 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 // ============ TYPES ============
-export interface Species {
-    id: string;
-    codigo_vs?: string | null;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular: string | null;
-    familia_id: string;
-    familia?: { familia_nome: string };
-    imagens?: { url_imagem: string; url_thumbnail?: string | null; local_id?: string | number | null }[];
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-}
+import type { Species } from '../types/domain';
 
 export interface FamilyOption {
     id: string;

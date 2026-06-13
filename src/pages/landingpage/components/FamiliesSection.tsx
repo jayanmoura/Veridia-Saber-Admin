@@ -173,7 +173,7 @@ export function FamiliesSection() {
             Array.from(especieMap.values()).map(e => e.familia_id).filter(Boolean)
           )] as string[];
 
-          let familiaMap = new Map<string, string>(); // id -> familia_nome
+          const familiaMap = new Map<string, string>(); // id -> familia_nome
 
           if (familiaIds.length > 0) {
             const { data: familiaDetalheData, error: familiaDetalheError } = await supabase

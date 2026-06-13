@@ -1,20 +1,7 @@
 import { Loader2, Leaf } from 'lucide-react';
 
 // ============ TYPES ============
-export interface Species {
-    id?: string;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular?: string | null;
-    familia_id: string;
-    descricao_especie?: string | null;
-    cuidados_luz?: string | null;
-    cuidados_agua?: string | null;
-    cuidados_temperatura?: string | null;
-    cuidados_substrato?: string | null;
-    cuidados_nutrientes?: string | null;
-    local_id?: string | null;
-}
+import type { Species } from '../../../types/domain';
 
 export interface FamilyOption {
     id: string;

@@ -1,25 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-
-// ============ TYPES ============
-export interface Species {
-    id?: string;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular?: string | null;
-    familia_id: string;
-    descricao_especie?: string | null;
-    cuidados_luz?: string | null;
-    cuidados_agua?: string | null;
-    cuidados_temperatura?: string | null;
-    cuidados_substrato?: string | null;
-    cuidados_nutrientes?: string | null;
-    local_id?: string | null;
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string } | { full_name: string }[] | null;
-}
+import { useToast } from './useToast';
+import type { Species } from '../types/domain';
 
 export interface FamilyOption {
     id: string;
@@ -147,6 +130,7 @@ const INITIAL_FORM_DATA: Species = {
  */
 export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): UseSpeciesFormReturn {
     const { profile } = useAuth();
+    const { showToast } = useToast();
 
     // Form state
     const [formData, setFormData] = useState<Species>(INITIAL_FORM_DATA);
@@ -321,7 +305,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
     // Handle geolocation
     const handleGetLocation = useCallback(() => {
         if (!navigator.geolocation) {
-            alert('Geolocalização não suportada pelo navegador.');
+            showToast('Geolocalização não suportada pelo navegador.', 'warning');
             return;
         }
         setGeoLoading(true);
@@ -335,12 +319,12 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
                 setGeoLoading(false);
             },
             (error) => {
-                alert('Erro ao obter localização: ' + error.message);
+                showToast('Erro ao obter localização: ' + error.message, 'error');
                 setGeoLoading(false);
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+                        { enableHighAccuracy: true, timeout: 10000 }
         );
-    }, []);
+    }, [showToast]);
 
     // Reset form state
     const resetForm = useCallback(() => {

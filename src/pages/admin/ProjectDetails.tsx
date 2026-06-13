@@ -26,6 +26,7 @@ import { downloadCSV } from '../../utils/csvGenerator';
 
 // Extracted components
 import { useProjectDetails } from '../../hooks';
+import { useToast } from '../../hooks/useToast';
 import { SpeciesByFamilyModal } from '../../components/Modals/SpeciesByFamilyModal';
 import {
     ProjectHeader,
@@ -41,6 +42,7 @@ import { MapPin } from 'lucide-react'; // Ensure MapPin is imported if not alrea
 export default function ProjectDetailsPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     // Use extracted hook for data management
     const {
@@ -107,13 +109,13 @@ export default function ProjectDetailsPage() {
         try {
             const { error } = await supabase.from('locais').delete().eq('id', id);
             if (error) {
-                alert('Erro ao excluir projeto: ' + error.message);
+                showToast('Erro ao excluir projeto: ' + error.message, 'error');
             } else {
                 setShowDeleteModal(false);
                 setShowSuccessModal(true);
             }
         } catch {
-            alert('Erro inesperado ao excluir projeto.');
+            showToast('Erro inesperado ao excluir projeto.', 'error');
         } finally {
             setDeleteLoading(false);
         }
@@ -217,7 +219,7 @@ export default function ProjectDetailsPage() {
 
             doc.save(`Relatorio_${project.nome.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
         } catch {
-            alert('Erro ao gerar relatório PDF.');
+            showToast('Erro ao gerar relatório PDF.', 'error');
         }
     };
 
@@ -233,7 +235,7 @@ export default function ProjectDetailsPage() {
 
             if (error) throw error;
             if (!speciesData || speciesData.length === 0) {
-                alert('Nenhuma espécie encontrada para gerar etiquetas.');
+                showToast('Nenhuma espécie encontrada para gerar etiquetas.', 'warning');
                 return;
             }
 
@@ -260,7 +262,7 @@ export default function ProjectDetailsPage() {
 
             generateHerbariumLabels(labels, `Etiquetas_${project.nome.replace(/\s+/g, '_')}.pdf`);
         } catch {
-            alert('Erro ao gerar etiquetas.');
+            showToast('Erro ao gerar etiquetas.', 'error');
         } finally {
             setGenLabelsLoading(false);
         }
@@ -279,7 +281,7 @@ export default function ProjectDetailsPage() {
 
             if (error) throw error;
             if (!speciesData || speciesData.length === 0) {
-                alert('Nenhum dado encontrado para exportação.');
+                showToast('Nenhum dado encontrado para exportação.', 'warning');
                 return;
             }
 
@@ -298,7 +300,7 @@ export default function ProjectDetailsPage() {
             });
             downloadCSV(csvData, `Dados_Projeto_${project.nome.replace(/\s+/g, '_')}.csv`);
         } catch {
-            alert('Erro ao exportar CSV.');
+            showToast('Erro ao exportar CSV.', 'error');
         } finally {
             setExportCSVLoading(false);
         }

@@ -5,6 +5,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, Heading2, Heading3, List, ImageIcon } from 'lucide-react';
 import { uploadFile } from '../utils/storage';
+import { useToast } from '../hooks/useToast';
 
 interface RichTextEditorProps {
     content: string;
@@ -14,6 +15,7 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ content, onChange, placeholder, orgao }: RichTextEditorProps) {
+    const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const editor = useEditor({
@@ -54,7 +56,7 @@ export default function RichTextEditor({ content, onChange, placeholder, orgao }
             }
         } catch (err: any) {
             console.error('Erro no upload de imagem:', err);
-            alert('Erro ao fazer upload da imagem: ' + err.message);
+            showToast('Erro ao fazer upload da imagem: ' + err.message, 'error');
         } finally {
             if (fileInputRef.current) {
                 fileInputRef.current.value = ''; // resets input

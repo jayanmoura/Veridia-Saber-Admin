@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { useToast } from '../../hooks/useToast';
 import {
     X,
     Folder,
@@ -45,6 +46,7 @@ interface PhotoGalleryModalProps {
 }
 
 export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModalProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [images, setImages] = useState<ImageData[]>([]);
     const [groupedImages, setGroupedImages] = useState<GroupedImages>({});
@@ -246,7 +248,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             });
 
             if (imagesToDownload.length === 0) {
-                alert('Nenhuma imagem selecionada para download.');
+                showToast('Nenhuma imagem selecionada para download.', 'warning');
                 setDownloading(false);
                 return;
             }
@@ -281,7 +283,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             }
 
             if (processedCount === 0) {
-                alert('Nenhuma imagem pôde ser baixada. Verifique sua conexão.');
+                showToast('Nenhuma imagem pôde ser baixada. Verifique sua conexão.', 'error');
                 setDownloading(false);
                 return;
             }
@@ -298,7 +300,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
             setSelectedImages(new Set());
         } catch (err) {
             console.error('Download error:', err);
-            alert('Erro ao gerar arquivo ZIP. Tente novamente.');
+            showToast('Erro ao gerar arquivo ZIP. Tente novamente.', 'error');
         } finally {
             setDownloading(false);
             setDownloadProgress('');

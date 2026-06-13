@@ -25,7 +25,7 @@ function resolveReturn(
 function createQueryBuilder(table: string) {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
 
-  const chainable = (..._args: unknown[]) => builder;
+  const chainable = () => builder;
 
   // Métodos de encadeamento — todos retornam o próprio builder
   const chainMethods = [
@@ -56,7 +56,7 @@ function createQueryBuilder(table: string) {
   const terminalMethods = ['single', 'insert', 'update', 'delete', 'upsert'] as const;
 
   terminalMethods.forEach((method) => {
-    builder[method] = vi.fn((..._args: unknown[]) =>
+    builder[method] = vi.fn(() =>
       Promise.resolve(resolveReturn(table, method)),
     );
   });
@@ -77,7 +77,7 @@ export const mockSupabase = {
     getSession: vi.fn(() =>
       Promise.resolve({ data: { session: null }, error: null }),
     ),
-    onAuthStateChange: vi.fn((_event: unknown, _callback: unknown) => ({
+    onAuthStateChange: vi.fn(() => ({
       data: { subscription: { unsubscribe: vi.fn() } },
     })),
     signOut: vi.fn(() => Promise.resolve({ error: null })),
@@ -98,7 +98,7 @@ export const mockSupabase = {
   from: vi.fn((table: string) => createQueryBuilder(table)),
 
   storage: {
-    from: vi.fn((_bucket: string) => ({
+    from: vi.fn(() => ({
       upload: vi.fn(() => Promise.resolve({ data: null, error: null })),
       remove: vi.fn(() => Promise.resolve({ data: null, error: null })),
       getPublicUrl: vi.fn((_path: string) => ({
@@ -109,7 +109,7 @@ export const mockSupabase = {
   },
 
   functions: {
-    invoke: vi.fn((_fn: string, _opts?: unknown) =>
+    invoke: vi.fn(() =>
       Promise.resolve({ data: null, error: null }),
     ),
   },

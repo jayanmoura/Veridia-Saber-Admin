@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, Filter, X, Map as MapIcon, Layers } from 'lucide-react';
+import { useToast } from '../../hooks/useToast';
 
 interface LocationData {
     id: string;
@@ -27,6 +28,7 @@ const MapController = () => {
 };
 
 export function GlobalHeatmap() {
+    const { showToast } = useToast();
     const { session } = useAuth();
     const currentUserId = session?.user?.id;
 
@@ -124,7 +126,7 @@ export function GlobalHeatmap() {
         } catch (error: any) {
             console.error('Error fetching map data:', error);
             // Mostrar erro visualmente para debug
-            alert(`Erro ao carregar mapa: ${error.message || 'Erro desconhecido'}.`);
+            showToast(`Erro ao carregar mapa: ${error.message || 'Erro desconhecido'}.`, 'error');
         } finally {
             setLoading(false);
         }

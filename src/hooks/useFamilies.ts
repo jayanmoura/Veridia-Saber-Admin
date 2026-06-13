@@ -2,19 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 // ============ TYPES ============
-export interface Family {
-    id: string;
-    familia_nome: string;
-    autoria_taxonomica?: string | null;
-    imagem_referencia: string | null;
-    imagem_thumbnail: string | null;
-    imagem_micro: string | null;
-    especie?: { count: number }[];
-    quantidade_especies: number;
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-}
+import type { Family } from '../types/domain';
 
 export interface PendingFamily {
     name: string;
@@ -132,7 +120,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
                 .select('id', { count: 'exact', head: true })
                 .is('imagem_referencia', null);
 
-            let richestQuery = supabase
+            const richestQuery = supabase
                 .from('especie')
                 .select('familia:familia_id(familia_nome)')
                 .not('familia_id', 'is', null);

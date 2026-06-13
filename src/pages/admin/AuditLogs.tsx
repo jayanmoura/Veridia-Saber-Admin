@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '../../hooks/useToast';
 
 interface AuditLog {
     id: number;
@@ -23,6 +24,7 @@ interface AuditLog {
 }
 
 export default function AuditLogs() {
+    const { showToast } = useToast();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [restoring, setRestoring] = useState<number | null>(null);
@@ -56,7 +58,7 @@ export default function AuditLogs() {
 
     const handleRestore = async (log: AuditLog) => {
         if (!log.old_data) {
-            alert('Não há dados antigos disponíveis para restauração.');
+            showToast('Não há dados antigos disponíveis para restauração.', 'warning');
             return;
         }
 
@@ -71,17 +73,17 @@ export default function AuditLogs() {
 
             if (error) throw error;
 
-            alert('Registro restaurado com sucesso!');
+            showToast('Registro restaurado com sucesso!', 'success');
             fetchLogs(); // Refresh logs to maybe show the restoration action
         } catch (err: any) {
             console.error('Restore Error:', err);
             // Handle common FK errors
             if (err.code === '23503') {
-                alert('Erro: Impossível restaurar. O registro depende de outro dado que não existe mais (Chave Estrangeira).');
+                showToast('Erro: Impossível restaurar. O registro depende de outro dado que não existe mais (Chave Estrangeira).', 'error');
             } else if (err.code === '23505') {
-                alert('Erro: Registro duplicado. Este ID já existe na tabela.');
+                showToast('Erro: Registro duplicado. Este ID já existe na tabela.', 'error');
             } else {
-                alert(`Erro ao restaurar: ${err.message}`);
+                showToast(`Erro ao restaurar: ${err.message}`, 'error');
             }
         } finally {
             setRestoring(null);

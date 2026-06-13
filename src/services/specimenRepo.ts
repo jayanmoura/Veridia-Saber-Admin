@@ -1,6 +1,12 @@
 import { supabase } from '../lib/supabase';
-import type { Specimen, SpecimenFilters } from './types';
+import type { SpecimenFilters } from './types';
+import type { Specimen } from '../types/domain';
 import { deleteFile } from '../utils/storage';
+
+export function unwrapJoin<T>(value: T | T[] | null): T | null {
+    if (Array.isArray(value)) return value[0] || null;
+    return value || null;
+}
 
 export const specimenRepo = {
     /**
@@ -90,8 +96,6 @@ export const specimenRepo = {
             .select('url_imagem')
             .eq('especime_id', id);
 
-        console.log('[DeleteSpecimen] Found images in DB:', images);
-
         if (images && images.length > 0) {
             try {
                 // 2. Extract paths from URLs
@@ -110,18 +114,12 @@ export const specimenRepo = {
                     })
                     .filter((path): path is string => path !== null);
 
-                console.log('[DeleteSpecimen] Paths to delete:', pathsToDelete);
-
                 if (pathsToDelete.length > 0) {
                     // 3. Delete files from storage
                     const deletePromises = pathsToDelete.map(path => deleteFile('arquivos-gerais', path));
-                    const results = await Promise.allSettled(deletePromises);
-                    console.log('[DeleteSpecimen] Storage remove result:', results);
-                } else {
-                    console.warn('[DeleteSpecimen] No paths extracted from URLs. Regex might be failing.');
+                    await Promise.allSettled(deletePromises);
                 }
-            } catch (err) {
-                console.error('[DeleteSpecimen] Error cleaning up storage:', err);
+            } catch {
                 // Continue to delete record even if storage cleanup fails
             }
 

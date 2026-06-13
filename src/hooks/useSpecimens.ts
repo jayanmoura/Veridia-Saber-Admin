@@ -2,32 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 // Interface matching the 'especime' VIEW
-export interface Specimen {
-    id: number;
-    tombo_codigo?: string | null;
-    especie_id: string;
-    local_id: number;
-    institution_id?: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    detalhes_localizacao: string | null;
-    descricao_ocorrencia: string | null;
-    nome_popular_local: string | null;
-    determinador: string | null;
-    data_determinacao: string | null;
-    coletor: string | null;
-    numero_coletor: string | null;
-    morfologia: string | null;
-    habitat_ecologia: string | null;
-    created_at: string;
-    created_by: string | null;
-    // Joined fields (if view doesn't have them formatted or if we need extra)
-    // The view should have these, but let's define what we expect from joined queries if needed
-    nome_cientifico?: string; // from join
-    familia_nome?: string;   // from join
-    url_imagem?: string;     // from join
-    locais?: { institution_id?: string | null; nome?: string }; // joined local data
-}
+import type { Specimen } from '../types/domain';
 
 export interface SpecimenFormData {
     local_id?: string; // Optional for global create
@@ -176,7 +151,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
         try {
             const payload = {
                 especie_id: formData.especie_id,
-                local_id: projectId,
+                local_id: Number(projectId),
                 institution_id: institutionId,
                 created_by: profileId,
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
@@ -200,7 +175,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                     .update(payload)
                     .eq('id', editingSpecimen.id);
                 if (error) throw error;
-                savedId = editingSpecimen.id;
+                savedId = Number(editingSpecimen.id);
             } else {
                 // INSERT into table especie_local
                 const { data, error } = await supabase

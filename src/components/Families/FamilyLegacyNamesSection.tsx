@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useFamilyLegacyNames, type FamilyLegacyName } from '../../hooks/useFamilyLegacyNames';
+import { useToast } from '../../hooks/useToast';
 import { Loader2, Plus, Trash2, Edit2, Save } from 'lucide-react';
 
 interface FamilyLegacyNamesSectionProps {
@@ -7,6 +8,7 @@ interface FamilyLegacyNamesSectionProps {
 }
 
 export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSectionProps) {
+    const { showToast } = useToast();
     const {
         legacyNames,
         loading,
@@ -55,7 +57,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
         const normalizedName = formData.nome_legado.trim();
 
         if (!normalizedName) {
-            alert("O nome legado é obrigatório.");
+            showToast("O nome legado é obrigatório.", 'warning');
             return;
         }
 
@@ -66,7 +68,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
         );
 
         if (isDuplicate) {
-            alert("Esse nome já está cadastrado para esta família.");
+            showToast("Esse nome já está cadastrado para esta família.", 'error');
             return;
         }
 
@@ -89,7 +91,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
             }
             resetForm();
         } catch (err: any) {
-            alert(err.message || 'Erro ao salvar nome legado.');
+            showToast(err.message || 'Erro ao salvar nome legado.', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -102,7 +104,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
         try {
             await removeLegacyName(id);
         } catch (err: any) {
-            alert(err.message || 'Erro ao remover nome legado.');
+            showToast(err.message || 'Erro ao remover nome legado.', 'error');
         } finally {
             setActionLoading(false);
         }

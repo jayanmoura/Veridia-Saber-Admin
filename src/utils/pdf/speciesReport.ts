@@ -77,7 +77,7 @@ export function generateSpeciesReport(
         try {
             const logoSize = 35;
             doc.addImage(logo, 'PNG', (pageWidth - logoSize) / 2, 40, logoSize, logoSize);
-        } catch (e) {
+        } catch {
             // Ignore
         }
     }

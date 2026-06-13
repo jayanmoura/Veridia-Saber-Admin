@@ -13,6 +13,7 @@ import { ConfirmDeleteModal } from '../../components/Modals/ConfirmDeleteModal';
 import { SuccessModal } from '../../components/Modals/SuccessModal';
 import { SpeciesTable } from '../../components/Tables';
 import { useSpecies, useSpeciesActions } from '../../hooks';
+import { useToast } from '../../hooks/useToast';
 import { deleteFile, parseStorageUrl } from '../../utils/storage';
 import { hasMinLevel } from '../../types/auth';
 import {
@@ -29,24 +30,13 @@ import {
 
 
 // Types for component
-interface Species {
-    id: string;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular: string | null;
-    familia_id: string;
-    familia?: { familia_nome: string };
-    imagens?: { url_imagem: string; local_id?: string | number | null }[];
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-    locais?: { nome: string; tipo?: string };
-}
+import type { Species } from '../../types/domain';
 
 const ITEMS_PER_PAGE = 20;
 
 export default function SpeciesPage() {
     const { profile } = useAuth();
+    const { showToast } = useToast();
 
     // Filters state
     const [search, setSearch] = useState('');
@@ -206,7 +196,7 @@ export default function SpeciesPage() {
                 setBlockedSpeciesName(speciesName);
                 setShowBlockModal(true);
             } else {
-                alert(error.message || 'Erro ao excluir espécie.');
+                showToast(error.message || 'Erro ao excluir espécie.', 'error');
             }
         } finally {
             setDeleteLoading(false);
@@ -314,7 +304,7 @@ export default function SpeciesPage() {
 
             {/* Table Component */}
             <SpeciesTable
-                species={species}
+                species={species as any}
                 loading={loading}
                 totalCount={totalCount}
                 page={page}

@@ -37,6 +37,13 @@ import { supabase } from '../../lib/supabase';
 // Apontando para o SpeciesModalRefactored — versão refatorada em uso ativo
 import { SpeciesModalRefactored } from '../../components/Modals/SpeciesModal/SpeciesModalRefactored';
 import { useSpeciesImages } from '../../hooks/useSpeciesImages';
+import { ToastProvider } from '../../contexts/ToastContext';
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <ToastProvider>
+    {children}
+  </ToastProvider>
+);
 
 const defaultProps = {
   isOpen: true,
@@ -76,7 +83,7 @@ describe('SpeciesModal Integration Tests', () => {
   describe('useSpeciesImages — uploadImages — estratégia de bucket', () => {
 
     it('isCreatingNewGlobalSpecies: true -> uploada para "imagens-plantas"', async () => {
-      const { result } = renderHook(() => useSpeciesImages());
+      const { result } = renderHook(() => useSpeciesImages(), { wrapper });
 
       const dummyFile = new File(['dummy content'], 'foto1.jpg', { type: 'image/jpeg' });
       act(() => {
@@ -99,7 +106,7 @@ describe('SpeciesModal Integration Tests', () => {
     });
 
     it('isCreatingNewGlobalSpecies: false com projectId -> uploada para "arquivos-gerais"', async () => {
-      const { result } = renderHook(() => useSpeciesImages());
+      const { result } = renderHook(() => useSpeciesImages(), { wrapper });
 
       const dummyFile = new File(['dummy content'], 'foto2.jpg', { type: 'image/jpeg' });
       act(() => {
@@ -128,7 +135,7 @@ describe('SpeciesModal Integration Tests', () => {
   describe('useSpeciesImages — handleDeleteExistingImage — Exclusão db/storage sincronizada', () => {
 
     it('Se remover do storage com sucesso, exclui do DB', async () => {
-      const { result } = renderHook(() => useSpeciesImages());
+      const { result } = renderHook(() => useSpeciesImages(), { wrapper });
 
       (storageUtils.deleteFile as Mock).mockResolvedValue(undefined);
       (storageUtils.parseStorageUrl as Mock).mockReturnValue({
@@ -163,7 +170,7 @@ describe('SpeciesModal Integration Tests', () => {
       // Perfil Gestor (Usuário de projeto), sem local
       currentProfile = { id: 'gestor-no-local', role: 'Gestor de Acervo', local_id: null };
 
-      render(<SpeciesModalRefactored {...defaultProps} />);
+      render(<SpeciesModalRefactored {...defaultProps} />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Nova Espécie')).toBeInTheDocument();
@@ -181,14 +188,14 @@ describe('SpeciesModal Integration Tests', () => {
   // --------------------------------------------------------------------------
   describe('SpeciesModalRefactored — renderização do componente', () => {
     it('renderiza o modal quando isOpen: true', async () => {
-      render(<SpeciesModalRefactored {...defaultProps} />);
+      render(<SpeciesModalRefactored {...defaultProps} />, { wrapper });
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeTruthy();
       });
     });
 
     it('renderiza as abas "Dados da Espécie" e "Etiqueta de Herbário"', async () => {
-      render(<SpeciesModalRefactored {...defaultProps} />);
+      render(<SpeciesModalRefactored {...defaultProps} />, { wrapper });
       await waitFor(() => {
         expect(screen.getByText('Dados da Espécie')).toBeInTheDocument();
         expect(screen.getByText('Etiqueta de Herbário')).toBeInTheDocument();

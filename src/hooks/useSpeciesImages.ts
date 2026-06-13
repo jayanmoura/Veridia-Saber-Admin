@@ -2,6 +2,60 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage, compressForListing } from '../utils/imageCompressor';
 import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
+import { useToast } from './useToast';
+
+// ============ TYPES ============
+export interface ExistingImage {
+    id: string;
+    url_imagem: string;
+    url_thumbnail: string | null;
+    url_micro: string | null;
+    creditos: string | null;
+}
+
+export interface UseSpeciesImagesOptions {
+    speciesId?: string;
+    localId?: string | null;
+}
+
+export interface UseSpeciesImagesReturn {
+    // State
+    imageFiles: File[];
+    imagePreviews: string[];
+    existingImages: ExistingImage[];
+    editedCredits: Record<string, string>;
+    newImageCredits: string[];
+    dragActive: boolean;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
+
+    // Actions
+    handleDrag: (e: React.DragEvent) => void;
+    handleDrop: (e: React.DragEvent) => void;
+    handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleFiles: (files: File[]) => void;
+    removeNewImage: (index: number) => void;
+    handleDeleteExistingImage: (imageId: string, imageUrl: string) => Promise<void>;
+    uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
+    loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
+    setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    setNewImageCredits: React.Dispatch<React.SetStateAction<string[]>>;
+    reset: () => void;
+}
+
+export interface UploadOptions {
+    isCreatingNewGlobalSpecies: boolean;
+    projectId: string | null;
+    speciesName: string;
+    onStageChange?: (stage: 'compressing' | 'uploading') => void;
+}
+
+/**
+ * @description Hook para manipulação de arquivos de imagens de espécies com drag & drop e suporte multi-bucket (global e projetos).
+ *
+ * @returns {UseSpeciesImagesReturn} Estado e controle do filepicker:
+ *   - `imageFiles`, `imagePreviews` — UI lists client-side
+ *   - `existingImages` — array do Supabase db mapping bucket paths
+import { useToast } from './useToast';
 
 // ============ TYPES ============
 export interface ExistingImage {
@@ -63,6 +117,7 @@ export interface UploadOptions {
  * const { imagePreviews, handleFileInput, uploadImages } = useSpeciesImages()
  */
 export function useSpeciesImages(): UseSpeciesImagesReturn {
+    const { showToast } = useToast();
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
@@ -71,7 +126,10 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    // Reset all image state
+    // ==========================================
+    // 1. Funções Base (Sem dependência de outras funções locais)
+    // ==========================================
+
     const reset = useCallback(() => {
         // Revoke object URLs to prevent memory leaks
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -82,7 +140,6 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         setEditedCredits({});
     }, [imagePreviews]);
 
-    // Load existing images for a species
     const loadExistingImages = useCallback(async (speciesId: string, localId: string | null) => {
         // Clear stale images immediately so previous species' images don't flash
         setExistingImages([]);
@@ -116,55 +173,6 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         }
     }, []);
 
-    // Drag handlers
-    const handleDrag = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === 'dragenter' || e.type === 'dragover') {
-            setDragActive(true);
-        } else if (e.type === 'dragleave') {
-            setDragActive(false);
-        }
-    }, []);
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFiles(Array.from(e.dataTransfer.files));
-        }
-    }, []);
-
-    const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleFiles(Array.from(e.target.files));
-        }
-    }, []);
-
-    const handleFiles = useCallback((files: File[]) => {
-        const currentTotal = existingImages.length + imageFiles.length;
-        const availableSlots = 3 - currentTotal;
-
-        if (availableSlots <= 0) {
-            alert('Atenção: Limite máximo de 3 fotos de capa atingido para esta espécie.');
-            return;
-        }
-
-        const imageFilesOnly = files.filter(f => f.type.startsWith('image/')).slice(0, availableSlots);
-
-        if (files.length > availableSlots) {
-            alert(`Apenas as primeiras ${availableSlots} imagens foram adicionadas (limite de 3).`);
-        }
-
-        const newPreviews = imageFilesOnly.map(file => URL.createObjectURL(file));
-        const defaultCredits = imageFilesOnly.map(() => 'Fotografado por ');
-
-        setImageFiles(prev => [...prev, ...imageFilesOnly]);
-        setImagePreviews(prev => [...prev, ...newPreviews]);
-        setNewImageCredits(prev => [...prev, ...defaultCredits]);
-    }, [existingImages.length, imageFiles.length]);
-
     const removeNewImage = useCallback((index: number) => {
         setImageFiles(prev => prev.filter((_, i) => i !== index));
         setImagePreviews(prev => {
@@ -174,9 +182,6 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         setNewImageCredits(prev => prev.filter((_, i) => i !== index));
     }, []);
 
-
-
-    // Delete existing image
     const handleDeleteExistingImage = useCallback(async (imageId: string, imageUrl: string) => {
         try {
             const storageInfo = parseStorageUrl(imageUrl);
@@ -189,7 +194,7 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
                 .delete()
                 .eq('id', imageId);
 
-            if (dbError) throw dbError;
+            if (dbError) throw new Error(dbError.message);
 
             setExistingImages(prev => prev.filter(img => img.id !== imageId));
             setEditedCredits(prev => {
@@ -197,13 +202,64 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
                 delete updated[imageId];
                 return updated;
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Erro ao excluir imagem:', error);
-            alert('Erro ao excluir imagem: ' + (error.message || 'Erro desconhecido'));
+            showToast('Erro ao excluir imagem: ' + (error instanceof Error ? error.message : 'Erro desconhecido'), 'error');
+        }
+    }, [showToast]);
+
+    const handleDrag = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
         }
     }, []);
 
-    // Upload images with hybrid bucket strategy
+    const handleFiles = useCallback((files: File[]) => {
+        const currentTotal = existingImages.length + imageFiles.length;
+        const availableSlots = 3 - currentTotal;
+
+        if (availableSlots <= 0) {
+            showToast('Atenção: Limite máximo de 3 fotos de capa atingido para esta espécie.', 'warning');
+            return;
+        }
+
+        const imageFilesOnly = files.filter(f => f.type.startsWith('image/')).slice(0, availableSlots);
+
+        if (files.length > availableSlots) {
+            showToast(`Apenas as primeiras ${availableSlots} imagens foram adicionadas (limite de 3).`, 'warning');
+        }
+
+        const newPreviews = imageFilesOnly.map(file => URL.createObjectURL(file));
+        const defaultCredits = imageFilesOnly.map(() => 'Fotografado por ');
+
+        setImageFiles(prev => [...prev, ...imageFilesOnly]);
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+        setNewImageCredits(prev => [...prev, ...defaultCredits]);
+    }, [existingImages.length, imageFiles.length, showToast]);
+
+    // ==========================================
+    // 2. Funções Derivadas (Dependem das Base)
+    // ==========================================
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFiles(Array.from(e.dataTransfer.files));
+        }
+    }, [handleFiles]);
+
+    const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
+        }
+    }, [handleFiles]);
+
     const uploadImages = useCallback(async (
         speciesId: string,
         options: UploadOptions
@@ -295,6 +351,10 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
 
         return results;
     }, [imageFiles, newImageCredits]);
+
+    // ==========================================
+    // 3. Return Statement
+    // ==========================================
 
     return {
         imageFiles,

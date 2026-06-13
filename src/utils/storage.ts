@@ -5,7 +5,7 @@
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL;
 const UPLOAD_API_URL = import.meta.env.VITE_UPLOAD_API_URL;
-const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET;
+const UPLOAD_TOKEN = import.meta.env.VITE_UPLOAD_TOKEN;
 
 /**
  * Constrói a URL pública de leitura para um arquivo no storage
@@ -27,7 +27,7 @@ export function parseStorageUrl(url: string): { bucket: string; path: string } |
 
         // Verifica URLs do Supabase (ex: https://xxx.supabase.co/storage/v1/object/public/bucket/path)
         if (urlObj.hostname.endsWith('supabase.co')) {
-            const match = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+            const match = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
             if (match) {
                 return { bucket: match[1], path: match[2] };
             }
@@ -74,7 +74,7 @@ export async function uploadFile(bucket: string, path: string, file: File | Blob
     const response = await fetch(`${UPLOAD_API_URL}/upload`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${UPLOAD_SECRET}`
+            'Authorization': `Bearer ${UPLOAD_TOKEN}`
             // Nota: não definir Content-Type ao enviar FormData com fetch, o browser define automaticamente o boundary
         },
         body: formData
@@ -93,17 +93,17 @@ export async function uploadFile(bucket: string, path: string, file: File | Blob
  * Deleta um arquivo do storage self-hosted.
  */
 export async function deleteFile(bucket: string, path: string): Promise<void> {
-    const response = await fetch(`${UPLOAD_API_URL}/upload`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${UPLOAD_SECRET}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ bucket, path })
+    const response = await fetch(`${UPLOAD_API_URL}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${UPLOAD_TOKEN}`,
+      },
+      body: JSON.stringify({ bucket, path }),
     });
 
-    if (!response.ok && response.status !== 404) {
-        const errObj = await response.json().catch(() => ({}));
-        throw new Error(errObj.error || `Erro HTTP na exclusão: ${response.status}`);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error ?? `Delete failed: ${response.status}`);
     }
 }
