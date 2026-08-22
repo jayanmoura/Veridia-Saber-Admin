@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Leaf, Info, ShieldAlert, X } from 'lucide-react';
@@ -8,15 +8,13 @@ import { Footer } from './components/Footer';
 
 // Leaflet
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+import { SpecimenPopupCard } from './components/SpecimenPopupCard';
+import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 
 interface SpeciesImage {
   id?: string;
@@ -214,6 +212,17 @@ export default function DetalhesEspecie() {
   useEffect(() => {
     fetchDetails();
   }, [fetchDetails]);
+
+  // Mapa especime_id → imagem específica daquele espécime (para os balões do mapa)
+  const imagemPorEspecime = useMemo(() => {
+    const map: Record<number, string | null> = {};
+    for (const img of galeriaCompleta) {
+      if (img.especime_id && !map[img.especime_id]) {
+        map[img.especime_id] = img.url_micro || img.url_thumbnail || null;
+      }
+    }
+    return map;
+  }, [galeriaCompleta]);
 
   // Auto-avanço de 5 segundos no carrossel de topo
   useEffect(() => {
@@ -469,45 +478,26 @@ export default function DetalhesEspecie() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {especimes.map(ponto => (
-                  <Marker
-                    key={ponto.id}
-                    position={[ponto.latitude, ponto.longitude]}
-                  >
-                    <Popup>
-                      <div style={{ minWidth: 180 }} className="text-left font-sans">
-                        <strong className="italic text-forest-900">
-                          {species?.nome_cientifico}
-                        </strong>
-                        {ponto.local_id && localNomeMap[ponto.local_id] && (
-                          <div className="text-forest-600 text-xs mt-1">
-                            📍 {localNomeMap[ponto.local_id]}
-                          </div>
-                        )}
-                        {ponto.tombo_codigo && (
-                          <div className="text-xs mt-1">
-                            Tombo: {ponto.tombo_codigo}
-                          </div>
-                        )}
-                        {ponto.descricao_ocorrencia && (
-                          <div className="text-xs mt-1">
-                            {ponto.descricao_ocorrencia}
-                          </div>
-                        )}
-                        {ponto.detalhes_localizacao && (
-                          <div className="text-[11px] text-neutral-500 mt-0.5">
-                            {ponto.detalhes_localizacao}
-                          </div>
-                        )}
-                        {ponto.coletor && (
-                          <div className="text-[11px] text-neutral-500">
-                            Coletor: {ponto.coletor}
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
+                <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                  {especimes.map(ponto => (
+                    <Marker
+                      key={ponto.id}
+                      position={[ponto.latitude, ponto.longitude]}
+                      icon={createDotIcon()}
+                    >
+                      <Popup maxWidth={260} autoPan={false}>
+                        <SpecimenPopupCard
+                          imagemUrl={imagemPorEspecime[ponto.id] || imagensCarrossel[0]?.src || null}
+                          nomeCientifico={species?.nome_cientifico}
+                          nomePopular={species?.nome_popular}
+                          familiaNome={species?.familia?.familia_nome}
+                          localNome={ponto.local_id ? localNomeMap[ponto.local_id] : null}
+                          tombo={ponto.tombo_codigo}
+                        />
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MarkerClusterGroup>
                 <MapBoundsUpdater pontos={especimes} />
               </MapContainer>
             </div>

@@ -1,8 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { supabase } from '../../../lib/supabase';
+import { SpecimenPopupCard } from './SpecimenPopupCard';
+import { createDotIcon, createClusterIcon } from './mapMarkerIcons';
 
 
 
@@ -19,6 +24,8 @@ interface SpecimenPin {
   especie_id: string;
   familia_nome: string;
   familia_id: string;
+  imagem_url: string | null;
+  local_nome: string | null;
 }
 
 interface LocalPin {
@@ -47,6 +54,18 @@ interface EspecieRow {
   familia_id: string | null;
 }
 
+interface ImagemRow {
+  especie_id: string | null;
+  url_micro: string | null;
+  url_thumbnail: string | null;
+}
+
+interface ImagemEspecimeRow {
+  especime_id: string | null;
+  url_micro: string | null;
+  url_thumbnail: string | null;
+}
+
 interface EspecieLocalRow {
   id: string;
   latitude: number | null;
@@ -54,6 +73,7 @@ interface EspecieLocalRow {
   tombo_codigo: string | null;
   tombo_num: string | null;
   especie_id: string | null;
+  local_id: string | null;
 }
 
 interface LocalRow {
@@ -85,7 +105,7 @@ function MapController({ activeTab, specimensPins, projetosPins, mapRef }: MapCo
 
     if (activePins.length > 0) {
       const bounds = L.latLngBounds(activePins.map(p => [p.latitude, p.longitude]));
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
     } else {
       map.setView([-22.74, -43.70], 12);
     }
@@ -129,6 +149,7 @@ export function FamiliesSection() {
         if (locError) throw locError;
 
         const locRows = (locData as LocalRow[]) || [];
+        const localNomeMap = new Map<string, string>(locRows.map(l => [l.id, l.nome]));
 
         const projPins: LocalPin[] = locRows
           .filter(l => l.latitude !== null && l.longitude !== null)
@@ -145,7 +166,7 @@ export function FamiliesSection() {
         // ── 4. Buscar espécimes georreferenciados (query plana — padrão admin) ──
         const { data: elData, error: elError } = await supabase
           .from('especie_local')
-          .select('id, latitude, longitude, tombo_codigo, tombo_num, especie_id')
+          .select('id, latitude, longitude, tombo_codigo, tombo_num, especie_id, local_id')
           .not('latitude', 'is', null)
           .not('longitude', 'is', null)
           .limit(500);
@@ -186,6 +207,39 @@ export function FamiliesSection() {
             ((familiaDetalheData as FamiliaRow[]) || []).forEach(f => familiaMap.set(f.id, f.familia_nome));
           }
 
+          // ── 4b2. Buscar imagem do espécime específico (prioridade) e da espécie (reserva) ──
+          const especimeIds = elRows.map(r => r.id);
+
+          const imagemPorEspecieId = new Map<string, string | null>();
+          const imagemPorEspecimeId = new Map<string, string | null>();
+
+          const [
+            { data: imagensEspecieData, error: imagensEspecieError },
+            { data: imagensEspecimeData, error: imagensEspecimeError }
+          ] = await Promise.all([
+            supabase
+              .from('imagens')
+              .select('especie_id, url_micro, url_thumbnail')
+              .in('especie_id', especieIds),
+            supabase
+              .from('imagens')
+              .select('especime_id, url_micro, url_thumbnail')
+              .in('especime_id', especimeIds)
+          ]);
+
+          if (imagensEspecieError) throw imagensEspecieError;
+          if (imagensEspecimeError) throw imagensEspecimeError;
+
+          ((imagensEspecieData as ImagemRow[]) || []).forEach(img => {
+            if (!img.especie_id || imagemPorEspecieId.has(img.especie_id)) return;
+            imagemPorEspecieId.set(img.especie_id, img.url_micro || img.url_thumbnail || null);
+          });
+
+          ((imagensEspecimeData as ImagemEspecimeRow[]) || []).forEach(img => {
+            if (!img.especime_id || imagemPorEspecimeId.has(img.especime_id)) return;
+            imagemPorEspecimeId.set(img.especime_id, img.url_micro || img.url_thumbnail || null);
+          });
+
           // ── 4c. Montar os pins ─────────────────────────────────────────────
           const pins: SpecimenPin[] = elRows
             .filter(r => r.especie_id !== null)
@@ -203,7 +257,9 @@ export function FamiliesSection() {
                 nome_popular: esp?.nome_popular || '',
                 especie_id: r.especie_id as string,
                 familia_nome: familiaNome,
-                familia_id: familiaId
+                familia_id: familiaId,
+                imagem_url: imagemPorEspecimeId.get(r.id) || imagemPorEspecieId.get(r.especie_id as string) || null,
+                local_nome: r.local_id ? (localNomeMap.get(r.local_id) || null) : null
               };
             });
 
@@ -380,66 +436,53 @@ export function FamiliesSection() {
               />
 
               {/* Marcadores de Espécimes (abas Famílias e Espécies) */}
-              {activeTab !== 'projetos' &&
-                specimensPinsFiltrados.map((pin) => (
-                  <CircleMarker
-                    key={`specimen-${pin.id}`}
-                    center={[pin.latitude, pin.longitude]}
-                    radius={8}
-                    color={activeTab === 'familias' ? '#5fcf6e' : '#4a7c5a'}
-                    fillColor={activeTab === 'familias' ? '#5fcf6e' : '#4a7c5a'}
-                    fillOpacity={0.8}
-                    weight={2}
-                    stroke
-                  >
-                    <Popup>
-                      {activeTab === 'familias' ? (
-                        <div>
-                          <strong>{pin.familia_nome}</strong>
-                          <br />
-                          <span><i>{pin.nome_cientifico}</i> — {pin.tombo_codigo ?? pin.tombo_num ?? 'sem tombo'}</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <span style={{ fontStyle: 'italic', fontWeight: 600 }}>{pin.nome_cientifico}</span> — {pin.tombo_codigo ?? pin.tombo_num ?? 'sem tombo'}
-                          {pin.nome_popular && (
-                            <>
-                              <br />
-                              <span>{pin.nome_popular}</span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </Popup>
-                  </CircleMarker>
-                ))}
+              {activeTab !== 'projetos' && (
+                <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                  {specimensPinsFiltrados.map((pin) => (
+                    <Marker
+                      key={`specimen-${pin.id}`}
+                      position={[pin.latitude, pin.longitude]}
+                      icon={createDotIcon(activeTab === 'familias' ? '#5fcf6e' : '#4a7c5a')}
+                    >
+                      <Popup maxWidth={260} autoPan={false}>
+                        <SpecimenPopupCard
+                          imagemUrl={pin.imagem_url}
+                          nomeCientifico={pin.nome_cientifico}
+                          nomePopular={pin.nome_popular}
+                          familiaNome={pin.familia_nome}
+                          tombo={pin.tombo_codigo ?? pin.tombo_num}
+                          localNome={pin.local_nome}
+                        />
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MarkerClusterGroup>
+              )}
 
               {/* Marcadores de Projetos */}
-              {activeTab === 'projetos' &&
-                projetosPinsFiltrados.map((pin) => (
-                  <CircleMarker
-                    key={`projeto-${pin.id}`}
-                    center={[pin.latitude, pin.longitude]}
-                    radius={10}
-                    color="#1a3a1f"
-                    fillColor="#1a3a1f"
-                    fillOpacity={0.8}
-                    weight={2}
-                    stroke
-                  >
-                    <Popup>
-                      <div>
-                        <strong>{pin.nome}</strong>
-                        <br />
-                        <span style={{ fontSize: '12px', color: '#555' }}>
-                          {pin.cidade && pin.estado
-                            ? `${pin.cidade}, ${pin.estado}`
-                            : pin.cidade || pin.estado || ''}
-                        </span>
-                      </div>
-                    </Popup>
-                  </CircleMarker>
-                ))}
+              {activeTab === 'projetos' && (
+                <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                  {projetosPinsFiltrados.map((pin) => (
+                    <Marker
+                      key={`projeto-${pin.id}`}
+                      position={[pin.latitude, pin.longitude]}
+                      icon={createDotIcon('#1a3a1f')}
+                    >
+                      <Popup autoPan={false}>
+                        <div>
+                          <strong>{pin.nome}</strong>
+                          <br />
+                          <span style={{ fontSize: '12px', color: '#555' }}>
+                            {pin.cidade && pin.estado
+                              ? `${pin.cidade}, ${pin.estado}`
+                              : pin.cidade || pin.estado || ''}
+                          </span>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MarkerClusterGroup>
+              )}
             </MapContainer>
           )}
         </div>

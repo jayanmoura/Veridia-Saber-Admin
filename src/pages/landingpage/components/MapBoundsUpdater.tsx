@@ -15,7 +15,7 @@ export function MapBoundsUpdater({ pontos }: Props) {
       return;
     }
     const bounds = pontos.map(p => [p.latitude, p.longitude] as [number, number]);
-    map.fitBounds(bounds, { padding: [50, 50] });
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
   }, [pontos, map]);
 
   return null;

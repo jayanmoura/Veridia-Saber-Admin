@@ -1,22 +1,20 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Leaf, Info, ShieldAlert, X } from 'lucide-react';
+import { Leaf, Info, ShieldAlert, X, BookOpen, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 // Leaflet
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+import { SpecimenPopupCard } from './components/SpecimenPopupCard';
+import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 
 interface FamilyDetails {
   id: string;
@@ -28,6 +26,8 @@ interface FamilyDetails {
   imagem_thumbnail: string | null;
   imagem_micro: string | null;
   distribuicao_geografica: string | null;
+  fonte_referencia: string | null;
+  link_referencia: string | null;
 }
 
 interface SpeciesListItem {
@@ -45,6 +45,7 @@ export default function DetalhesFamilia() {
   const [species, setSpecies] = useState<SpeciesListItem[]>([]);
   const [imagens, setImagens] = useState<any[]>([]);
   const [especimesMap, setEspecimesMap] = useState<any[]>([]);
+  const [localNomeMap, setLocalNomeMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +74,15 @@ export default function DetalhesFamilia() {
     );
   }, [species, especimesMap]);
 
+  // Lista de URLs de fontes (link_referencia pode ter múltiplas URLs separadas por linha)
+  const listaFontes = useMemo(() => {
+    if (!family?.link_referencia) return [];
+    return family.link_referencia
+      .split('\n')
+      .map(url => url.trim())
+      .filter(url => url.length > 0);
+  }, [family]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -83,7 +93,7 @@ export default function DetalhesFamilia() {
         // Query 1: dados da família
         const { data: familyData, error: familyError } = await supabase
           .from('familia')
-          .select('id, familia_nome, descricao_familia, caracteristicas, autoria_taxonomica, distribuicao_geografica, imagem_thumbnail, imagem_referencia, imagem_micro')
+          .select('id, familia_nome, descricao_familia, caracteristicas, autoria_taxonomica, distribuicao_geografica, imagem_thumbnail, imagem_referencia, imagem_micro, fonte_referencia, link_referencia')
           .eq('id', id)
           .single();
 
@@ -162,13 +172,27 @@ export default function DetalhesFamilia() {
         if (especieIds.length > 0) {
           const { data: especimesMapData, error: especimesMapError } = await supabase
             .from('especie_local')
-            .select('id, latitude, longitude, detalhes_localizacao, descricao_ocorrencia, coletor, especie_id, tombo_codigo, tombo_num')
+            .select('id, latitude, longitude, detalhes_localizacao, descricao_ocorrencia, coletor, especie_id, tombo_codigo, tombo_num, local_id')
             .in('especie_id', especieIds)
             .not('latitude', 'is', null)
             .not('longitude', 'is', null);
 
           if (especimesMapError) throw especimesMapError;
           especimesMapResult = especimesMapData || [];
+        }
+
+        // Buscar nomes dos locais (projetos) para os balões do mapa
+        const localIds = [...new Set(especimesMapResult.map(e => e.local_id).filter(Boolean))];
+        let tempLocalNomeMap: Record<number, string> = {};
+        if (localIds.length > 0) {
+          const { data: locaisData, error: locaisError } = await supabase
+            .from('locais')
+            .select('id, nome')
+            .in('id', localIds);
+
+          if (locaisError) throw locaisError;
+
+          tempLocalNomeMap = Object.fromEntries((locaisData ?? []).map(l => [l.id, l.nome]));
         }
 
         let carrossel: Array<{ src: string; creditos: string | null }> = [];
@@ -212,6 +236,7 @@ export default function DetalhesFamilia() {
         setSpecies(especiesResult);
         setImagens(imagensResult);
         setEspecimesMap(especimesMapResult);
+        setLocalNomeMap(tempLocalNomeMap);
         setImagensCarrossel(carrossel);
         setCurrentIndex(0);
       } catch (err: any) {
@@ -235,6 +260,17 @@ export default function DetalhesFamilia() {
           thumbnail: img.url_thumbnail,
           original: img.url_imagem
         };
+      }
+    }
+    return map;
+  }, [imagens]);
+
+  // Montar mapa especime_id → imagem específica daquele espécime (para os balões do mapa)
+  const imagemPorEspecime = useMemo(() => {
+    const map: Record<number, { micro: string | null; thumbnail: string | null }> = {};
+    for (const img of imagens) {
+      if (img.especime_id && !map[img.especime_id]) {
+        map[img.especime_id] = { micro: img.url_micro, thumbnail: img.url_thumbnail };
       }
     }
     return map;
@@ -447,6 +483,48 @@ export default function DetalhesFamilia() {
                 )}
               </div>
             </div>
+
+            {/* Referências bibliográficas */}
+            {(family.fonte_referencia || listaFontes.length > 0) && (
+              <div className="bg-white rounded-2xl border border-forest-200 p-6 shadow-xs text-left">
+                <h3 className="text-sm font-bold text-forest-900 mb-4 flex items-center gap-2">
+                  <BookOpen size={16} className="text-forest-400" />
+                  Referências
+                </h3>
+
+                {family.fonte_referencia && (
+                  <p className="text-xs text-forest-600 italic mb-4">
+                    {family.fonte_referencia}
+                  </p>
+                )}
+
+                {listaFontes.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {listaFontes.map((url, idx) => {
+                      const href = url.startsWith('http') ? url : `https://${url}`;
+                      let dominio = url;
+                      try {
+                        dominio = new URL(href).hostname.replace('www.', '');
+                      } catch {
+                        dominio = url.length > 30 ? `${url.slice(0, 30)}...` : url;
+                      }
+                      return (
+                        <a
+                          key={idx}
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-xs font-semibold text-forest-900 bg-forest-50 hover:bg-forest-100 border border-forest-200 rounded-lg px-3 py-2 transition-colors w-fit"
+                        >
+                          Ver Fontes Online — {dominio}
+                          <ExternalLink size={12} className="text-forest-600" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -490,48 +568,32 @@ export default function DetalhesFamilia() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {pontosFiltrados.map(ponto => {
-                  const especie = species.find(e => e.id === ponto.especie_id);
-                  return (
-                    <Marker
-                      key={ponto.id}
-                      position={[ponto.latitude, ponto.longitude]}
-                    >
-                      <Popup>
-                        <div style={{ minWidth: 180 }} className="text-left font-sans">
-                          <strong className="italic text-forest-900">
-                            {especie?.nome_cientifico ?? 'Espécie'}
-                          </strong>
-                          {especie?.nome_popular && (
-                            <div className="text-forest-600 text-xs font-semibold mt-0.5">
-                              {especie.nome_popular}
-                            </div>
-                          )}
-                          {ponto.tombo_codigo && (
-                            <div className="text-neutral-500 text-xs mt-1">
-                              <strong>Tombo:</strong> {ponto.tombo_codigo}
-                            </div>
-                          )}
-                          {ponto.descricao_ocorrencia && (
-                            <div className="text-neutral-600 text-xs mt-1 border-t border-stone-100 pt-1 leading-relaxed">
-                              {ponto.descricao_ocorrencia}
-                            </div>
-                          )}
-                          {ponto.detalhes_localizacao && (
-                            <div className="text-neutral-400 text-[10px] mt-1 leading-normal">
-                              <strong>Localização:</strong> {ponto.detalhes_localizacao}
-                            </div>
-                          )}
-                          {ponto.coletor && (
-                            <div className="text-neutral-400 text-[10px] mt-0.5">
-                              <strong>Coletor:</strong> {ponto.coletor}
-                            </div>
-                          )}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
+                <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                  {pontosFiltrados.map(ponto => {
+                    const especie = species.find(e => e.id === ponto.especie_id);
+                    const imgEspecime = imagemPorEspecime[ponto.id];
+                    const imgEspecie = imagemPorEspecie[ponto.especie_id];
+                    const imagemUrl = imgEspecime?.micro || imgEspecime?.thumbnail || imgEspecie?.micro || imgEspecie?.thumbnail || null;
+                    return (
+                      <Marker
+                        key={ponto.id}
+                        position={[ponto.latitude, ponto.longitude]}
+                        icon={createDotIcon()}
+                      >
+                        <Popup maxWidth={260} autoPan={false}>
+                          <SpecimenPopupCard
+                            imagemUrl={imagemUrl}
+                            nomeCientifico={especie?.nome_cientifico}
+                            nomePopular={especie?.nome_popular}
+                            familiaNome={family.familia_nome}
+                            tombo={ponto.tombo_codigo}
+                            localNome={ponto.local_id ? localNomeMap[ponto.local_id] : null}
+                          />
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
+                </MarkerClusterGroup>
                 <MapBoundsUpdater pontos={pontosFiltrados} />
               </MapContainer>
             </div>
@@ -626,6 +688,7 @@ export default function DetalhesFamilia() {
             </div>
           )}
         </div>
+
       </main>
 
       <Footer />

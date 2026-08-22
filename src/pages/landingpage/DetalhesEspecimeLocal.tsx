@@ -7,16 +7,11 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 // Leaflet
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
 
-delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+const SPECIMEN_MARKER_COLOR = '#4a7c5a';
 
 interface EspecimeDetails {
   id: number;
@@ -434,14 +429,22 @@ export default function DetalhesEspecimeLocal() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                <Marker position={[especime.latitude, especime.longitude]}>
+                <CircleMarker
+                  center={[especime.latitude, especime.longitude]}
+                  radius={8}
+                  color={SPECIMEN_MARKER_COLOR}
+                  fillColor={SPECIMEN_MARKER_COLOR}
+                  fillOpacity={0.8}
+                  weight={2}
+                  stroke
+                >
                   <Popup>
                     <div className="text-left font-sans text-xs">
                       <strong className="font-mono">{especime.tombo_codigo || `#${especime.id}`}</strong>
                       <div className="italic text-forest-900 mt-0.5">{especie.nome_cientifico}</div>
                     </div>
                   </Popup>
-                </Marker>
+                </CircleMarker>
                 <MapBoundsUpdater pontos={[{ latitude: especime.latitude, longitude: especime.longitude }]} />
               </MapContainer>
             </div>

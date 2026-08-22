@@ -8,15 +8,13 @@ import { Footer } from './components/Footer';
 
 // Leaflet
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
-
-delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+import { SpecimenPopupCard } from './components/SpecimenPopupCard';
+import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 
 interface LocalDetails {
   id: string;
@@ -437,58 +435,34 @@ export default function DetalhesLocal() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {especimes.filter(e => e.latitude !== null && e.longitude !== null).map(ponto => {
-                  const especie = especies.find(e => e.id === ponto.especie_id);
-                  const famObj = especie ? (Array.isArray(especie.familia) ? especie.familia[0] : especie.familia) : null;
-                  const familiaNome = famObj?.familia_nome;
+                <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                  {especimes.filter(e => e.latitude !== null && e.longitude !== null).map(ponto => {
+                    const especie = especies.find(e => e.id === ponto.especie_id);
+                    const famObj = especie ? (Array.isArray(especie.familia) ? especie.familia[0] : especie.familia) : null;
+                    const familiaNome = famObj?.familia_nome;
 
-                  return (
-                    <Marker
-                      key={ponto.id}
-                      position={[ponto.latitude!, ponto.longitude!]}
-                    >
-                      <Popup>
-                        <div className="text-left font-sans" style={{ minWidth: 180 }}>
-                          {especie ? (
-                            <>
-                              <strong className="italic text-forest-900">
-                                {especie.nome_cientifico}
-                              </strong>
-                              {especie.nome_popular && (
-                                <div className="text-forest-600 text-xs font-semibold mt-0.5">
-                                  {especie.nome_popular}
-                                </div>
-                              )}
-                              {familiaNome && (
-                                <div className="text-neutral-400 text-[10px] uppercase font-bold tracking-wider mt-0.5">
-                                  {familiaNome}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <strong className="text-forest-900">Espécime</strong>
-                          )}
+                    const imagemUrl = imagemPorEspecime[ponto.id] || (especie ? imagemDaEspecie[especie.id] : null) || null;
 
-                          {ponto.tombo_codigo && (
-                            <div className="text-neutral-500 text-xs mt-1">
-                              <strong>Tombo:</strong> {ponto.tombo_codigo}
-                            </div>
-                          )}
-                          {ponto.descricao_ocorrencia && (
-                            <div className="text-neutral-600 text-xs mt-1 border-t border-stone-100 pt-1 leading-relaxed">
-                              {ponto.descricao_ocorrencia}
-                            </div>
-                          )}
-                          {ponto.coletor && (
-                            <div className="text-neutral-400 text-[10px] mt-1">
-                              <strong>Coletor:</strong> {ponto.coletor}
-                            </div>
-                          )}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
+                    return (
+                      <Marker
+                        key={ponto.id}
+                        position={[ponto.latitude!, ponto.longitude!]}
+                        icon={createDotIcon()}
+                      >
+                        <Popup maxWidth={260} autoPan={false}>
+                          <SpecimenPopupCard
+                            imagemUrl={imagemUrl}
+                            nomeCientifico={especie?.nome_cientifico}
+                            nomePopular={especie?.nome_popular}
+                            familiaNome={familiaNome}
+                            tombo={ponto.tombo_codigo}
+                            localNome={local.nome}
+                          />
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
+                </MarkerClusterGroup>
                 <MapBoundsUpdater pontos={especimes.filter(e => e.latitude !== null && e.longitude !== null) as Array<{ latitude: number; longitude: number }>} />
               </MapContainer>
             </div>
