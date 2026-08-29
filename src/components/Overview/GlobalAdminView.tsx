@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { StatCard } from '../../components/Dashboard/StatCard';
-import { BetaTestersModal } from '../../components/Modals/BetaTestersModal';
 import { AnalyticsModal } from '../../components/Modals/AnalyticsModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,7 +14,6 @@ import {
     BookOpen,
     Shield,
     Globe,
-    Plus,
     BarChart3,
     Map as MapIcon,
     Eye
@@ -45,7 +43,6 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
     const { profile } = useAuth();
     const navigate = useNavigate();
     const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
-    const [isBetaTestersModalOpen, setIsBetaTestersModalOpen] = useState(false);
     const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
 
     const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
@@ -69,15 +66,7 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                 <StatCard title="Total de Famílias" value={stats.families} icon={TreeDeciduous} color="emerald" loading={loading} />
                 <StatCard title="Total de Espécies" value={stats.species} icon={Leaf} color="blue" loading={loading} />
 
-                <div className="relative">
-                    <button
-                        onClick={() => setIsBetaTestersModalOpen(true)}
-                        className="absolute -top-8 right-0 text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 hover:underline transition-colors"
-                    >
-                        <Plus size={14} /> Adicionar Beta Tester
-                    </button>
-                    <StatCard title="Projetos Cadastrados" value={stats.projects} icon={MapPin} color="purple" loading={loading} />
-                </div>
+                <StatCard title="Projetos Cadastrados" value={stats.projects} icon={MapPin} color="purple" loading={loading} />
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6">
@@ -225,11 +214,6 @@ export function GlobalAdminView({ stats, recentLogs, loading }: GlobalAdminViewP
                 </div>,
                 document.body
             )}
-
-            <BetaTestersModal
-                isOpen={isBetaTestersModalOpen}
-                onClose={() => setIsBetaTestersModalOpen(false)}
-            />
 
             <AnalyticsModal
                 isOpen={isAnalyticsModalOpen}

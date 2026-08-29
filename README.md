@@ -230,10 +230,11 @@ As migrações ficam em `supabase/migrations/` e devem ser aplicadas em ordem:
 | Arquivo | Conteúdo |
 |---|---|
 | `001_rls_policies.sql` | Políticas RLS base de todas as tabelas |
-| `002_beta_testers.sql` | Tabela e lógica de beta testers |
+| `002_beta_testers.sql` | Tabela e lógica de beta testers (removida na migration 012) |
 | `003_fix_especie_local_delete.sql` | Correção de permissões de exclusão de espécimes |
 | `004` a `010` | Ajustes incrementais de RLS e funções |
 | `011_allow_anon_read_public_tables.sql` | Leitura anônima para a landing page pública |
+| `012_drop_beta_testers.sql` | Remoção completa da feature e tabela de beta testers |
 
 A Edge Function `login-proxy` em `supabase/functions/login-proxy/` é necessária para o fluxo de autenticação OAuth.
 
