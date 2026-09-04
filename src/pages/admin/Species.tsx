@@ -144,6 +144,7 @@ export default function SpeciesPage() {
             detalhes_localizacao: '',
             descricao_ocorrencia: '',
             coletor: profile?.full_name || '',
+            numero_coletor: '',
             determinador: profile?.full_name || '',
             data_determinacao: new Date().toISOString().split('T')[0],
         });
