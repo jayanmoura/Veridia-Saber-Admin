@@ -14,14 +14,15 @@ export { useSpeciesImages } from './useSpeciesImages';
 export type { ExistingImage, UseSpeciesImagesOptions, UseSpeciesImagesReturn, UploadOptions } from './useSpeciesImages';
 
 export { useSpeciesForm } from './useSpeciesForm';
-export type { Species as SpeciesFormData } from '../types/domain';
+export type { Species as SpeciesFormData, SpeciesAutocompleteItem } from '../types/domain';
 export type {
-    FamilyOption as FormFamilyOption,
-    LocalOption,
-    LocalData,
-    UseSpeciesFormOptions,
-    UseSpeciesFormReturn
+  FamilyOption as FormFamilyOption,
+  LocalOption,
+  LocalData,
+  UseSpeciesFormOptions,
+  UseSpeciesFormReturn,
 } from './useSpeciesForm';
+
 
 export { useProjectDetails } from './useProjectDetails';
 export type {
@@ -54,3 +55,7 @@ export { useSpeciesActions } from './useSpeciesActions';
 export { useProjectActions } from './useProjectActions';
 
 export { useFamilyActions } from './useFamilyActions';
+
+export { usePeriodicReports } from './usePeriodicReports';
+export type { UsePeriodicReportsOptions, UsePeriodicReportsReturn } from './usePeriodicReports';
+export type { PeriodicReport, PeriodicReportType, PeriodicReportData } from '../types/domain';

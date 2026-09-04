@@ -96,15 +96,26 @@ export default function DetalhesEspecimeLocal() {
       if (especimeError) throw especimeError;
       const especimeRes = especimeData as EspecimeDetails;
 
-      // 2. Dados da espécie global
-      const { data: especieData, error: especieError } = await supabase
-        .from('especie')
-        .select('id, nome_cientifico, nome_popular, familia_id, autor, descricao_especie, familia:familia_id(id, familia_nome)')
-        .eq('id', especimeRes.especie_id)
-        .single();
+      // 2. Dados da espécie e override do local
+      const [especieDataRes, overrideRes] = await Promise.all([
+        supabase
+          .from('especie')
+          .select('id, nome_cientifico, nome_popular, familia_id, autor, descricao_especie, familia:familia_id(id, familia_nome)')
+          .eq('id', especimeRes.especie_id)
+          .single(),
+        supabase
+          .from('especie_local_overrides')
+          .select('descricao_especie')
+          .eq('especie_id', especimeRes.especie_id)
+          .eq('local_id', localId)
+          .maybeSingle(),
+      ]);
 
-      if (especieError) throw especieError;
-      const especieRes = especieData as EspecieDetails;
+      if (especieDataRes.error) throw especieDataRes.error;
+      const especieRes = especieDataRes.data as EspecieDetails;
+      if (overrideRes.data?.descricao_especie) {
+        especieRes.descricao_especie = overrideRes.data.descricao_especie;
+      }
 
       // 3. Dados do local (para o breadcrumb)
       const { data: localData, error: localError } = await supabase

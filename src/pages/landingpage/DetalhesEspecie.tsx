@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Leaf, Info, ShieldAlert, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -46,6 +46,8 @@ interface SpeciesDetails {
 
 export default function DetalhesEspecie() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const localIdParam = searchParams.get('local_id') || searchParams.get('local');
   const navigate = useNavigate();
 
   const [species, setSpecies] = useState<SpeciesDetails | null>(null);
@@ -159,12 +161,28 @@ export default function DetalhesEspecie() {
 
       if (speciesError) throw speciesError;
 
+      // Se acessado no contexto de um local/projeto, verificar override
+      let overrideDescricao: string | null = null;
+      if (localIdParam) {
+        const { data: overrideData } = await supabase
+          .from('especie_local_overrides')
+          .select('descricao_especie')
+          .eq('especie_id', id)
+          .eq('local_id', localIdParam)
+          .maybeSingle();
+
+        if (overrideData?.descricao_especie) {
+          overrideDescricao = overrideData.descricao_especie;
+        }
+      }
+
       // Montar carrossel e galeria com a nova lógica definitiva
       await montarImagensEspecie(id);
 
       // Setar dados da espécie (imagens serão preenchidas pelo estado galeriaCompleta)
       setSpecies({
         ...(speciesData as unknown as Omit<SpeciesDetails, 'imagens'>),
+        descricao_especie: overrideDescricao ?? speciesData.descricao_especie,
         imagens: null
       });
       setCurrentIndex(0);
@@ -207,7 +225,7 @@ export default function DetalhesEspecie() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, localIdParam]);
 
   useEffect(() => {
     fetchDetails();

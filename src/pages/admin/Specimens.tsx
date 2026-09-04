@@ -25,8 +25,6 @@ const INITIAL_FORM: SpecimenFormData = {
     numero_coletor: '',
     determinador: '',
     data_determinacao: '',
-    morfologia: '',
-    habitat_ecologia: ''
 };
 
 export default function Specimens() {
@@ -288,8 +286,6 @@ export default function Specimens() {
             numero_coletor: specimen.numero_coletor || '',
             determinador: specimen.determinador || '',
             data_determinacao: specimen.data_determinacao || '',
-            morfologia: specimen.morfologia || '',
-            habitat_ecologia: specimen.habitat_ecologia || ''
         });
         setIsModalOpen(true);
     };
@@ -315,8 +311,6 @@ export default function Specimens() {
                 numero_coletor: formData.numero_coletor || null,
                 determinador: formData.determinador || null,
                 data_determinacao: formData.data_determinacao || null,
-                morfologia: formData.morfologia || null,
-                habitat_ecologia: formData.habitat_ecologia || null,
             };
 
             let savedId: number | null = null;

@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     Shield,
     RefreshCw,
     Clock,
     User,
-    Database
+    Database,
+    Folder
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../contexts/AuthContext';
+import { useProjects } from '../../hooks';
+import { PeriodicReportsModal } from '../../components/Modals/PeriodicReportsModal';
 
 interface AuditLog {
     id: number;
@@ -25,36 +29,51 @@ interface AuditLog {
 
 export default function AuditLogs() {
     const { showToast } = useToast();
+    const { profile } = useAuth();
+    const { projects } = useProjects();
+    const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [restoring, setRestoring] = useState<number | null>(null);
+    const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+
+    const isGlobalAdmin = profile?.role === 'Curador Mestre' || profile?.role === 'Coordenador Científico';
+
+    const fetchLogs = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Using 'user_id' to join with 'profiles' table
+            let query = supabase
+                .from('audit_logs')
+                .select(`
+                    *,
+                    user_id (
+                        full_name,
+                        email
+                    )
+                `)
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (selectedProjectId && selectedProjectId !== 'all') {
+                query = query.eq('local_id', selectedProjectId);
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+            setLogs(data || []);
+        } catch (error: unknown) {
+            console.error('Error fetching audit logs:', error);
+            showToast('Erro ao buscar registros de auditoria.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedProjectId, showToast]);
 
     useEffect(() => {
         fetchLogs();
-    }, []);
-
-    const fetchLogs = async () => {
-        setLoading(true);
-        // Using 'user_id' to join with 'profiles' table
-        const { data, error } = await supabase
-            .from('audit_logs')
-            .select(`
-                *,
-                user_id (
-                    full_name,
-                    email
-                )
-            `)
-            .order('created_at', { ascending: false })
-            .limit(100);
-
-        if (error) {
-            console.error('Error fetching audit logs:', error);
-        } else {
-            setLogs(data || []);
-        }
-        setLoading(false);
-    };
+    }, [fetchLogs]);
 
     const handleRestore = async (log: AuditLog) => {
         if (!log.old_data) {
@@ -117,13 +136,47 @@ export default function AuditLogs() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3">
-                <div className="p-3 bg-indigo-100 rounded-lg">
-                    <Shield className="text-indigo-600" size={24} />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-indigo-100 rounded-lg">
+                        <Shield className="text-indigo-600" size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Auditoria e Segurança</h1>
+                        <p className="text-gray-500">Histórico completo de alterações no sistema.</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Auditoria e Segurança</h1>
-                    <p className="text-gray-500">Histórico completo de alterações no sistema.</p>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    {isGlobalAdmin && (
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="project-filter" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Projeto:
+                            </label>
+                            <select
+                                id="project-filter"
+                                value={selectedProjectId}
+                                onChange={(e) => setSelectedProjectId(e.target.value)}
+                                className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-2xs font-medium cursor-pointer"
+                            >
+                                <option value="all">Todos os projetos</option>
+                                {projects.map((proj) => (
+                                    <option key={proj.id} value={proj.id}>
+                                        {proj.nome}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => setIsReportsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/50 rounded-xl transition-all shadow-xs group"
+                        title="Relatórios Periódicos de Atividade"
+                    >
+                        <Folder className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />
+                        <span className="text-sm font-medium">Relatórios de Atividade</span>
+                    </button>
                 </div>
             </div>
 
@@ -213,6 +266,11 @@ export default function AuditLogs() {
                     </table>
                 </div>
             </div>
+
+            <PeriodicReportsModal
+                isOpen={isReportsModalOpen}
+                onClose={() => setIsReportsModalOpen(false)}
+            />
         </div>
     );
 }

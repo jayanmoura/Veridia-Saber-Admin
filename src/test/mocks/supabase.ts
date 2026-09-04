@@ -113,6 +113,10 @@ export const mockSupabase = {
       Promise.resolve({ data: null, error: null }),
     ),
   },
+
+  rpc: vi.fn(() =>
+    Promise.resolve({ data: [], error: null }),
+  ),
 };
 
 // ============================================================

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Loader2, MapPin, User, FileText, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
+import { X, Search, Loader2, MapPin, User, Image as ImageIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -55,7 +55,6 @@ export function SpecimenModal({
 
     // Images Hook
     const images = useSpecimenImages();
-    const [advancedOpen, setAdvancedOpen] = useState(false);
     const [uploadStage, setUploadStage] = useState<'idle' | 'compressing' | 'uploading' | 'saving'>('idle');
     const isSubmitting = useRef(false);
 
@@ -75,40 +74,44 @@ export function SpecimenModal({
             // New mode
             setSpeciesSearch('');
             setProjectSearch('');
-            // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails)
-            if (!formData.especie_id) setSelectedSpeciesName('');
+            // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails or Wizard)
+            if (!formData.especie_id) {
+                setSelectedSpeciesName('');
+            } else if (initialSpeciesName) {
+                setSelectedSpeciesName(initialSpeciesName);
+            }
 
-            // Auto-fill project for users with local_id
-            if (profile?.local_id) {
-                // Fetch project details to get name and institution
-                // We define this as an async IIFE to process inside the effect
+            // Auto-fill or pre-fill project details
+            const targetLocalId = formData.local_id || profile?.local_id;
+            if (targetLocalId) {
+                if (initialProjectName) {
+                    setSelectedProjectName(initialProjectName);
+                }
                 (async () => {
                     try {
                         const { data: localData } = await supabase
                             .from('locais')
                             .select('id, nome, institution_id')
-                            .eq('id', profile.local_id)
+                            .eq('id', targetLocalId)
                             .single();
 
                         if (localData) {
                             setFormData(prev => ({
                                 ...prev,
                                 local_id: localData.id.toString(),
-                                institution_id: localData.institution_id
+                                institution_id: prev.institution_id || localData.institution_id
                             }));
-                            setSelectedProjectName(localData.nome);
+                            if (!initialProjectName && localData.nome) {
+                                setSelectedProjectName(localData.nome);
+                            }
                         }
                     } catch (err) {
-                        console.error("Error fetching user project:", err);
+                        console.error("Error fetching project details:", err);
                     }
                 })();
             } else {
-                if (!formData.local_id) {
-                    setSelectedProjectName('');
-                    setProjectOptions([]);
-                } else if (initialProjectName) {
-                    setSelectedProjectName(initialProjectName);
-                }
+                setSelectedProjectName('');
+                setProjectOptions([]);
             }
 
             // Sets Defaults
@@ -494,50 +497,6 @@ export function SpecimenModal({
                         </section>
 
 
-
-                        {/* Section 3: Dados Avançados (Colapsável) */}
-                        <section className="border rounded-lg overflow-hidden">
-                            <button
-                                type="button"
-                                onClick={() => setAdvancedOpen(!advancedOpen)}
-                                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                            >
-                                <div className="flex items-center gap-2 font-semibold text-gray-700 uppercase tracking-wider text-sm">
-                                    <FileText size={16} className="text-emerald-600" />
-                                    Dados para Etiquetas de Herbário
-                                </div>
-                                {advancedOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                            </button>
-
-                            {advancedOpen && (
-                                <div className="p-4 space-y-4 border-t border-gray-100">
-                                    <div className="space-y-1">
-                                        <label className="block text-sm font-medium text-gray-700">Morfologia</label>
-                                        <textarea
-                                            name="morfologia"
-                                            value={formData.morfologia}
-                                            onChange={handleChange}
-                                            rows={2}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors resize-none"
-                                            placeholder="Descrição morfológica do espécime..."
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-sm font-medium text-gray-700">Habitat e Ecologia</label>
-                                        <textarea
-                                            name="habitat_ecologia"
-                                            value={formData.habitat_ecologia}
-                                            onChange={handleChange}
-                                            rows={2}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors resize-none"
-                                            placeholder="Descrição do ambiente..."
-                                        />
-                                    </div>
-
-
-                                </div>
-                            )}
-                        </section>
 
 
 

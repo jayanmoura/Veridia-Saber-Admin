@@ -31,32 +31,44 @@ export interface Family {
  * Origens: useSpecies, useSpeciesForm, useSpeciesActions, types.ts, Species.tsx
  */
 export interface Species {
+  id?: string;
+  codigo_vs?: string | null;
+  nome_cientifico: string;
+  autor?: string | null;
+  nome_popular?: string | null;
+  familia_id?: string;
+  familia?: { id?: string | number; familia_nome: string } | null;
+  descricao_especie?: string | null;
+  cuidados_luz?: string | null;
+  cuidados_agua?: string | null;
+  cuidados_temperatura?: string | null;
+  cuidados_substrato?: string | null;
+  cuidados_nutrientes?: string | null;
+  local_id?: string | null;
+  imagens?: { 
     id?: string;
-    codigo_vs?: string | null;
-    nome_cientifico: string;
-    autor?: string | null;
-    nome_popular?: string | null;
-    familia_id?: string;
-    familia?: { id?: string | number; familia_nome: string } | null;
-    descricao_especie?: string | null;
-    cuidados_luz?: string | null;
-    cuidados_agua?: string | null;
-    cuidados_temperatura?: string | null;
-    cuidados_substrato?: string | null;
-    cuidados_nutrientes?: string | null;
-    local_id?: string | null;
-    imagens?: { 
-        id?: string;
-        url_imagem: string; 
-        url_thumbnail?: string | null; 
-        url_micro?: string | null;
-        local_id?: string | number | null;
-    }[] | null;
-    created_at?: string | null;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-    locais?: { nome: string; tipo?: string };
+    url_imagem: string; 
+    url_thumbnail?: string | null; 
+    url_micro?: string | null;
+    local_id?: string | number | null;
+  }[] | null;
+  created_at?: string | null;
+  created_by?: string | null;
+  creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
+  locais?: { nome: string; tipo?: string };
 }
+
+/**
+ * @description Item retornado pela RPC buscar_especie_autocomplete.
+ */
+export interface SpeciesAutocompleteItem {
+  id: string;
+  nome_cientifico: string;
+  autor?: string | null;
+  nome_popular?: string | null;
+  familia_id?: string | null;
+}
+
 
 /**
  * @description Entidade Specimen (Espécime/Registro de Campo) consolidada.
@@ -118,4 +130,26 @@ export interface Specimen {
         url_micro?: string | null;
     }[];
     imageCount?: number;
+}
+
+/**
+ * @description Entidade PeriodicReport (Relatório Periódico de Atividade).
+ * Origem: tabela relatorios_periodicos
+ */
+export type PeriodicReportType = 'mensal' | 'bimestral' | 'semestral' | 'anual';
+
+export interface PeriodicReportData {
+  por_tabela: Record<string, Record<string, number>>;
+  total?: number;
+}
+
+export interface PeriodicReport {
+  id: string | number;
+  tipo: PeriodicReportType;
+  ano: number;
+  periodo_inicio: string;
+  periodo_fim: string;
+  periodo_label: string;
+  dados: PeriodicReportData;
+  gerado_em: string;
 }

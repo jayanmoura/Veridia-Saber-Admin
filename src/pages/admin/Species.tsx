@@ -9,12 +9,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../../components/Modals/SpeciesModal/index';
+import { SpecimenModal } from '../../components/Modals/SpecimenModal';
 import { ConfirmDeleteModal } from '../../components/Modals/ConfirmDeleteModal';
 import { SuccessModal } from '../../components/Modals/SuccessModal';
 import { SpeciesTable } from '../../components/Tables';
 import { useSpecies, useSpeciesActions } from '../../hooks';
 import { useToast } from '../../hooks/useToast';
 import { deleteFile, parseStorageUrl } from '../../utils/storage';
+import { specimenRepo } from '../../services/specimenRepo';
+import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { hasMinLevel } from '../../types/auth';
 import {
     Leaf,
@@ -64,6 +67,24 @@ export default function SpeciesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSpecies, setEditingSpecies] = useState<Species | null>(null);
 
+    // Specimen Modal State (wizard flow)
+    const [isSpecimenModalOpen, setIsSpecimenModalOpen] = useState(false);
+    const [specimenFormData, setSpecimenFormData] = useState<SpecimenFormData>({
+        local_id: '',
+        especie_id: '',
+        latitude: '',
+        longitude: '',
+        detalhes_localizacao: '',
+        descricao_ocorrencia: '',
+        coletor: '',
+        numero_coletor: '',
+        determinador: '',
+        data_determinacao: '',
+    });
+    const [specimenInitialSpeciesName, setSpecimenInitialSpeciesName] = useState('');
+    const [specimenInitialProjectName, setSpecimenInitialProjectName] = useState('');
+    const [specimenActionLoading, setSpecimenActionLoading] = useState(false);
+
     // Delete state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [speciesToDelete, setSpeciesToDelete] = useState<Species | null>(null);
@@ -89,6 +110,79 @@ export default function SpeciesPage() {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingSpecies(null);
+    };
+
+    const handleRequestSpecimenCreation = async (especieId: string, localId: string, speciesName?: string) => {
+        let projectName = '';
+        let institutionId = profile?.institution_id || '';
+
+        try {
+            const { data: localData } = await supabase
+                .from('locais')
+                .select('nome, institution_id')
+                .eq('id', localId)
+                .single();
+
+            if (localData) {
+                projectName = localData.nome || '';
+                if (localData.institution_id) {
+                    institutionId = localData.institution_id;
+                }
+            }
+        } catch (err) {
+            console.warn('Erro ao buscar dados do projeto para o espécime:', err);
+        }
+
+        setSpecimenInitialSpeciesName(speciesName || '');
+        setSpecimenInitialProjectName(projectName);
+        setSpecimenFormData({
+            local_id: localId,
+            institution_id: institutionId,
+            especie_id: especieId,
+            latitude: '',
+            longitude: '',
+            detalhes_localizacao: '',
+            descricao_ocorrencia: '',
+            coletor: profile?.full_name || '',
+            determinador: profile?.full_name || '',
+            data_determinacao: new Date().toISOString().split('T')[0],
+        });
+
+        setIsSpecimenModalOpen(true);
+    };
+
+    const handleSaveSpecimen = async (): Promise<number | null> => {
+        if (!specimenFormData.local_id || !specimenFormData.especie_id) return null;
+        setSpecimenActionLoading(true);
+
+        try {
+            const payload = {
+                especie_id: specimenFormData.especie_id,
+                local_id: parseInt(specimenFormData.local_id),
+                institution_id: specimenFormData.institution_id || profile?.institution_id || null,
+                created_by: profile?.id,
+                latitude: specimenFormData.latitude ? parseFloat(specimenFormData.latitude) : null,
+                longitude: specimenFormData.longitude ? parseFloat(specimenFormData.longitude) : null,
+                detalhes_localizacao: specimenFormData.detalhes_localizacao || null,
+                descricao_ocorrencia: specimenFormData.descricao_ocorrencia || null,
+                coletor: specimenFormData.coletor || null,
+                numero_coletor: specimenFormData.numero_coletor || null,
+                determinador: specimenFormData.determinador || null,
+                data_determinacao: specimenFormData.data_determinacao || null,
+            };
+
+            const created = await specimenRepo.createSpecimen(payload);
+            refetch();
+            showToast('Espécime registrado com sucesso!', 'success');
+            return created?.id || null;
+        } catch (err: unknown) {
+            const error = err as { message?: string };
+            console.error('Error creating specimen:', err);
+            showToast(error.message || 'Erro ao criar espécime.', 'error');
+            return null;
+        } finally {
+            setSpecimenActionLoading(false);
+        }
     };
 
     const openDeleteModal = (species: any) => {
@@ -324,6 +418,19 @@ export default function SpeciesPage() {
                 onClose={handleCloseModal}
                 onSave={refetch}
                 initialData={editingSpecies}
+                onRequestSpecimenCreation={handleRequestSpecimenCreation}
+            />
+
+            <SpecimenModal
+                isOpen={isSpecimenModalOpen}
+                onClose={() => setIsSpecimenModalOpen(false)}
+                onSave={handleSaveSpecimen}
+                formData={specimenFormData}
+                setFormData={setSpecimenFormData}
+                loading={specimenActionLoading}
+                isEdit={false}
+                initialSpeciesName={specimenInitialSpeciesName}
+                initialProjectName={specimenInitialProjectName}
             />
 
             <ConfirmDeleteModal

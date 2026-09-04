@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,11 +16,25 @@ import {
     Eye,
     X,
     Loader2,
-    CheckCircle
+    CheckCircle,
+    Clock,
+    RefreshCw
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { ProjectData, LocalStats, RecentLocalSpecies, LocalFamily } from '../../hooks';
 import { uploadFile } from '../../utils/storage';
 import { useToast } from '../../hooks/useToast';
+
+interface LocalAuditLog {
+    id: number;
+    created_at: string;
+    action_type: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
+    table_name: string;
+    record_id: string;
+    details: string | null;
+    user_id?: { full_name: string; email: string } | { full_name: string; email: string }[] | null;
+}
 
 interface LocalAdminViewProps {
     projectData: ProjectData | null;
@@ -55,6 +69,62 @@ export function LocalAdminView({
     const [isLocalFamiliesModalOpen, setIsLocalFamiliesModalOpen] = useState(false);
     const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
     const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
+
+    // Recent activities state
+    const [recentActivity, setRecentActivity] = useState<LocalAuditLog[]>([]);
+    const [loadingActivity, setLoadingActivity] = useState(true);
+
+    const fetchRecentActivity = useCallback(async () => {
+        setLoadingActivity(true);
+        try {
+            const { data, error } = await supabase
+                .from('audit_logs')
+                .select(`
+                    id,
+                    created_at,
+                    action_type,
+                    table_name,
+                    record_id,
+                    details,
+                    user_id (
+                        full_name,
+                        email
+                    )
+                `)
+                .order('created_at', { ascending: false })
+                .limit(15);
+
+            if (error) throw error;
+            setRecentActivity((data as unknown as LocalAuditLog[]) || []);
+        } catch (err) {
+            console.error('Erro ao buscar atividades recentes do projeto:', err);
+        } finally {
+            setLoadingActivity(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRecentActivity();
+    }, [fetchRecentActivity]);
+
+    const getActionBadge = (action: string) => {
+        switch (action) {
+            case 'INSERT':
+                return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Criação</span>;
+            case 'UPDATE':
+                return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Edição</span>;
+            case 'DELETE':
+                return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Exclusão</span>;
+            default:
+                return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{action}</span>;
+        }
+    };
+
+    const getUserName = (user: LocalAuditLog['user_id']) => {
+        if (!user) return 'Sistema / Desconhecido';
+        if (Array.isArray(user)) return user[0]?.full_name || 'Desconhecido';
+        return user.full_name || 'Desconhecido';
+    };
 
     // Edit project state
     const [editDescription, setEditDescription] = useState('');
@@ -292,6 +362,71 @@ export function LocalAdminView({
                     </div>
                 </div>
             )}
+
+            {/* Recent Activity Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <Clock size={20} className="text-indigo-600" />
+                            Atividades Recentes no Projeto
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">Últimas alterações e atualizações no acervo local</p>
+                    </div>
+                    <button
+                        onClick={fetchRecentActivity}
+                        disabled={loadingActivity}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                        title="Atualizar atividades"
+                    >
+                        <RefreshCw size={16} className={loadingActivity ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+
+                {loadingActivity ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="animate-spin text-emerald-600" size={32} />
+                    </div>
+                ) : recentActivity.length > 0 ? (
+                    <div className="divide-y divide-gray-100">
+                        {recentActivity.map((log) => (
+                            <div key={log.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="shrink-0">
+                                        {getActionBadge(log.action_type)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-800 truncate">
+                                            <span className="font-semibold text-gray-900">{getUserName(log.user_id)}</span>
+                                            {' na tabela '}
+                                            <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+                                                {log.table_name}
+                                            </span>
+                                        </p>
+                                        {log.details && (
+                                            <p className="text-xs text-gray-500 truncate mt-0.5">{log.details}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-xs text-gray-400 shrink-0 self-start sm:self-center">
+                                    <Clock size={13} />
+                                    <span>
+                                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Clock size={20} className="text-gray-300" />
+                        </div>
+                        <p className="text-gray-500 text-sm">Nenhuma atividade recente registrada neste projeto.</p>
+                    </div>
+                )}
+            </div>
 
             {/* Local Families Modal */}
             {isLocalFamiliesModalOpen && createPortal(

@@ -12,4 +12,5 @@ export * from './generalReport';
 export * from './projectSpecimensReport';
 export * from './speciesReport';
 export * from './specimenLabels';
+export * from './periodicReport';
 export * from './types';

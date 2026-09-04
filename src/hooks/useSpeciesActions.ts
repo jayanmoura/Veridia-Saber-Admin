@@ -157,14 +157,25 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
 
             let localDetails = {};
             if (profile?.local_id) {
-                const { data: localData } = await supabase
-                    .from('especie_local')
-                    .select('descricao_ocorrencia, detalhes_localizacao, latitude, longitude')
-                    .eq('especie_id', speciesId)
-                    .eq('local_id', profile.local_id)
-                    .maybeSingle();
+                const [localRes, overrideRes] = await Promise.all([
+                    supabase
+                        .from('especie_local')
+                        .select('descricao_ocorrencia, detalhes_localizacao, latitude, longitude')
+                        .eq('especie_id', speciesId)
+                        .eq('local_id', profile.local_id)
+                        .maybeSingle(),
+                    supabase
+                        .from('especie_local_overrides')
+                        .select('descricao_especie')
+                        .eq('especie_id', speciesId)
+                        .eq('local_id', profile.local_id)
+                        .maybeSingle(),
+                ]);
 
-                if (localData) localDetails = localData;
+                if (localRes.data) localDetails = localRes.data;
+                if (overrideRes.data?.descricao_especie) {
+                    speciesData.descricao_especie = overrideRes.data.descricao_especie;
+                }
             }
 
             const safeName = speciesData.nome_cientifico.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();

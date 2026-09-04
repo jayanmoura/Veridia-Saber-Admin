@@ -1,50 +1,50 @@
 import { Loader2, Leaf } from 'lucide-react';
 
 // ============ TYPES ============
-import type { Species } from '../../../types/domain';
+import type { Species, SpeciesAutocompleteItem } from '../../../types/domain';
+import type { LocalData } from '../../../hooks/useSpeciesForm';
 
 export interface FamilyOption {
-    id: string;
-    familia_nome: string;
+  id: string;
+  familia_nome: string;
 }
 
 export interface LocalOption {
-    id: string;
-    nome: string;
+  id: string;
+  nome: string;
 }
 
-
-
 interface SpeciesDataTabProps {
-    formData: Species;
-    onFormDataChange: <K extends keyof Species>(field: K, value: Species[K]) => void;
+  formData: Species;
+  onFormDataChange: <K extends keyof Species>(field: K, value: Species[K]) => void;
 
+  // Options
+  families: FamilyOption[];
+  locais: LocalOption[];
 
-    // Options
-    families: FamilyOption[];
-    locais: LocalOption[];
+  // Autocomplete
+  selectedEspecieId?: string | null;
+  suggestions: SpeciesAutocompleteItem[];
+  isSearching: boolean;
+  showSuggestions: boolean;
+  onNameChange: (value: string) => void;
+  onSelectGlobalSpecies: (species: SpeciesAutocompleteItem) => void;
+  onClearSelection: () => void;
+  onShowSuggestions: (show: boolean) => void;
+  isAutorReadOnly?: boolean;
+  isFamiliaReadOnly?: boolean;
 
-    // Autocomplete
-    suggestions: Species[];
-    isSearching: boolean;
-    showSuggestions: boolean;
-    onNameChange: (value: string) => void;
-    onSelectGlobalSpecies: (species: Species) => void;
-    onClearSelection: () => void;
-    onShowSuggestions: (show: boolean) => void;
+  // Permissions
+  userRole: string;
+  isEditingExisting: boolean;
+  shouldLockGlobalFields: boolean;
+  isProjectUser: boolean;
+  isSenior: boolean;
+  getUserLocalName: () => string;
 
-    // Permissions
-    userRole: string;
-    isGlobalSpecies: boolean;
-    isEditingExisting: boolean;
-    shouldLockGlobalFields: boolean;
-    isProjectUser: boolean;
-    isSenior: boolean;
-    getUserLocalName: () => string;
-
-    // Local Data
-    localData?: any;
-    onLocalDataChange?: React.Dispatch<React.SetStateAction<any>>;
+  // Local Data
+  localData?: LocalData;
+  onLocalDataChange?: React.Dispatch<React.SetStateAction<LocalData>>;
 }
 
 /**
@@ -52,29 +52,31 @@ interface SpeciesDataTabProps {
  * Contains taxonomy fields, description, cultivation guide, and project notes.
  */
 export function SpeciesDataTab({
-    formData,
-    onFormDataChange,
+  formData,
+  onFormDataChange,
 
-    families,
-    locais,
-    suggestions,
-    isSearching,
-    showSuggestions,
-    onNameChange,
-    onSelectGlobalSpecies,
-    onClearSelection,
-    onShowSuggestions,
-    userRole,
-    isGlobalSpecies,
-    isEditingExisting,
-    shouldLockGlobalFields,
-    isProjectUser,
-    isSenior,
-    getUserLocalName,
-    localData,
-    onLocalDataChange
-
+  families,
+  locais,
+  selectedEspecieId,
+  suggestions,
+  isSearching,
+  showSuggestions,
+  onNameChange,
+  onSelectGlobalSpecies,
+  onClearSelection,
+  onShowSuggestions,
+  isAutorReadOnly = false,
+  isFamiliaReadOnly = false,
+  userRole,
+  isEditingExisting,
+  shouldLockGlobalFields,
+  isProjectUser,
+  isSenior,
+  getUserLocalName,
+  localData,
+  onLocalDataChange,
 }: SpeciesDataTabProps) {
+
     const isGlobalAdmin = userRole === 'Curador Mestre' || userRole === 'Coordenador Científico' || userRole === 'Taxonomista Sênior';
 
     return (
@@ -91,24 +93,30 @@ export function SpeciesDataTab({
                     )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Family Select */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Família <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                            value={formData.familia_id}
-                            onChange={(e) => onFormDataChange('familia_id', e.target.value)}
-                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                            required
-                            disabled={shouldLockGlobalFields}
-                        >
-                            <option value="">Selecione uma família...</option>
-                            {families.map(fam => (
-                                <option key={fam.id} value={fam.id}>{fam.familia_nome}</option>
-                            ))}
-                        </select>
-                    </div>
+          {/* Family Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Família <span className="text-red-500">*</span>
+              {isFamiliaReadOnly && selectedEspecieId && (
+                <span className="text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-2">
+                  🔒 Vinculado à espécie
+                </span>
+              )}
+            </label>
+            <select
+              value={formData.familia_id}
+              onChange={(e) => !isFamiliaReadOnly && onFormDataChange('familia_id', e.target.value)}
+              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${isFamiliaReadOnly ? 'bg-gray-100 cursor-not-allowed text-gray-600' : 'bg-white'}`}
+              required
+              disabled={isFamiliaReadOnly}
+            >
+              <option value="">Selecione uma família...</option>
+              {families.map(fam => (
+                <option key={fam.id} value={fam.id}>{fam.familia_nome}</option>
+              ))}
+            </select>
+          </div>
+
 
                     {/* Local Select */}
                     {!isSenior && (
@@ -135,101 +143,119 @@ export function SpeciesDataTab({
                         </div>
                     )}
 
-                    {/* Scientific Name with Autocomplete */}
-                    <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nome Científico <span className="text-red-500">*</span>
-                            {isGlobalSpecies && (
-                                <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full ml-2">
-                                    🔗 Espécie do catálogo global
-                                </span>
-                            )}
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={formData.nome_cientifico}
-                                onChange={(e) => !shouldLockGlobalFields && onNameChange(e.target.value)}
-                                onFocus={() => suggestions.length > 0 && onShowSuggestions(true)}
-                                onBlur={() => setTimeout(() => onShowSuggestions(false), 200)}
-                                className={`flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                placeholder={isProjectUser ? "Digite para buscar ou criar nova..." : "Ex: Justicia brandegeeana"}
-                                required
-                                readOnly={shouldLockGlobalFields}
-                            />
-                            {isGlobalSpecies && (
-                                <button
-                                    type="button"
-                                    onClick={onClearSelection}
-                                    className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
-                                    title="Limpar seleção"
-                                >
-                                    ✕
-                                </button>
-                            )}
+          {/* Scientific Name with Autocomplete */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome Científico <span className="text-red-500">*</span>
+              {selectedEspecieId && (
+                <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full ml-2">
+                  🔗 Espécie do catálogo global
+                </span>
+              )}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={formData.nome_cientifico}
+                onChange={(e) => !shouldLockGlobalFields && onNameChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && onShowSuggestions(true)}
+                onBlur={() => setTimeout(() => onShowSuggestions(false), 200)}
+                className={`flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                placeholder={isProjectUser ? 'Digite para buscar ou criar nova...' : 'Ex: Justicia brandegeeana'}
+                required
+                readOnly={shouldLockGlobalFields}
+              />
+              {selectedEspecieId && (
+                <button
+                  type="button"
+                  onClick={onClearSelection}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                  title="Limpar seleção"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Autocomplete Dropdown */}
+            {showSuggestions && !isEditingExisting && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {isSearching ? (
+                  <div className="p-3 text-center text-gray-500 flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Buscando...
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-b text-xs text-gray-500 font-medium">
+                      Espécies encontradas no catálogo global:
+                    </div>
+                    {suggestions.map((species) => (
+                      <button
+                        key={species.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          onSelectGlobalSpecies(species);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-medium text-gray-900 italic">
+                            {species.nome_cientifico}
+                          </span>
+                          {species.autor && (
+                            <span className="text-xs text-gray-500 font-serif italic">
+                              {species.autor}
+                            </span>
+                          )}
                         </div>
-
-                        {/* Autocomplete Dropdown */}
-                        {showSuggestions && !isEditingExisting && isProjectUser && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {isSearching ? (
-                                    <div className="p-3 text-center text-gray-500 flex items-center justify-center gap-2">
-                                        <Loader2 size={16} className="animate-spin" />
-                                        Buscando...
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="px-3 py-2 bg-gray-50 border-b text-xs text-gray-500 font-medium">
-                                            Espécies encontradas no catálogo global:
-                                        </div>
-                                        {suggestions.map((species) => (
-                                            <button
-                                                key={species.id}
-                                                type="button"
-                                                onClick={() => onSelectGlobalSpecies(species)}
-                                                className="w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-b-0"
-                                            >
-                                                <div className="font-medium text-gray-900 italic">
-                                                    {species.nome_cientifico}
-                                                </div>
-                                                {species.nome_popular && (
-                                                    <div className="text-sm text-gray-500">{species.nome_popular}</div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </>
-                                )}
-                            </div>
+                        {species.nome_popular && (
+                          <div className="text-xs text-gray-500 mt-0.5">{species.nome_popular}</div>
                         )}
-                    </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
-                    {/* Common Name */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nome Popular</label>
-                        <input
-                            type="text"
-                            value={formData.nome_popular || ''}
-                            onChange={(e) => onFormDataChange('nome_popular', e.target.value)}
-                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                            placeholder="Ex: Camarão-vermelho"
-                            readOnly={shouldLockGlobalFields}
-                        />
-                    </div>
+          {/* Common Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Popular</label>
+            <input
+              type="text"
+              value={formData.nome_popular || ''}
+              onChange={(e) => onFormDataChange('nome_popular', e.target.value)}
+              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+              placeholder="Ex: Camarão-vermelho"
+              readOnly={shouldLockGlobalFields}
+            />
+          </div>
 
-                    {/* Taxon Author */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Autor do Táxon</label>
-                        <input
-                            type="text"
-                            value={formData.autor || ''}
-                            onChange={(e) => onFormDataChange('autor', e.target.value)}
-                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors font-serif italic ${shouldLockGlobalFields ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                            placeholder="Ex: L., Vell., Mart."
-                            readOnly={shouldLockGlobalFields}
-                        />
-                    </div>
-                </div>
-            </section>
+          {/* Taxon Author */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Autor do Táxon
+              {isAutorReadOnly && selectedEspecieId && (
+                <span className="text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-2">
+                  🔒 Vinculado à espécie
+                </span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={formData.autor || ''}
+              onChange={(e) => !isAutorReadOnly && onFormDataChange('autor', e.target.value)}
+              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors font-serif italic ${isAutorReadOnly ? 'bg-gray-100 cursor-not-allowed text-gray-600' : 'bg-white'}`}
+              placeholder="Ex: L., Vell., Mart."
+              readOnly={isAutorReadOnly}
+            />
+          </div>
+        </div>
+      </section>
+
 
             {/* Section 2: Description (Global) */}
             <section>
@@ -249,12 +275,12 @@ export function SpeciesDataTab({
                 />
             </section>
 
-            {/* Section 2.5: Descrição Ocorrência (Dados Locais) - Only when a local project is selected */}
+            {/* Section 2.5: Descrição Botânica (Dados Locais) - Only when a local project is selected */}
             {(isProjectUser || (isGlobalAdmin && formData.local_id)) && (
                 <section>
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                         <Leaf size={16} className="text-emerald-600" />
-                        Descrição Ocorrência (Dados Locais)
+                        Descrição Botânica (Dados Locais)
                     </h3>
                     <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 space-y-4">
                         <div>
@@ -262,15 +288,13 @@ export function SpeciesDataTab({
                                 Notas do Projeto (ex: Onde encontrar no parque)
                             </label>
                             <textarea
-                                value={localData?.descricao_ocorrencia || ''}
-                                onChange={(e) => onLocalDataChange?.((prev: any) => ({ ...prev, descricao_ocorrencia: e.target.value }))}
+                                value={localData?.notas_projeto || ''}
+                                onChange={(e) => onLocalDataChange?.(prev => ({ ...prev, notas_projeto: e.target.value }))}
                                 rows={3}
                                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none bg-white"
                                 placeholder="Descreva detalhes específicos desta espécie neste local..."
                             />
                         </div>
-
-
                     </div>
                 </section>
             )}

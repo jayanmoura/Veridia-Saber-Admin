@@ -215,7 +215,26 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             countWithImages = imgResult.count || 0;
             const globalMissingImages = (count || 0) - countWithImages;
 
-            // Filter images by local_id for non-global admins (View logic)
+            // Fetch overrides for local user context
+            const overrideMap = new Map<string, string>();
+            if (!isGlobalAdmin && userLocalId && data && data.length > 0) {
+                const speciesIds = data.map((s: any) => s.id);
+                const { data: overrides } = await supabase
+                    .from('especie_local_overrides')
+                    .select('especie_id, descricao_especie')
+                    .in('especie_id', speciesIds)
+                    .eq('local_id', userLocalId);
+
+                if (overrides && overrides.length > 0) {
+                    overrides.forEach((o: any) => {
+                        if (o.descricao_especie !== null && o.descricao_especie !== undefined) {
+                            overrideMap.set(o.especie_id, o.descricao_especie);
+                        }
+                    });
+                }
+            }
+
+            // Filter images by local_id for non-global admins (View logic) and apply overrides
             const formattedData: Species[] = (data || []).map((item: any) => {
                 let filteredImages = item.imagens || [];
 
@@ -225,7 +244,9 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     );
                 }
 
-                return { ...item, imagens: filteredImages };
+                const effectiveDescricao = overrideMap.get(item.id) ?? item.descricao_especie;
+
+                return { ...item, descricao_especie: effectiveDescricao, imagens: filteredImages };
             });
 
             setSpecies(formattedData);

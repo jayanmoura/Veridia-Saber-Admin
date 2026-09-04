@@ -18,9 +18,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
 import { useToast } from '../../../hooks/useToast';
 import { SpeciesDataTab } from './SpeciesDataTab';
-import { LabelDataTab } from './LabelDataTab';
 import { ImageUploadZone } from '../../Forms/ImageUploadZone';
-import { X, Loader2, Image as ImageIcon, FileText, Leaf } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon } from 'lucide-react';
 
 // ============ TYPES ============
 import type { Species } from '../../../types/domain';
@@ -30,6 +29,7 @@ interface SpeciesModalProps {
   onClose: () => void;
   onSave: () => void;
   initialData?: Species | null;
+  onRequestSpecimenCreation?: (especieId: string, localId: string, speciesName?: string) => void;
 }
 
 type UploadStage = 'idle' | 'compressing' | 'uploading' | 'saving';
@@ -40,7 +40,13 @@ const STAGE_LABEL: Record<Exclude<UploadStage, 'idle'>, string> = {
   saving: 'Salvando dados...',
 };
 
-export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }: SpeciesModalProps) {
+export function SpeciesModalRefactored({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+  onRequestSpecimenCreation,
+}: SpeciesModalProps) {
   const { showToast } = useToast();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -58,7 +64,7 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
       return;
     }
     if (initialData?.id) {
-      const currentLocalId = initialData.local_id || (form.isLocalUser ? profile?.local_id : null);
+      const currentLocalId = initialData.local_id || form.formData.local_id || (form.isLocalUser ? profile?.local_id : null);
       images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
       form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null);
     } else {
@@ -87,21 +93,24 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
     if (hasNewImages) setUploadStage('saving');
 
     try {
-      let speciesId = initialData?.id || (form.isGlobalSpecies ? form.selectedGlobalSpecies?.id : undefined);
-      const effectiveLocalId = form.formData.local_id || (form.isLocalUser ? String(profile?.local_id || '') : null);
+      let speciesId = initialData?.id || (form.selectedEspecieId ? form.selectedEspecieId : undefined);
+      const effectiveLocalId = form.formData.local_id || initialData?.local_id || (form.isLocalUser ? String(profile?.local_id || '') : null);
 
-      // CASE 1: LINKING GLOBAL SPECIES TO LOCAL PROJECT
-      if (form.isGlobalSpecies && form.selectedGlobalSpecies?.id) {
-        speciesId = form.selectedGlobalSpecies.id;
+      // CASO 2: VINCULANDO ESPÉCIE DO CATÁLOGO GLOBAL (selectedEspecieId preenchido)
+      if (form.selectedEspecieId) {
+        if (!effectiveLocalId) {
+          showToast('Selecione um projeto/local para vincular a espécie.', 'warning');
+          return;
+        }
+        speciesId = form.selectedEspecieId;
       }
-      // CASE 2: EDITING EXISTING SPECIES
+      // CASO EDIT: EDITANDO ESPÉCIE EXISTENTE
       else if (form.isEditingExisting && speciesId) {
         if (form.isGlobalAdmin) {
           const dataToSave = {
             nome_cientifico: form.formData.nome_cientifico.trim(),
             nome_popular: form.formData.nome_popular?.trim() || null,
             familia_id: form.formData.familia_id,
-            descricao_especie: form.formData.descricao_especie?.trim() || null,
             cuidados_luz: form.formData.cuidados_luz?.trim() || null,
             cuidados_agua: form.formData.cuidados_agua?.trim() || null,
             cuidados_temperatura: form.formData.cuidados_temperatura?.trim() || null,
@@ -118,8 +127,8 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
           if (error) throw error;
         }
       }
-      // CASE 3: CREATING NEW SPECIES
-      else if (!form.isGlobalSpecies) {
+      // CASO 1: CRIANDO NOVA ESPÉCIE (selectedEspecieId é null)
+      else if (!form.selectedEspecieId) {
         const dataToSaveNew = {
           nome_cientifico: form.formData.nome_cientifico.trim(),
           nome_popular: form.formData.nome_popular?.trim() || null,
@@ -147,62 +156,44 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
         speciesId = data.id;
       }
 
-      // SAVE LOCAL DATA (especie_local)
+      // OVERRIDE LOCAL (especie_local_overrides): grava descricao_especie E notas_projeto numa única chamada
       if (effectiveLocalId && speciesId) {
-        let targetInstitutionId = profile?.institution_id;
+        // Para espécie global vinculada ou edição existente, a descrição no form é override local.
+        // Para espécie nova criada, a descrição botânica já foi gravada na tabela global `especie`.
+        const isNewGlobalSpecies = !form.selectedEspecieId && !form.isEditingExisting;
+        const descricaoTrimmed = isNewGlobalSpecies
+          ? null
+          : (form.formData.descricao_especie?.trim() || null);
+        const notasTrimmed = form.localData.notas_projeto?.trim() || null;
+        const hasAnyOverride = Boolean(descricaoTrimmed || notasTrimmed);
 
-        if (!targetInstitutionId) {
-          try {
-            const { data: localInfo } = await supabase
-              .from('locais')
-              .select('institution_id')
-              .eq('id', effectiveLocalId)
-              .single();
+        if (hasAnyOverride) {
+          const { error: overrideError } = await supabase
+            .from('especie_local_overrides')
+            .upsert({
+              especie_id: speciesId,
+              local_id: effectiveLocalId,
+              descricao_especie: descricaoTrimmed,
+              notas_projeto: notasTrimmed,
+              created_by: profile?.id || null,
+            }, { onConflict: 'especie_id,local_id' });
 
-            if (localInfo?.institution_id) {
-              targetInstitutionId = localInfo.institution_id;
-            }
-          } catch (err) {
-            console.warn('Erro ao buscar institution_id do projeto:', err);
-          }
-        }
+          if (overrideError) throw overrideError;
+        } else if (form.hasExistingOverride) {
+          const { error: deleteError } = await supabase
+            .from('especie_local_overrides')
+            .delete()
+            .eq('especie_id', speciesId)
+            .eq('local_id', effectiveLocalId);
 
-        if (!targetInstitutionId) {
-          console.error('Erro: institution_id não encontrado');
-          showToast('Erro: Não foi possível identificar a instituição. Contate o administrador.', 'error');
-        } else {
-          const localPayload = {
-            especie_id: speciesId,
-            local_id: effectiveLocalId,
-            institution_id: targetInstitutionId,
-            descricao_ocorrencia: form.localData.descricao_ocorrencia?.trim() || null,
-            detalhes_localizacao: form.localData.detalhes_localizacao?.trim() || null,
-            latitude: form.localData.latitude ? parseFloat(form.localData.latitude) : null,
-            longitude: form.localData.longitude ? parseFloat(form.localData.longitude) : null,
-            determinador: form.localData.determinador?.trim() || null,
-            data_determinacao: form.localData.data_determinacao || null,
-            coletor: form.localData.coletor?.trim() || null,
-            numero_coletor: form.localData.numero_coletor?.trim() || null,
-            morfologia: form.localData.morfologia?.trim() || null,
-            habitat_ecologia: form.localData.habitat_ecologia?.trim() || null,
-          };
-
-          const { error: localError } = await supabase
-            .from('especie_local')
-            .upsert(localPayload, { onConflict: 'especie_id,local_id' });
-
-          if (localError) {
-            console.error('Error saving local data:', localError);
-            if (localError.code === '42501') {
-              showToast('Erro de permissão: Verifique suas credenciais com o administrador.', 'error');
-            }
-          }
+          if (deleteError) throw deleteError;
         }
       }
 
+
       // Upload new images
       if (hasNewImages && speciesId) {
-        const isCreatingNewGlobalSpecies = !form.isGlobalSpecies && !form.isEditingExisting && !effectiveLocalId;
+        const isCreatingNewGlobalSpecies = !form.selectedEspecieId && !form.isEditingExisting && !effectiveLocalId;
 
         setUploadStage('uploading');
         const uploadResults = await images.uploadImages(speciesId, {
@@ -250,8 +241,29 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
         await Promise.all(creditUpdates);
       }
 
+      let shouldOpenSpecimenModal = false;
+
+      if (effectiveLocalId && speciesId && onRequestSpecimenCreation) {
+        const { data: existingSpecimens, error: checkError } = await supabase
+          .from('especie_local')
+          .select('id')
+          .eq('especie_id', speciesId)
+          .eq('local_id', effectiveLocalId)
+          .limit(1);
+
+        if (!checkError && (!existingSpecimens || existingSpecimens.length === 0)) {
+          shouldOpenSpecimenModal = true;
+        }
+      }
+
       onSave();
-      onClose();
+
+      if (shouldOpenSpecimenModal && onRequestSpecimenCreation && effectiveLocalId && speciesId) {
+        onClose();
+        onRequestSpecimenCreation(speciesId, effectiveLocalId, form.formData.nome_cientifico);
+      } else {
+        onClose();
+      }
     } catch (error: unknown) {
       const err = error as { message?: string };
       console.error('Save error:', error);
@@ -292,141 +304,69 @@ export function SpeciesModalRefactored({ isOpen, onClose, onSave, initialData }:
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-100 bg-white px-6">
-          <button
-            type="button"
-            onClick={() => form.setActiveTab('species')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              form.activeTab === 'species'
-                ? 'border-emerald-500 text-emerald-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <Leaf size={15} />
-            Dados da Espécie
-          </button>
-          <button
-            type="button"
-            onClick={() => form.setActiveTab('label')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              form.activeTab === 'label'
-                ? 'border-emerald-500 text-emerald-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <FileText size={15} />
-            Etiqueta de Herbário
-          </button>
-        </div>
-
         {/* Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-220px)]">
+        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-170px)]">
           {form.dataLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="animate-spin text-emerald-600" size={32} />
             </div>
           ) : (
             <div className="p-6 space-y-8">
+              <SpeciesDataTab
+                formData={form.formData}
+                onFormDataChange={(field, value) => form.setFormData(prev => ({ ...prev, [field]: value }))}
+                families={form.families}
+                locais={form.locais}
+                selectedEspecieId={form.selectedEspecieId}
+                suggestions={form.suggestions}
+                isSearching={form.isSearching}
+                showSuggestions={form.showSuggestions}
+                onNameChange={form.handleNameChange}
+                onSelectGlobalSpecies={form.handleSelectGlobalSpecies}
+                onClearSelection={form.handleClearSelection}
+                onShowSuggestions={form.setShowSuggestions}
+                isAutorReadOnly={form.isAutorReadOnly}
+                isFamiliaReadOnly={form.isFamiliaReadOnly}
+                userRole={form.userRole}
+                isEditingExisting={form.isEditingExisting}
+                shouldLockGlobalFields={form.shouldLockGlobalFields}
+                isProjectUser={form.isProjectUser}
+                isSenior={form.isSenior}
+                getUserLocalName={form.getUserLocalName}
+                localData={form.localData}
+                onLocalDataChange={form.setLocalData}
+              />
 
-              {/* ── SPECIES TAB ── */}
-              {form.activeTab === 'species' && (
-                <>
-                  <SpeciesDataTab
-                    formData={form.formData}
-                    onFormDataChange={(field, value) => form.setFormData(prev => ({ ...prev, [field]: value }))}
-                    families={form.families}
-                    locais={form.locais}
-                    suggestions={form.suggestions}
-                    isSearching={form.isSearching}
-                    showSuggestions={form.showSuggestions}
-                    onNameChange={form.handleNameChange}
-                    onSelectGlobalSpecies={form.handleSelectGlobalSpecies}
-                    onClearSelection={form.handleClearSelection}
-                    onShowSuggestions={form.setShowSuggestions}
-                    userRole={form.userRole}
-                    isGlobalSpecies={form.isGlobalSpecies}
-                    isEditingExisting={form.isEditingExisting}
-                    shouldLockGlobalFields={form.shouldLockGlobalFields}
-                    isProjectUser={form.isProjectUser}
-                    isSenior={form.isSenior}
-                    getUserLocalName={form.getUserLocalName}
-                    localData={form.localData}
-                    onLocalDataChange={form.setLocalData}
-                  />
+              {/* Images Section */}
+              <section>
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <ImageIcon size={16} className="text-emerald-600" />
+                  Galeria de Imagens
+                </h3>
+                <ImageUploadZone
+                  imagePreviews={images.imagePreviews}
+                  newImageCredits={images.newImageCredits}
+                  onRemoveNewImage={images.removeNewImage}
+                  onNewImageCreditsChange={(index, credits) => {
+                    images.setNewImageCredits(prev => {
+                      const updated = [...prev];
+                      updated[index] = credits;
+                      return updated;
+                    });
+                  }}
+                  existingImages={images.existingImages}
+                  editedCredits={images.editedCredits}
+                  onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
+                  onDeleteExisting={images.handleDeleteExistingImage}
+                  dragActive={images.dragActive}
+                  onDrag={images.handleDrag}
+                  onDrop={images.handleDrop}
+                  onFileInput={images.handleFileInput}
+                  fileInputRef={images.fileInputRef}
+                />
+              </section>
 
-                  {/* Images Section */}
-                  <section>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <ImageIcon size={16} className="text-emerald-600" />
-                      Galeria de Imagens
-                    </h3>
-                    <ImageUploadZone
-                      imagePreviews={images.imagePreviews}
-                      newImageCredits={images.newImageCredits}
-                      onRemoveNewImage={images.removeNewImage}
-                      onNewImageCreditsChange={(index, credits) => {
-                        images.setNewImageCredits(prev => {
-                          const updated = [...prev];
-                          updated[index] = credits;
-                          return updated;
-                        });
-                      }}
-                      existingImages={images.existingImages}
-                      editedCredits={images.editedCredits}
-                      onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
-                      onDeleteExisting={images.handleDeleteExistingImage}
-                      dragActive={images.dragActive}
-                      onDrag={images.handleDrag}
-                      onDrop={images.handleDrop}
-                      onFileInput={images.handleFileInput}
-                      fileInputRef={images.fileInputRef}
-                    />
-                  </section>
-                </>
-              )}
-
-              {/* ── LABEL TAB ── */}
-              {form.activeTab === 'label' && (
-                <>
-                  {/* GPS Button */}
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-                      📍 Geolocalização
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={form.handleGetLocation}
-                      disabled={form.geoLoading}
-                      className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 disabled:opacity-50"
-                    >
-                      {form.geoLoading ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          Obtendo...
-                        </>
-                      ) : (
-                        <>📍 Obter Localização Atual</>
-                      )}
-                    </button>
-                  </div>
-
-                  <LabelDataTab
-                    localData={form.localData}
-                    onLocalDataChange={(field, value) =>
-                      form.setLocalData(prev => ({ ...prev, [field]: value }))
-                    }
-                    formData={{
-                      nome_cientifico: form.formData.nome_cientifico,
-                      autor: form.formData.autor,
-                      familia_id: form.formData.familia_id || '',
-                    }}
-                    families={form.families}
-                  />
-                </>
-              )}
-
-              {/* Authorship Info — shown in both tabs when editing */}
+              {/* Authorship Info — shown when editing */}
               {initialData?.id && initialData?.created_at && (
                 <section className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
                   <p>
