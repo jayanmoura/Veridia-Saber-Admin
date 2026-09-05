@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
@@ -16,11 +16,12 @@ import {
     AlertTriangle
 } from 'lucide-react';
 import type { GlobalStats, RecentWorkItem } from '../../hooks';
+import type { Species, Family } from '../../types/domain';
 
 interface SeniorViewProps {
     stats: GlobalStats;
     recentWork: RecentWorkItem[];
-    pendingSpecies: any[];
+    pendingSpecies: Record<string, unknown>[];
     loading: boolean;
     refetch: () => Promise<void>;
 }
@@ -32,8 +33,8 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
     const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
-    const [editingWork, setEditingWork] = useState<any>(null);
-    const [editingFamily, setEditingFamily] = useState<any>(null);
+    const [editingWork, setEditingWork] = useState<Species | null>(null);
+    const [editingFamily, setEditingFamily] = useState<Family | null>(null);
 
     const handleNewSpecies = () => {
         setEditingWork(null);
@@ -42,10 +43,10 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
 
     const handleEditWork = (work: RecentWorkItem) => {
         if (work.type === 'familia') {
-            setEditingFamily(work);
+            setEditingFamily(work as unknown as Family);
             setIsFamilyModalOpen(true);
         } else {
-            setEditingWork(work);
+            setEditingWork(work as unknown as Species);
             setIsSpeciesModalOpen(true);
         }
     };
@@ -184,11 +185,11 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
             <PendingCuratorshipModal
                 isOpen={isPendingModalOpen}
                 onClose={() => setIsPendingModalOpen(false)}
-                items={pendingSpecies}
+                items={pendingSpecies as unknown as ComponentProps<typeof PendingCuratorshipModal>['items']}
                 onFix={async (item) => {
                     const { data } = await supabase.from('especie').select('*, familia(familia_nome), imagens(url_imagem, local_id)').eq('id', item.id).single();
                     if (data) {
-                        setEditingWork(data);
+                        setEditingWork(data as unknown as Species);
                         setIsPendingModalOpen(false);
                         setIsSpeciesModalOpen(true);
                     }

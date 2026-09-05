@@ -24,7 +24,7 @@ export default function Projects() {
 
     // Actions hook
     const actions = useProjectActions({
-        profile: profile as any,
+        profile,
         onSuccess: refetch
     });
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../lib/supabase';
@@ -16,6 +16,34 @@ interface LocationData {
     date: string;
     image?: string;
     user_id: string | null; // Added to track plant owner
+}
+
+interface RawPlantaColecaoRow {
+    id: string | number;
+    latitude: number;
+    longitude: number;
+    especie: string | null;
+    familia_custom: string | null;
+    familia_id: string | null;
+    familia?: { familia_nome: string } | null;
+    data_registro: string;
+    fotos: string[] | null;
+    user_id: string | null;
+}
+
+interface RawEspecieLocalHeatmapRef {
+    nome_cientifico: string | null;
+    familia: { familia_nome: string } | { familia_nome: string }[] | null;
+    created_by: string | null;
+    imagens: { url_imagem: string | null; url_thumbnail: string | null }[] | null;
+}
+
+interface RawEspecieLocalHeatmapRow {
+    id: string | number;
+    latitude: number;
+    longitude: number;
+    created_at: string;
+    especie: RawEspecieLocalHeatmapRef | RawEspecieLocalHeatmapRef[] | null;
 }
 
 // Fix Leaflet clean up issues
@@ -38,11 +66,7 @@ export function GlobalHeatmap() {
     const [uniqueFamilies, setUniqueFamilies] = useState<string[]>([]);
     const [mapStyle, setMapStyle] = useState<'light' | 'dark' | 'satellite'>('light');
 
-    useEffect(() => {
-        fetchLocations();
-    }, []);
-
-    const fetchLocations = async () => {
+    const fetchLocations = useCallback(async () => {
         setLoading(true);
         try {
             // Fetch from plantas_da_colecao (app mobile registrations)
@@ -87,7 +111,7 @@ export function GlobalHeatmap() {
             if (especieLocalError) throw especieLocalError;
 
             // Map plantas_da_colecao
-            const mappedPlantas: LocationData[] = (plantasData || []).map((item: any) => ({
+            const mappedPlantas: LocationData[] = ((plantasData || []) as RawPlantaColecaoRow[]).map((item) => ({
                 id: `planta_${item.id}`,
                 latitude: Number(item.latitude),
                 longitude: Number(item.longitude),
@@ -100,14 +124,15 @@ export function GlobalHeatmap() {
             }));
 
             // Map especie_local
-            const mappedEspecieLocal: LocationData[] = (especieLocalData || []).map((item: any) => {
+            const mappedEspecieLocal: LocationData[] = ((especieLocalData || []) as RawEspecieLocalHeatmapRow[]).map((item) => {
                 const especie = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                const familia = Array.isArray(especie?.familia) ? especie.familia[0] : especie?.familia;
                 return {
                     id: `especie_local_${item.id}`,
                     latitude: Number(item.latitude),
                     longitude: Number(item.longitude),
                     species_name: especie?.nome_cientifico || 'Não Identificada',
-                    family_name: especie?.familia?.familia_nome || 'Sem Família',
+                    family_name: familia?.familia_nome || 'Sem Família',
                     collector: 'Painel Web',
                     date: item.created_at,
                     image: especie?.imagens?.[0]?.url_thumbnail || especie?.imagens?.[0]?.url_imagem || undefined,
@@ -123,14 +148,18 @@ export function GlobalHeatmap() {
             const families = Array.from(new Set(allLocations.map(l => l.family_name))).sort();
             setUniqueFamilies(families);
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error fetching map data:', error);
-            // Mostrar erro visualmente para debug
-            showToast(`Erro ao carregar mapa: ${error.message || 'Erro desconhecido'}.`, 'error');
+            const err = error as { message?: string };
+            showToast(`Erro ao carregar mapa: ${err.message || 'Erro desconhecido'}.`, 'error');
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchLocations();
+    }, [fetchLocations]);
 
     const filteredLocations = filterFamily
         ? locations.filter(l => l.family_name === filterFamily)

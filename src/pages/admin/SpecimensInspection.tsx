@@ -42,13 +42,7 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
     const [images, setImages] = useState<{ id: string; url_imagem: string; url_thumbnail: string | null; url_micro: string | null; creditos: string | null }[]>([]);
     const [loadingImages, setLoadingImages] = useState(false);
 
-    useEffect(() => {
-        if (specimen && isOpen) {
-            loadImages();
-        }
-    }, [specimen, isOpen]);
-
-    const loadImages = async () => {
+    const loadImages = useCallback(async () => {
         if (!specimen) return;
         setLoadingImages(true);
         try {
@@ -62,7 +56,13 @@ function SpecimenDetailModal({ specimen, isOpen, onClose }: SpecimenDetailModalP
         } finally {
             setLoadingImages(false);
         }
-    };
+    }, [specimen]);
+
+    useEffect(() => {
+        if (specimen && isOpen) {
+            loadImages();
+        }
+    }, [specimen, isOpen, loadImages]);
 
     if (!isOpen || !specimen) return null;
 
@@ -396,7 +396,7 @@ function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRo
                         <label className="block text-sm font-medium text-gray-700 mb-2">Filtrar por Imagens</label>
                         <select
                             value={imageFilter}
-                            onChange={(e) => setImageFilter(e.target.value as any)}
+                            onChange={(e) => setImageFilter(e.target.value as 'all' | 'with' | 'without')}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
                         >
                             <option value="all">Todos os espécimes</option>
@@ -711,7 +711,7 @@ export default function SpecimensInspection() {
                         </label>
                         <select
                             value={filter}
-                            onChange={(e) => setFilter(e.target.value as any)}
+                            onChange={(e) => setFilter(e.target.value as 'all' | 'with-images' | 'without-images')}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none appearance-none bg-white"
                             disabled={!selectedProject}
                         >

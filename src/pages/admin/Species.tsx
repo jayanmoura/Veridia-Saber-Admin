@@ -19,6 +19,7 @@ import { deleteFile, parseStorageUrl } from '../../utils/storage';
 import { specimenRepo } from '../../services/specimenRepo';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { hasMinLevel } from '../../types/auth';
+import type { SpeciesItem } from '../../components/Tables/SpeciesTable';
 import {
     Leaf,
     ImageOff,
@@ -58,7 +59,7 @@ export default function SpeciesPage() {
 
     // Actions hook (PDF, export, labels)
     const actions = useSpeciesActions({
-        profile: profile as any,
+        profile,
         search,
         selectedFamily
     });
@@ -102,8 +103,8 @@ export default function SpeciesPage() {
         setIsModalOpen(true);
     };
 
-    const handleEditSpecies = (species: any) => {
-        setEditingSpecies(species as Species);
+    const handleEditSpecies = (species: Species) => {
+        setEditingSpecies(species);
         setIsModalOpen(true);
     };
 
@@ -186,8 +187,8 @@ export default function SpeciesPage() {
         }
     };
 
-    const openDeleteModal = (species: any) => {
-        setSpeciesToDelete(species as Species);
+    const openDeleteModal = (species: Species) => {
+        setSpeciesToDelete(species);
         setIsDeleteModalOpen(true);
     };
 
@@ -286,13 +287,14 @@ export default function SpeciesPage() {
             setDeletedSpeciesName(speciesName);
             setShowSuccessModal(true);
             refetch();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Delete error:', error);
-            if (error.code === '23503') {
+            const err = error as { code?: string; message?: string };
+            if (err.code === '23503') {
                 setBlockedSpeciesName(speciesName);
                 setShowBlockModal(true);
             } else {
-                showToast(error.message || 'Erro ao excluir espécie.', 'error');
+                showToast(err.message || 'Erro ao excluir espécie.', 'error');
             }
         } finally {
             setDeleteLoading(false);
@@ -300,7 +302,7 @@ export default function SpeciesPage() {
     };
 
     // Access control
-    const hasAccess = hasMinLevel(profile?.role as any, 5);
+    const hasAccess = hasMinLevel(profile?.role, 5);
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
     if (!hasAccess) {
@@ -378,7 +380,7 @@ export default function SpeciesPage() {
                             </button>
                         </>
                     )}
-                    {hasMinLevel(profile?.role as any, 4) ? (
+                    {hasMinLevel(profile?.role, 4) ? (
                         <button
                             onClick={handleNewSpecies}
                             className="flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors shadow-sm flex-1 md:flex-none"
@@ -400,7 +402,7 @@ export default function SpeciesPage() {
 
             {/* Table Component */}
             <SpeciesTable
-                species={species as any}
+                species={species as unknown as SpeciesItem[]}
                 loading={loading}
                 totalCount={totalCount}
                 page={page}

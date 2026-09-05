@@ -5,7 +5,7 @@ interface PendingItem {
     id: string;
     nome_cientifico: string;
     descricao_especie?: string | null;
-    imagens?: any[];
+    imagens?: { id?: string; url_imagem?: string | null; url_thumbnail?: string | null }[];
     familia?: { familia_nome: string } | null;
 }
 

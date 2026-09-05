@@ -53,9 +53,10 @@ export function useFamilyLegacyNames(familiaId: string | undefined): UseFamilyLe
 
             if (error) throw error;
             setLegacyNames(data || []);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error fetching legacy names:', err);
-            setError(err.message);
+            const error = err as { message?: string };
+            setError(error.message || 'Erro ao carregar nomenclaturas legadas.');
         } finally {
             setLoading(false);
         }
@@ -102,7 +103,7 @@ export function useFamilyLegacyNames(familiaId: string | undefined): UseFamilyLe
                 throw error;
             }
             await fetchLegacyNames();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error adding legacy name:', err);
             throw err;
         }
@@ -145,7 +146,7 @@ export function useFamilyLegacyNames(familiaId: string | undefined): UseFamilyLe
                 throw error;
             }
             await fetchLegacyNames();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error updating legacy name:', err);
             throw err;
         }
@@ -160,7 +161,7 @@ export function useFamilyLegacyNames(familiaId: string | undefined): UseFamilyLe
 
             if (error) throw error;
             await fetchLegacyNames();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error removing legacy name:', err);
             throw err;
         }

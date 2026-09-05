@@ -11,7 +11,7 @@ import type { SpecimenFormData } from '../../hooks/useSpecimens';
 interface SpecimenModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (data: any) => Promise<number | null>;
+    onSave: (data?: unknown) => Promise<number | null>;
     formData: SpecimenFormData;
     setFormData: React.Dispatch<React.SetStateAction<SpecimenFormData>>;
     loading: boolean;
@@ -26,6 +26,19 @@ interface OptionItem {
     label: string;
     subLabel?: string;
     institutionId?: string;
+}
+
+interface RawSpeciesOption {
+    id: string;
+    nome_cientifico: string;
+    nome_popular: string | null;
+}
+
+interface RawProjectOption {
+    id: string | number;
+    nome: string;
+    tipo: string | null;
+    institution_id: string | null;
 }
 
 export function SpecimenModal({
@@ -123,6 +136,13 @@ export function SpecimenModal({
             }));
             images.reset();
         }
+        // 'images' e 'setFormData' excluídos intencionalmente: 'images' é
+        // recriado a cada render pelo hook useSpecimenImages (incluí-lo
+        // causaria o efeito rodar em todo render); 'setFormData' é estável
+        // via useState e não precisa constar. 'formData.local_id' também
+        // não é necessário pois o efeito já lê o valor mais recente via
+        // closure no momento em que roda, disparado pelas deps corretas.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId]);
 
     // Species Search Effect
@@ -136,10 +156,10 @@ export function SpecimenModal({
                     .select('id, nome_cientifico, nome_popular')
                     .ilike('nome_cientifico', `%${speciesSearch}%`)
                     .limit(10);
-                setSpeciesOptions((data || []).map((d: any) => ({
+                setSpeciesOptions(((data || []) as RawSpeciesOption[]).map((d) => ({
                     id: d.id,
                     label: d.nome_cientifico,
-                    subLabel: d.nome_popular
+                    subLabel: d.nome_popular || undefined
                 })));
             } finally { setSpeciesSearching(false); }
         }, 300);
@@ -157,11 +177,11 @@ export function SpecimenModal({
                     .select('id, nome, tipo, institution_id')
                     .ilike('nome', `%${projectSearch}%`)
                     .limit(10);
-                setProjectOptions((data || []).map((d: any) => ({
+                setProjectOptions(((data || []) as RawProjectOption[]).map((d) => ({
                     id: d.id.toString(),
                     label: d.nome,
-                    subLabel: d.tipo,
-                    institutionId: d.institution_id
+                    subLabel: d.tipo || undefined,
+                    institutionId: d.institution_id || undefined
                 })));
             } finally { setProjectSearching(false); }
         }, 300);

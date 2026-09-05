@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Search, Loader2, Plus, Edit2, Trash2, Tag, Filter, Leaf, FileText } from 'lucide-react';
+import { MapPin, Search, Loader2, Plus, Edit2, Trash2, Filter, Leaf, FileText } from 'lucide-react';
 import { specimenRepo } from '../../services/specimenRepo';
 import type { Specimen } from '../../services/types';
-import { generateHerbariumLabels } from '../../utils/pdf';
 import { SpecimenModal } from '../../components/Modals/SpecimenModal';
 import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
@@ -47,7 +46,6 @@ export default function Specimens() {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [formData, setFormData] = useState<SpecimenFormData>(INITIAL_FORM);
     const [actionLoading, setActionLoading] = useState(false);
-    const [labelLoading, setLabelLoading] = useState<number | null>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -102,6 +100,12 @@ export default function Specimens() {
         };
 
         init();
+        // loadSpecimens/searchParams/setSearchParams excluídos intencionalmente:
+        // loadSpecimens não é memoizada (recriada a cada render) e searchParams
+        // é modificado dentro deste mesmo efeito (via setSearchParams), o que
+        // causaria um loop de re-execução se incluído nas deps. Este efeito
+        // deve rodar apenas quando o profile muda (login/troca de usuário).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profile]);
 
     const loadSpecimens = async (localIdOverride?: string) => {
@@ -166,41 +170,6 @@ export default function Specimens() {
             return 0;
         });
     }, [filtered, sortKey, sortDir]);
-
-    const handlePrintLabel = async (specimen: Specimen) => {
-        setLabelLoading(Number(specimen.id));
-        try {
-            // Format data for label generator
-            const formatDate = (dateStr?: string | null) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
-
-            const labelData = {
-                scientificName: specimen.especie?.nome_cientifico || 'Sem Identificação',
-                author: (specimen.especie as any)?.autor || undefined,
-                family: specimen.especie?.familia?.familia_nome || 'INDETERMINADA',
-                popularName: specimen.especie?.nome_popular || undefined,
-                collector: specimen.coletor || 'Sem Coletor',
-                collectorNumber: specimen.numero_coletor || undefined,
-                date: formatDate(specimen.created_at),
-                location: `${specimen.locais?.nome || 'Local Desconhecido'}`,
-                notes: specimen.detalhes_localizacao || '',
-                morphology: specimen.morfologia || undefined,
-                habitat: specimen.habitat_ecologia || undefined,
-                determinant: specimen.determinador || '',
-                determinationDate: formatDate(specimen.data_determinacao),
-                coordinates: (specimen.latitude && specimen.longitude)
-                    ? `Lat: ${specimen.latitude} Long: ${specimen.longitude}`
-                    : undefined,
-                tomboNumber: specimen.tombo_codigo || specimen.id
-            };
-
-            generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
-        } catch (error) {
-            console.error('Error generating label:', error);
-            showToast('Erro ao gerar etiqueta', 'error');
-        } finally {
-            setLabelLoading(null);
-        }
-    };
 
     // NEW: Generate Project Report (PDF)
     const handleGenerateProjectReport = async () => {
@@ -510,14 +479,6 @@ export default function Specimens() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handlePrintLabel(item)}
-                                                    className="p-1.5 text-gray-400 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
-                                                    title="Gerar Etiqueta"
-                                                    disabled={labelLoading === item.id}
-                                                >
-                                                    {labelLoading === item.id ? <Loader2 size={16} className="animate-spin" /> : <Tag size={16} />}
-                                                </button>
                                                 <button
                                                     onClick={() => openEditModal(item)}
                                                     className="p-1.5 text-gray-400 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"

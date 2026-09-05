@@ -4,11 +4,25 @@ import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
 import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
 
+interface SupabaseErrorLike {
+    message?: string;
+    code?: string;
+}
+
+function isSupabaseErrorLike(error: unknown): error is SupabaseErrorLike {
+    return typeof error === 'object' && error !== null && ('message' in error || 'code' in error);
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+    if (isSupabaseErrorLike(error) && error.message) return error.message;
+    return fallback;
+}
+
 interface Profile {
     id: string;
     role?: string;
     full_name?: string;
-    institution_id?: string;
+    institution_id?: string | null;
 }
 
 interface Project {
@@ -17,7 +31,22 @@ interface Project {
     descricao: string | null;
     imagem_capa: string | null;
     tipo: string | null;
+    sigla?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    gestor_id?: string | null;
 }
+
+interface HerbariumReportRow {
+    nome_cientifico: string;
+    autor: string | null;
+    familia: { familia_nome: string } | { familia_nome: string }[] | null;
+    especie_local: { detalhes_localizacao: string | null; determinador: string | null }[] | null;
+}
+
+
 
 interface ProjectFormData {
     nome: string;
@@ -298,12 +327,12 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             setIsNewModalOpen(false);
             resetNewForm();
             onSuccess();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Create project error:', error);
-            if (error.code === '23505') { // Unique violation
+            if (isSupabaseErrorLike(error) && error.code === '23505') { // Unique violation
                 showToast('A Sigla do Projeto já está em uso. Por favor, escolha outra.', 'error');
             } else {
-                showToast(error.message || 'Erro ao criar projeto.', 'error');
+                showToast(getErrorMessage(error, 'Erro ao criar projeto.'), 'error');
             }
         } finally {
             setNewProjectLoading(false);
@@ -316,14 +345,14 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         setSelectedProject(project);
         setEditFormData({
             nome: project.nome,
-            sigla: (project as any).sigla || '', // Cast as any because Project type might not have sigla yet
+            sigla: project.sigla || '',
             tipo: project.tipo || '',
-            cidade: (project as any).cidade || '',
-            estado: (project as any).estado || '',
-            latitude: (project as any).latitude ? String((project as any).latitude) : '',
-            longitude: (project as any).longitude ? String((project as any).longitude) : '',
+            cidade: project.cidade || '',
+            estado: project.estado || '',
+            latitude: project.latitude ? String(project.latitude) : '',
+            longitude: project.longitude ? String(project.longitude) : '',
             descricao: project.descricao || '',
-            gestor_id: (project as any).gestor_id || ''
+            gestor_id: project.gestor_id || ''
         });
         setEditImagePreview(project.imagem_capa);
         setEditImageFile(null);
@@ -402,9 +431,9 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             // Wait a bit to ensure DB propagation/consistency before refetching
             await new Promise(resolve => setTimeout(resolve, 1000));
             onSuccess();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Edit error:', error);
-            showToast(error.message || 'Erro ao atualizar projeto.', 'error');
+            showToast(getErrorMessage(error, 'Erro ao atualizar projeto.'), 'error');
         } finally {
             setEditLoading(false);
             isSubmittingEdit.current = false;
@@ -503,8 +532,8 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             showToast('Projeto excluído com sucesso!');
             closeDeleteModal();
             onSuccess();
-        } catch (error: any) {
-            showToast(error.message || 'Erro ao excluir projeto.', 'error');
+        } catch (error) {
+            showToast(getErrorMessage(error, 'Erro ao excluir projeto.'), 'error');
         } finally {
             setDeleteLoading(false);
         }
@@ -524,16 +553,19 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 return;
             }
 
-            const labels = data.map((sp: any) => ({
-                scientificName: sp.nome_cientifico,
-                author: sp.autor,
-                family: sp.familia?.familia_nome || 'INDETERMINADA',
-                location: project.nome,
-                collector: 'Veridia Saber',
-                date: new Date().toLocaleDateString('pt-BR'),
-                determinant: sp.especie_local?.[0]?.determinador || 'Sistema Veridia',
-                notes: sp.especie_local?.[0]?.detalhes_localizacao || ''
-            }));
+            const labels = (data as unknown as HerbariumReportRow[]).map((sp) => {
+                const familyName = (Array.isArray(sp.familia) ? sp.familia[0]?.familia_nome : sp.familia?.familia_nome) || 'INDETERMINADA';
+                return {
+                    scientificName: sp.nome_cientifico,
+                    author: sp.autor ?? undefined,
+                    family: familyName,
+                    location: project.nome,
+                    collector: 'Veridia Saber',
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    determinant: sp.especie_local?.[0]?.determinador || 'Sistema Veridia',
+                    notes: sp.especie_local?.[0]?.detalhes_localizacao || ''
+                };
+            });
 
             generateHerbariumLabels(labels, `Etiquetas_${project.nome.replace(/\s+/g, '_')}.pdf`);
         } catch (error) {

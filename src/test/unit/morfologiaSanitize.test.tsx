@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { sanitizeOrgaoConteudo } from '../../pages/landingpage/MorfologiaOrgaoPage';
+import { sanitizeOrgaoConteudo } from '../../pages/landingpage/morfologiaSanitize';
 
 describe('Sanitização de conteúdo de Morfologia (F12: XSS em conteudo_orgaos)', () => {
   describe('1. Conteúdo Markdown legítimo', () => {

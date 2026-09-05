@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -28,6 +28,16 @@ interface ContentItem {
     titulo: string;
     conteudo: string;
     ordem: number;
+}
+
+interface StorageFileItem {
+    id: string;
+    name: string;
+    publicUrl: string;
+    created_at?: string;
+    updated_at?: string;
+    last_accessed_at?: string;
+    metadata?: Record<string, unknown>;
 }
 
 const ORGAOS = ['Raiz', 'Caule', 'Folha', 'Flor', 'Fruto', 'Semente'];
@@ -63,18 +73,14 @@ export default function EducationalContent() {
     const [filesLoading, setFilesLoading] = useState(false);
     const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
-    const [folderFiles, setFolderFiles] = useState<any[]>([]);
+    const [folderFiles, setFolderFiles] = useState<StorageFileItem[]>([]);
 
     // Bulk action states
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDeletingFiles, setIsDeletingFiles] = useState(false);
 
-    useEffect(() => {
-        fetchContent();
-    }, [selectedTab]);
-
-    const fetchContent = async () => {
+    const fetchContent = useCallback(async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('conteudo_orgaos')
@@ -94,7 +100,11 @@ export default function EducationalContent() {
             setItems(data || []);
         }
         setLoading(false);
-    };
+    }, [selectedTab]);
+
+    useEffect(() => {
+        fetchContent();
+    }, [fetchContent]);
 
     const handleSave = async () => {
         if (!formData.titulo || !formData.conteudo) {
@@ -140,12 +150,13 @@ export default function EducationalContent() {
             setIsModalOpen(false);
             setEditingItem(null);
             fetchContent();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error saving:', err);
+            const error = err as { message?: string };
             setFeedbackModal({
                 isOpen: true,
                 title: 'Erro ao Salvar',
-                message: 'Ocorreu um erro ao salvar: ' + err.message,
+                message: 'Ocorreu um erro ao salvar: ' + (error.message || 'erro desconhecido'),
                 variant: 'warning'
             });
         }
@@ -163,12 +174,13 @@ export default function EducationalContent() {
             setIsDeleteModalOpen(false);
             setItemToDelete(null);
             fetchContent();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error deleting:', err);
+            const error = err as { message?: string };
             setFeedbackModal({
                 isOpen: true,
                 title: 'Erro ao Excluir',
-                message: 'Ocorreu um erro ao tentar excluir: ' + err.message,
+                message: 'Ocorreu um erro ao tentar excluir: ' + (error.message || 'erro desconhecido'),
                 variant: 'warning'
             });
         } finally {
@@ -267,9 +279,10 @@ export default function EducationalContent() {
             await Promise.all(promises);
             const zipBlob = await zip.generateAsync({ type: 'blob' });
             saveAs(zipBlob, `imagens_${currentFolder}_${Date.now()}.zip`);
-        } catch (e: any) {
+        } catch (e) {
             console.error('Erro ao baixar ZIP:', e);
-            setFeedbackModal({ isOpen: true, title: 'Erro de Download', message: 'Falha ao compactar imagens: ' + e.message, variant: 'warning' });
+            const error = e as { message?: string };
+            setFeedbackModal({ isOpen: true, title: 'Erro de Download', message: 'Falha ao compactar imagens: ' + (error.message || 'erro desconhecido'), variant: 'warning' });
         } finally {
             setIsDownloading(false);
         }
@@ -300,9 +313,10 @@ export default function EducationalContent() {
             } else {
                 setFolderFiles([]);
             }
-        } catch (e: any) {
+        } catch (e) {
             console.error('Erro ao excluir imagens no Supabase:', e);
-            setFeedbackModal({ isOpen: true, title: 'Erro de Exclusão', message: 'Falha ao remover imagens: ' + e.message, variant: 'warning' });
+            const error = e as { message?: string };
+            setFeedbackModal({ isOpen: true, title: 'Erro de Exclusão', message: 'Falha ao remover imagens: ' + (error.message || 'erro desconhecido'), variant: 'warning' });
         } finally {
             setIsDeletingFiles(false);
         }

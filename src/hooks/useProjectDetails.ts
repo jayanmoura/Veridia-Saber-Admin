@@ -53,6 +53,54 @@ export interface ModalSpecies {
     nome_popular: string | null;
 }
 
+interface FamiliaRef {
+    id: number;
+    familia_nome: string;
+}
+
+interface ImageRow {
+    url_micro: string | null;
+    url_thumbnail: string | null;
+    url_imagem: string | null;
+}
+
+interface EspecieFamiliaOnlyRef {
+    familia_id: number | string | null;
+}
+
+interface FamilyCountRow {
+    especie: EspecieFamiliaOnlyRef | EspecieFamiliaOnlyRef[] | null;
+}
+
+interface SpeciesJoinRow {
+    id: string;
+    nome_cientifico: string | null;
+    nome_popular: string | null;
+    familia_id: number | null;
+    familia: FamiliaRef | FamiliaRef[] | null;
+    imagens: ImageRow[] | null;
+}
+
+interface SpecimenSpeciesRow {
+    id: string | number;
+    created_at: string | null;
+    tombo_codigo: string | null;
+    imagens: ImageRow[] | null;
+    especie: SpeciesJoinRow | SpeciesJoinRow[] | null;
+}
+
+interface FamilyOnlyEspecieRef {
+    familia: FamiliaRef | FamiliaRef[] | null;
+}
+
+interface FamilyOnlyRow {
+    especie: FamilyOnlyEspecieRef | FamilyOnlyEspecieRef[] | null;
+}
+
+interface FamilyModalRow {
+    especie: ModalSpecies | ModalSpecies[] | null;
+}
+
 export type TabType = 'users' | 'species' | 'families' | 'specimens' | 'storage';
 
 export interface StorageAnalysis {
@@ -237,9 +285,12 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
             if (familyData) {
                 const uniqueFamilyIds = new Set(
-                    familyData
-                        .map((item: any) => item.especie?.familia_id)
-                        .filter((fid: any) => fid)
+                    (familyData as FamilyCountRow[])
+                        .map((item) => {
+                            const esp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                            return esp?.familia_id;
+                        })
+                        .filter((fid): fid is number | string => Boolean(fid))
                 );
                 setFamiliesCount(uniqueFamilyIds.size);
             }
@@ -292,8 +343,8 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
                     const speciesMap = new Map<string, LinkedSpecies>();
 
-                    (speciesData || []).forEach((item: any) => {
-                        const s = item.especie;
+                    ((speciesData || []) as SpecimenSpeciesRow[]).forEach((item) => {
+                        const s = Array.isArray(item.especie) ? item.especie[0] : item.especie;
                         if (!s || !s.id) return;
 
                         const imgEspecie = s.imagens?.[0];
@@ -346,8 +397,8 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
                     if (speciesForFamilies) {
                         const familyMap = new Map<number, { id: number; familia_nome: string; speciesCount: number }>();
-                        speciesForFamilies.forEach((item: any) => {
-                            const s = item.especie;
+                        (speciesForFamilies as FamilyOnlyRow[]).forEach((item) => {
+                            const s = Array.isArray(item.especie) ? item.especie[0] : item.especie;
                             if (!s) return;
 
                             const fam = Array.isArray(s.familia) ? s.familia[0] : s.familia;
@@ -384,7 +435,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         } finally {
             setTabLoading(false);
         }
-    }, [projectId, itemsPerPage, usersCount, speciesCountTotal]);
+    }, [projectId, itemsPerPage, usersCount]);
 
     // Fetch storage analysis
     const fetchStorageAnalysis = useCallback(async () => {
@@ -459,7 +510,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                 .order('nome_cientifico', { foreignTable: 'especie' });
 
             if (data) {
-                const mapped = data.map((item: any) => item.especie);
+                const mapped = (data as FamilyModalRow[])
+                    .map((item) => (Array.isArray(item.especie) ? item.especie[0] : item.especie))
+                    .filter((esp): esp is ModalSpecies => esp !== null && esp !== undefined);
                 setModalSpecies(mapped);
             }
         } catch (err) {
@@ -494,6 +547,11 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             setCurrentPage(1);
             fetchTabData(activeTab, 1);
         }
+        // fetchTabData/projectId excluídos intencionalmente: adicioná-los
+        // causaria corrida com o efeito de "Page change" (ambos disparariam
+        // ao trocar de aba, um buscando a página antiga). Este efeito já
+        // reage a `activeTab`/`project`, que é o gatilho correto.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, project]);
 
     // Page change
@@ -501,6 +559,12 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         if (projectId && project && currentPage > 0) {
             fetchTabData(activeTab, currentPage);
         }
+        // activeTab/fetchTabData/project/projectId excluídos intencionalmente:
+        // este efeito deve reagir SÓ à mudança de página (`currentPage`).
+        // Incluir `activeTab` aqui faria este efeito também disparar na troca
+        // de aba, competindo com o efeito de "Tab change" acima e buscando a
+        // página errada (currentPage ainda não resetado para 1 nesse render).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage]);
 
     return {

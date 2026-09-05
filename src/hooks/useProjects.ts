@@ -16,6 +16,10 @@ export interface Project {
     quantidade_especies: number;
 }
 
+interface RawProjectRow extends Omit<Project, 'especie'> {
+    especie?: { count: number }[];
+}
+
 export interface ProjectStats {
     total: number;
     topProject: { name: string; count: number } | null;
@@ -85,7 +89,7 @@ export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn
 
             if (error) throw error;
 
-            const formattedData: Project[] = (data || []).map((item: any) => ({
+            const formattedData: Project[] = ((data || []) as RawProjectRow[]).map((item) => ({
                 ...item,
                 quantidade_especies: item.especie?.[0]?.count || 0
             }));

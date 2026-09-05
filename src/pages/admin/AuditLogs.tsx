@@ -21,7 +21,7 @@ interface AuditLog {
     action_type: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
     table_name: string;
     record_id: string;
-    old_data: any; // JSON with previous data
+    old_data: Record<string, unknown> | null; // JSON with previous data
     details: string | null;
     // user_id is now the expanded relation
     user_id: { full_name: string; email: string } | { full_name: string; email: string }[];
@@ -94,15 +94,15 @@ export default function AuditLogs() {
 
             showToast('Registro restaurado com sucesso!', 'success');
             fetchLogs(); // Refresh logs to maybe show the restoration action
-        } catch (err: any) {
+        } catch (err) {
             console.error('Restore Error:', err);
-            // Handle common FK errors
-            if (err.code === '23503') {
+            const error = err as { code?: string; message?: string };
+            if (error.code === '23503') {
                 showToast('Erro: Impossível restaurar. O registro depende de outro dado que não existe mais (Chave Estrangeira).', 'error');
-            } else if (err.code === '23505') {
+            } else if (error.code === '23505') {
                 showToast('Erro: Registro duplicado. Este ID já existe na tabela.', 'error');
             } else {
-                showToast(`Erro ao restaurar: ${err.message}`, 'error');
+                showToast(`Erro ao restaurar: ${error.message}`, 'error');
             }
         } finally {
             setRestoring(null);
@@ -122,9 +122,8 @@ export default function AuditLogs() {
         }
     };
 
-    const parseDetails = (details: string | null, oldData: any) => {
+    const parseDetails = (details: string | null, oldData: Record<string, unknown> | null) => {
         if (!details && !oldData) return '-';
-        // Try to show a meaningful name from old_data if possible
         if (oldData) {
             if (oldData.nome) return `Nome: ${oldData.nome}`;
             if (oldData.nome_cientifico) return `Espécie: ${oldData.nome_cientifico}`;

@@ -70,6 +70,14 @@ export function SpeciesModalRefactored({
     } else {
       images.reset();
     }
+    // 'form', 'images', 'initialData.local_id' e 'profile?.local_id'
+    // excluídos intencionalmente: 'form' e 'images' são objetos novos a
+    // cada render (retornados por useSpeciesForm/useSpeciesImages sem
+    // memoização), incluí-los faria este efeito rodar em todo render e
+    // resetar o formulário/imagens repetidamente. Este efeito já reage
+    // corretamente a 'isOpen' e 'initialData?.id', que são os gatilhos
+    // reais de troca de espécie/abertura do modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialData?.id]);
 
   // Handle form submission

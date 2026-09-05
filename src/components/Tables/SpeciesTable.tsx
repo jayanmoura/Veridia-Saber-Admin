@@ -80,8 +80,8 @@ export function SpeciesTable({
         if (!sortKey) return species;
         return [...species].sort((a, b) => {
             if (sortKey === 'codigo') {
-                const valA = extractCodeNumber((a as any).codigo_vs);
-                const valB = extractCodeNumber((b as any).codigo_vs);
+                const valA = extractCodeNumber(a.codigo_vs);
+                const valB = extractCodeNumber(b.codigo_vs);
                 return sortDir === 'asc' ? valA - valB : valB - valA;
             }
             return 0;
@@ -138,7 +138,7 @@ export function SpeciesTable({
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 font-mono text-xs font-bold">
-                                            {(specie as any).codigo_vs || '-'}
+                                            {specie.codigo_vs || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             {specie.familia?.familia_nome || '-'}

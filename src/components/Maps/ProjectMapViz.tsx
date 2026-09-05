@@ -47,6 +47,30 @@ interface ProjectCluster {
     count: number;
 }
 
+interface ProjectRow {
+    id: number;
+    nome: string;
+    latitude: number | null;
+    longitude: number | null;
+}
+
+interface RawPlantRow {
+    id: string;
+    latitude: number;
+    longitude: number;
+    local_id: number;
+    especie?: {
+        nome_cientifico?: string | null;
+        familia?: { familia_nome?: string | null } | null;
+        imagens?: { url_thumbnail?: string | null; url_imagem?: string | null }[] | null;
+    } | null;
+    locais?: {
+        nome?: string | null;
+        latitude?: number | string | null;
+        longitude?: number | string | null;
+    } | null;
+}
+
 const MapController = () => {
     const map = useMap();
     useEffect(() => {
@@ -67,7 +91,7 @@ const ZoomHandler = ({ target }: { target: { lat: number, lng: number, zoom: num
 };
 
 export function ProjectMapViz() {
-    const [projects, setProjects] = useState<any[]>([]);
+    const [projects, setProjects] = useState<ProjectRow[]>([]);
     const [plants, setPlants] = useState<PlantLocation[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'projects' | 'plants'>('projects');
@@ -95,7 +119,7 @@ export function ProjectMapViz() {
                 withCoordinates: true
             });
 
-            const mappedPlants: PlantLocation[] = (plantsData || []).map((item: any) => ({
+            const mappedPlants: PlantLocation[] = ((plantsData || []) as RawPlantRow[]).map((item) => ({
                 id: item.id,
                 latitude: Number(item.latitude),
                 longitude: Number(item.longitude),
@@ -105,7 +129,7 @@ export function ProjectMapViz() {
                 project_name: item.locais?.nome || 'Projeto Desconhecido',
                 project_lat: item.locais?.latitude ? Number(item.locais.latitude) : undefined,
                 project_lng: item.locais?.longitude ? Number(item.locais.longitude) : undefined,
-                image: item.especie?.imagens?.[0]?.url_thumbnail || item.especie?.imagens?.[0]?.url_imagem
+                image: item.especie?.imagens?.[0]?.url_thumbnail || item.especie?.imagens?.[0]?.url_imagem || undefined
             }));
 
             setProjects(projectsData || []);

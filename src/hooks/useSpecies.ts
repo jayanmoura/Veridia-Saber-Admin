@@ -5,6 +5,27 @@ import { useAuth } from '../contexts/authContext';
 // ============ TYPES ============
 import type { Species } from '../types/domain';
 
+interface RawSpeciesName {
+    nome_cientifico?: string | null;
+}
+
+interface RawSpeciesImage {
+    id?: string;
+    url_imagem: string;
+    url_thumbnail?: string | null;
+    local_id?: string | number | null;
+}
+
+interface RawEspecieLocalOverride {
+    especie_id: string;
+    descricao_especie: string | null;
+}
+
+interface RawSpeciesRow extends Omit<Species, 'imagens'> {
+    id: string;
+    imagens?: RawSpeciesImage[] | null;
+}
+
 export interface FamilyOption {
     id: string;
     familia_nome: string;
@@ -72,7 +93,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
     });
 
     // Calculate stats from global data (Top Genus) and global data (Missing Images)
-    const calculateStats = useCallback((data: Species[], total: number, missingImagesGlobal: number, allNamesData?: any[]) => {
+    const calculateStats = useCallback((data: Species[], total: number, missingImagesGlobal: number, allNamesData?: RawSpeciesName[]) => {
         const genusCounts: Record<string, number> = {};
 
         const dataToProcess = (allNamesData && allNamesData.length > 0) ? allNamesData : data;
@@ -218,7 +239,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             // Fetch overrides for local user context
             const overrideMap = new Map<string, string>();
             if (!isGlobalAdmin && userLocalId && data && data.length > 0) {
-                const speciesIds = data.map((s: any) => s.id);
+                const speciesIds = (data as RawSpeciesRow[]).map((s) => s.id);
                 const { data: overrides } = await supabase
                     .from('especie_local_overrides')
                     .select('especie_id, descricao_especie')
@@ -226,7 +247,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     .eq('local_id', userLocalId);
 
                 if (overrides && overrides.length > 0) {
-                    overrides.forEach((o: any) => {
+                    (overrides as RawEspecieLocalOverride[]).forEach((o) => {
                         if (o.descricao_especie !== null && o.descricao_especie !== undefined) {
                             overrideMap.set(o.especie_id, o.descricao_especie);
                         }
@@ -235,11 +256,11 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             }
 
             // Filter images by local_id for non-global admins (View logic) and apply overrides
-            const formattedData: Species[] = (data || []).map((item: any) => {
+            const formattedData: Species[] = ((data || []) as RawSpeciesRow[]).map((item) => {
                 let filteredImages = item.imagens || [];
 
                 if (!isGlobalAdmin && userLocalId && filteredImages.length > 0) {
-                    filteredImages = filteredImages.filter((img: any) =>
+                    filteredImages = filteredImages.filter((img) =>
                         img.local_id === userLocalId || img.local_id === String(userLocalId) || img.local_id === null
                     );
                 }

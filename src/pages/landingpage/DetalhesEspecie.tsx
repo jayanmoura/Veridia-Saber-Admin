@@ -44,6 +44,32 @@ interface SpeciesDetails {
   imagens: SpeciesImage[] | null;
 }
 
+interface GalleryImageItem {
+  id?: string;
+  especime_id: number | null;
+  url_thumbnail: string | null;
+  url_micro: string | null;
+  url_imagem: string;
+  creditos: string | null;
+}
+
+interface MapSpecimenItem {
+  id: number;
+  latitude: number;
+  longitude: number;
+  detalhes_localizacao: string | null;
+  descricao_ocorrencia: string | null;
+  coletor: string | null;
+  tombo_codigo: string | null;
+  tombo_num: number | null;
+  local_id: number | null;
+}
+
+interface LocalNameItem {
+  id: number;
+  nome: string;
+}
+
 export default function DetalhesEspecie() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -58,10 +84,10 @@ export default function DetalhesEspecie() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [galleryLightboxIndex, setGalleryLightboxIndex] = useState<number | null>(null);
 
-  const [especimes, setEspecimes] = useState<any[]>([]);
+  const [especimes, setEspecimes] = useState<MapSpecimenItem[]>([]);
   const [localNomeMap, setLocalNomeMap] = useState<Record<number, string>>({});
   const [imagensCarrossel, setImagensCarrossel] = useState<Array<{ src: string; creditos: string | null }>>([]);
-  const [galeriaCompleta, setGaleriaCompleta] = useState<any[]>([]);
+  const [galeriaCompleta, setGaleriaCompleta] = useState<GalleryImageItem[]>([]);
 
   const montarImagensEspecie = async (especieId: string) => {
     // Passo 1: buscar todos os espécimes desta espécie
@@ -74,7 +100,7 @@ export default function DetalhesEspecie() {
     const todosEspecimeIds = (especimes ?? []).map(e => e.id);
 
     // ── GALERIA: todas as imagens Tipo B, sem limite ──────────
-    let galeria: any[] = [];
+    let galeria: GalleryImageItem[] = [];
     if (todosEspecimeIds.length > 0) {
       const { data: tipoB } = await supabase
         .from('imagens')
@@ -199,7 +225,7 @@ export default function DetalhesEspecie() {
 
       // Buscar nomes dos locais para os popups
       const localIds = [...new Set((especimesLocalData ?? []).map(e => e.local_id).filter(Boolean))];
-      let locaisData: any[] = [];
+      let locaisData: LocalNameItem[] = [];
       if (localIds.length > 0) {
         const { data, error: locaisError } = await supabase
           .from('locais')
@@ -219,9 +245,10 @@ export default function DetalhesEspecie() {
       setEspecimes(especimesLocalData ?? []);
       setLocalNomeMap(tempLocalNomeMap);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao buscar detalhes da espécie:', err);
-      setError(err.message || 'Ocorreu um erro ao carregar os detalhes da espécie.');
+      const error = err as { message?: string };
+      setError(error.message || 'Ocorreu um erro ao carregar os detalhes da espécie.');
     } finally {
       setLoading(false);
     }

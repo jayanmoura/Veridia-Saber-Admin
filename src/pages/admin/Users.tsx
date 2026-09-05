@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
@@ -49,6 +49,8 @@ interface UserStats {
     managers: number;
     taxonomists: number;
 }
+
+type RoleFilterTab = 'all' | 'managers' | 'taxonomists' | 'consultants';
 
 export default function Users() {
     const { profile } = useAuth();
@@ -124,14 +126,7 @@ export default function Users() {
         };
     };
 
-    useEffect(() => {
-        if (hasAccess) {
-            fetchProfiles();
-            fetchProjects();
-        }
-    }, [profile]);
-
-    const fetchProfiles = async () => {
+    const fetchProfiles = useCallback(async () => {
         setLoading(true);
         try {
             let query = supabase
@@ -139,7 +134,6 @@ export default function Users() {
                 .select('*, locais(nome)')
                 .order('full_name');
 
-            // TAREFA 2: Gestor (nível 4) só vê usuários do seu local_id
             if (myLevel === 4 && myLocalId) {
                 query = query.eq('local_id', myLocalId);
             }
@@ -156,9 +150,9 @@ export default function Users() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [myLevel, myLocalId]);
 
-    const fetchProjects = async () => {
+    const fetchProjects = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('locais')
@@ -170,7 +164,14 @@ export default function Users() {
         } catch (error) {
             console.error('Error fetching projects:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (hasAccess) {
+            fetchProfiles();
+            fetchProjects();
+        }
+    }, [hasAccess, fetchProfiles, fetchProjects]);
 
     const calculateStats = (data: Profile[]) => {
         const total = data.length;
@@ -239,9 +240,10 @@ export default function Users() {
             closeEditModal();
             fetchProfiles();
             showToast('Cargo atualizado com sucesso!');
-        } catch (error: any) {
+        } catch (error) {
             console.error('Edit error:', error);
-            showToast(error.message || 'Erro ao atualizar cargo.', 'error');
+            const err = error as { message?: string };
+            showToast(err.message || 'Erro ao atualizar cargo.', 'error');
         } finally {
             setEditLoading(false);
         }
@@ -279,9 +281,10 @@ export default function Users() {
                     : p
             ));
             showToast('Usuário rebaixado para Consulente com sucesso!');
-        } catch (error: any) {
+        } catch (error) {
             console.error('Demote error:', error);
-            showToast(error.message || 'Erro ao rebaixar usuário.', 'error');
+            const err = error as { message?: string };
+            showToast(err.message || 'Erro ao rebaixar usuário.', 'error');
         } finally {
             setDeleteLoading(false);
         }
@@ -345,15 +348,15 @@ export default function Users() {
                         {(myLevel === 4 ? [
                             { id: 'all', label: 'Todos' },
                             { id: 'taxonomists', label: 'Taxonomistas' }
-                        ] : [
+                        ] as { id: RoleFilterTab; label: string }[] : [
                             { id: 'all', label: 'Todos' },
                             { id: 'managers', label: 'Gestores' },
                             { id: 'taxonomists', label: 'Taxonomistas' },
                             { id: 'consultants', label: 'Consulentes' }
-                        ]).map((tab) => (
+                        ] as { id: RoleFilterTab; label: string }[]).map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setRoleFilter(tab.id as any)}
+                                onClick={() => setRoleFilter(tab.id)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${roleFilter === tab.id
                                     ? 'bg-gray-900 text-white shadow-sm'
                                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'

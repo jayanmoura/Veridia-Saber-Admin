@@ -68,8 +68,9 @@ describe('SpeciesModal Integration Tests', () => {
     mockSupabaseResponse('especie', 'update', { data: { id: 'esp-existente' }, error: null });
 
     // Zera o tracker do banco de mock
-    if (typeof (supabase as any).__resetMockReqs === 'function') {
-      (supabase as any).__resetMockReqs();
+    const mockedSupabase = supabase as typeof supabase & { __resetMockReqs?: () => void };
+    if (typeof mockedSupabase.__resetMockReqs === 'function') {
+      mockedSupabase.__resetMockReqs();
     }
   });
 
@@ -194,12 +195,13 @@ describe('SpeciesModal Integration Tests', () => {
       });
     });
 
-    it('renderiza as abas "Dados da Espécie" e "Etiqueta de Herbário"', async () => {
+    it('renderiza como formulário único, sem sistema de abas (Feature 1 da Fase 7 removeu "Etiqueta de Herbário")', async () => {
       render(<SpeciesModalRefactored {...defaultProps} />, { wrapper });
       await waitFor(() => {
-        expect(screen.getByText('Dados da Espécie')).toBeInTheDocument();
-        expect(screen.getByText('Etiqueta de Herbário')).toBeInTheDocument();
+        expect(screen.getByText('Nova Espécie')).toBeInTheDocument();
+        expect(screen.getByText('Galeria de Imagens')).toBeInTheDocument();
       });
+      expect(screen.queryByText('Etiqueta de Herbário')).not.toBeInTheDocument();
     });
   });
 });

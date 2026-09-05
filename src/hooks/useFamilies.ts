@@ -4,6 +4,14 @@ import { supabase } from '../lib/supabase';
 // ============ TYPES ============
 import type { Family } from '../types/domain';
 
+interface RawFamiliaRefForStats {
+    familia: { familia_nome: string } | { familia_nome: string }[] | null;
+}
+
+interface RawFamilyRow extends Omit<Family, 'especie'> {
+    especie?: { count: number }[];
+}
+
 export interface PendingFamily {
     name: string;
     count: number;
@@ -74,7 +82,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
     const [pendingLoading, setPendingLoading] = useState(false);
 
     // Calculate stats from global data (Richest) and global data (Missing Images)
-    const calculateStats = useCallback((_data: Family[], total: number, missingImagesGlobal: number, allSpeciesData?: any[]) => {
+    const calculateStats = useCallback((_data: Family[], total: number, missingImagesGlobal: number, allSpeciesData?: RawFamiliaRefForStats[]) => {
         let richest: FamilyStats['richest'] = null;
         let maxCount = 0;
 
@@ -136,7 +144,7 @@ export function useFamilies(options: UseFamiliesOptions = {}): UseFamiliesReturn
 
             if (error) throw error;
 
-            const formattedData: Family[] = (data || []).map((item: any) => ({
+            const formattedData: Family[] = ((data || []) as RawFamilyRow[]).map((item) => ({
                 ...item,
                 quantidade_especies: item.especie?.[0]?.count || 0
             }));

@@ -80,7 +80,7 @@ export function SpeciesTab({ species }: SpeciesTabProps) {
                         )}
                         {sp.familia && (
                             <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
-                                {(sp.familia as any).familia_nome}
+                                {sp.familia.familia_nome}
                             </span>
                         )}
                     </div>

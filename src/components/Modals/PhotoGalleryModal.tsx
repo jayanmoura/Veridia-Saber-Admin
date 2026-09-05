@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import JSZip from 'jszip';
@@ -39,6 +39,20 @@ interface GroupedImages {
     [speciesName: string]: ImageData[];
 }
 
+interface RawImageRow {
+    id: string;
+    url_imagem: string;
+    url_thumbnail: string | null;
+    creditos: string | null;
+    created_at: string;
+    especie: { nome_cientifico: string } | { nome_cientifico: string }[] | null;
+    especime: {
+        especie: { nome_cientifico: string } | { nome_cientifico: string }[] | null;
+    } | {
+        especie: { nome_cientifico: string } | { nome_cientifico: string }[] | null;
+    }[] | null;
+}
+
 interface PhotoGalleryModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -69,29 +83,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8; // 4 columns x 2 rows
 
-    useEffect(() => {
-        if (isOpen && localId) {
-            fetchImages();
-        }
-    }, [isOpen, localId]);
-
-    // Reset state when modal closes
-    useEffect(() => {
-        if (!isOpen) {
-            setCurrentFolder(null);
-            setSelectedFolders(new Set());
-            setSelectedImages(new Set());
-            setSearchTerm('');
-            setCurrentPage(1);
-        }
-    }, [isOpen]);
-
-    // Reset page when search changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
-
-    const fetchImages = async () => {
+    const fetchImages = useCallback(async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -112,15 +104,22 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
 
             if (error) throw error;
 
-            const imageList: ImageData[] = (data || []).map((item: any) => ({
-                id: item.id,
-                url_imagem: item.url_imagem,
-                url_thumbnail: item.url_thumbnail || null,
-                creditos: item.creditos,
-                created_at: item.created_at,
-                especie: item.especie,
-                especime: item.especime
-            }));
+            const imageList: ImageData[] = ((data || []) as RawImageRow[]).map((item) => {
+                const especie = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                const especimeRaw = Array.isArray(item.especime) ? item.especime[0] : item.especime;
+                const especimeEspecie = especimeRaw
+                    ? (Array.isArray(especimeRaw.especie) ? especimeRaw.especie[0] : especimeRaw.especie)
+                    : null;
+                return {
+                    id: item.id,
+                    url_imagem: item.url_imagem,
+                    url_thumbnail: item.url_thumbnail || null,
+                    creditos: item.creditos,
+                    created_at: item.created_at,
+                    especie: especie || null,
+                    especime: especimeRaw ? { especie: especimeEspecie } : null
+                };
+            });
             setImages(imageList);
 
             const grouped: GroupedImages = {};
@@ -128,7 +127,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
                 // Prioritize species direct link, fallback to specimen's species link
                 const speciesName = 
                     img.especie?.nome_cientifico || 
-                    (img as any).especime?.especie?.nome_cientifico || 
+                    img.especime?.especie?.nome_cientifico || 
                     'Sem Espécie';
                 
                 if (!grouped[speciesName]) {
@@ -142,7 +141,29 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
         } finally {
             setLoading(false);
         }
-    };
+    }, [localId]);
+
+    useEffect(() => {
+        if (isOpen && localId) {
+            fetchImages();
+        }
+    }, [isOpen, localId, fetchImages]);
+
+    // Reset state when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setCurrentFolder(null);
+            setSelectedFolders(new Set());
+            setSelectedImages(new Set());
+            setSearchTerm('');
+            setCurrentPage(1);
+        }
+    }, [isOpen]);
+
+    // Reset page when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     // Filtered and paginated folder names
     const allFolderNames = Object.keys(groupedImages).sort();

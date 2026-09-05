@@ -42,7 +42,7 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
     const [duplicateError, setDuplicateError] = useState<string | null>(null);
     const [similarFamilies, setSimilarFamilies] = useState<string[]>([]);
     const isSubmitting = useRef(false);
-    const checkTimeout = useRef<any>(null);
+    const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Tab Interface
     const [activeTab, setActiveTab] = useState<'details' | 'legacy'>('details');
@@ -272,9 +272,10 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
 
             onSave();
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Save error:', error);
-            showToast(error.message || 'Erro ao salvar família.', 'error');
+            const err = error as { message?: string };
+            showToast(err.message || 'Erro ao salvar família.', 'error');
         } finally {
             setLoading(false);
             isSubmitting.current = false;

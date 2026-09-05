@@ -60,6 +60,15 @@ interface SpeciesLocation {
     } | null;
 }
 
+interface RawMapSpecimenRow {
+    id: string;
+    tombo_codigo?: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    descricao_ocorrencia: string | null;
+    especie?: SpeciesLocation['especie'] | SpeciesLocation['especie'][] | null;
+}
+
 const MapController = () => {
     const map = useMap();
     useEffect(() => {
@@ -131,13 +140,13 @@ export default function ProjectMap() {
                 });
 
                 // Map to correct structure
-                const mappedSpecies: SpeciesLocation[] = (speciesData || []).map((sp: any) => ({
+                const mappedSpecies: SpeciesLocation[] = ((speciesData || []) as RawMapSpecimenRow[]).map((sp) => ({
                     id: sp.id,
-                    tombo_codigo: sp.tombo_codigo, // Map tombo
+                    tombo_codigo: sp.tombo_codigo,
                     latitude: sp.latitude,
                     longitude: sp.longitude,
                     descricao_ocorrencia: sp.descricao_ocorrencia,
-                    especie: Array.isArray(sp.especie) ? sp.especie[0] : sp.especie
+                    especie: (Array.isArray(sp.especie) ? sp.especie[0] : sp.especie) ?? null
                 }));
 
                 setSpecies(mappedSpecies);
@@ -152,9 +161,10 @@ export default function ProjectMap() {
 
                     setTaxonomists(taxonomistData || []);
                 }
-            } catch (err: any) {
+            } catch (err) {
                 console.error('Error fetching project map data:', err);
-                setError(err.message || 'Erro ao carregar dados do mapa.');
+                const error = err as { message?: string };
+                setError(error.message || 'Erro ao carregar dados do mapa.');
             } finally {
                 setLoading(false);
             }

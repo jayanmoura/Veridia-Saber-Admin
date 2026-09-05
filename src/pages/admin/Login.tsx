@@ -57,9 +57,10 @@ export default function Login() {
                 throw new Error('Erro inesperado ao criar sessão');
             }
 
-        } catch (err: any) {
+        } catch (err) {
+            const error = err as { message?: string };
             // Verifica mensagens específicas do Supabase para tradução e segurança
-            if (err.message === 'Invalid login credentials' || err.message?.includes('Invalid login')) {
+            if (error.message === 'Invalid login credentials' || error.message?.includes('Invalid login')) {
                 setError('E-mail ou senha incorretos.');
             } else {
                 // Log para debug em dev, mas usuario vê msg generica
@@ -88,8 +89,9 @@ export default function Login() {
             });
 
             if (error) throw error;
-        } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login com Google');
+        } catch (err) {
+            const error = err as { message?: string };
+            setError(error.message || 'Erro ao fazer login com Google');
             setGoogleLoading(false);
         }
     };

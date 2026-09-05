@@ -7,7 +7,6 @@ import {
     FileText,
     Trash2,
     Loader2,
-    Tag,
     FileSpreadsheet
 } from 'lucide-react';
 
@@ -30,12 +29,10 @@ interface ProjectHeaderProps {
 
     // Actions
     onGenerateReport: () => void;
-    onGenerateLabels: () => void;
     onExportCSV: () => void;
     onDelete: () => void;
 
     // Loading states
-    genLabelsLoading: boolean;
     exportCSVLoading: boolean;
 }
 
@@ -67,10 +64,8 @@ export function ProjectHeader({
     speciesCount,
     usersCount,
     onGenerateReport,
-    onGenerateLabels,
     onExportCSV,
     onDelete,
-    genLabelsLoading,
     exportCSVLoading
 }: ProjectHeaderProps) {
     return (
@@ -145,14 +140,6 @@ export function ProjectHeader({
                 >
                     <FileText size={16} />
                     Gerar Relatório
-                </button>
-                <button
-                    onClick={onGenerateLabels}
-                    disabled={genLabelsLoading}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {genLabelsLoading ? <Loader2 size={16} className="animate-spin" /> : <Tag size={16} />}
-                    Etiquetas de Herbário
                 </button>
                 <button
                     onClick={onExportCSV}

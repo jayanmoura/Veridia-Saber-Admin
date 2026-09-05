@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -57,13 +57,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
     const [platformDistribution, setPlatformDistribution] = useState<PlatformDistribution[]>([]);
     const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchAllData();
-        }
-    }, [isOpen, period]);
-
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
             await Promise.all([
@@ -77,7 +71,14 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
         } finally {
             setLoading(false);
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [period]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchAllData();
+        }
+    }, [isOpen, fetchAllData]);
 
     const fetchMetrics = async () => {
         // Get start of today in local timezone, then convert to ISO string

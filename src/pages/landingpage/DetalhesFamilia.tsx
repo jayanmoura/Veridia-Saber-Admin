@@ -37,14 +37,37 @@ interface SpeciesListItem {
   codigo_vs: string | null;
 }
 
+interface FamilyImageItem {
+  id: string;
+  especie_id: string | null;
+  especime_id: number | null;
+  url_thumbnail: string | null;
+  url_micro: string | null;
+  url_imagem: string | null;
+  creditos: string | null;
+}
+
+interface MapSpecimenItem {
+  id: number;
+  latitude: number;
+  longitude: number;
+  detalhes_localizacao: string | null;
+  descricao_ocorrencia: string | null;
+  coletor: string | null;
+  especie_id: string;
+  tombo_codigo: string | null;
+  tombo_num: number | null;
+  local_id: number | null;
+}
+
 export default function DetalhesFamilia() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [family, setFamily] = useState<FamilyDetails | null>(null);
   const [species, setSpecies] = useState<SpeciesListItem[]>([]);
-  const [imagens, setImagens] = useState<any[]>([]);
-  const [especimesMap, setEspecimesMap] = useState<any[]>([]);
+  const [imagens, setImagens] = useState<FamilyImageItem[]>([]);
+  const [especimesMap, setEspecimesMap] = useState<MapSpecimenItem[]>([]);
   const [localNomeMap, setLocalNomeMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +135,7 @@ export default function DetalhesFamilia() {
         const especieIds = especiesResult.map(e => e.id);
 
         // Query 3: imagens de todas as espécies desta família (grid das espécies nos cards)
-        let imagensResult: any[] = [];
+        let imagensResult: FamilyImageItem[] = [];
         if (especieIds.length > 0) {
           // Imagens Tipo A: especie_id preenchido
           const { data: imgData, error: imgError } = await supabase
@@ -135,7 +158,7 @@ export default function DetalhesFamilia() {
           const especimeIds = (especimes ?? []).map(e => e.id);
 
           // Imagens Tipo B: especime_id preenchido
-          let imagensEspecime: any[] = [];
+          let imagensEspecime: FamilyImageItem[] = [];
           if (especimeIds.length > 0) {
             const { data: imgEspecimeData, error: imgEspecimeError } = await supabase
               .from('imagens')
@@ -155,11 +178,11 @@ export default function DetalhesFamilia() {
 
           const imagensEspecimeEnriquecidas = imagensEspecime.map(img => ({
             ...img,
-            especie_id: img.especie_id || especimeParaEspecie[img.especime_id] || null
+            especie_id: img.especie_id || (img.especime_id ? especimeParaEspecie[img.especime_id] : null) || null
           }));
 
           // Combinar sem duplicatas por id
-          const mapaIdImagens = new Map<string, any>();
+          const mapaIdImagens = new Map<string, FamilyImageItem>();
           for (const img of imagensEspecie) mapaIdImagens.set(img.id, img);
           for (const img of imagensEspecimeEnriquecidas) {
             if (!mapaIdImagens.has(img.id)) mapaIdImagens.set(img.id, img);
@@ -168,7 +191,7 @@ export default function DetalhesFamilia() {
         }
 
         // Query 4: espécimes com coordenadas para o mapa
-        let especimesMapResult: any[] = [];
+        let especimesMapResult: MapSpecimenItem[] = [];
         if (especieIds.length > 0) {
           const { data: especimesMapData, error: especimesMapError } = await supabase
             .from('especie_local')
@@ -239,9 +262,10 @@ export default function DetalhesFamilia() {
         setLocalNomeMap(tempLocalNomeMap);
         setImagensCarrossel(carrossel);
         setCurrentIndex(0);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erro ao buscar dados de detalhes da família:', err);
-        setError(err.message || 'Ocorreu um erro ao carregar as informações.');
+        const error = err as { message?: string };
+        setError(error.message || 'Ocorreu um erro ao carregar as informações.');
       } finally {
         setLoading(false);
       }
@@ -254,7 +278,7 @@ export default function DetalhesFamilia() {
   const imagemPorEspecie = useMemo(() => {
     const map: Record<string, { micro: string | null; thumbnail: string | null; original: string | null }> = {};
     for (const img of imagens) {
-      if (!map[img.especie_id]) {
+      if (img.especie_id && !map[img.especie_id]) {
         map[img.especie_id] = {
           micro: img.url_micro,
           thumbnail: img.url_thumbnail,

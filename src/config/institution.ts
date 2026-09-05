@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 /**
  * Institution Configuration
  * 
@@ -16,7 +18,7 @@ let cachedDefaultInstitutionId: string | null = null;
  * Fetches the default institution ID from the database.
  * Caches the result for subsequent calls.
  */
-export async function getDefaultInstitutionId(supabase: any): Promise<string | null> {
+export async function getDefaultInstitutionId(supabase: SupabaseClient): Promise<string | null> {
     if (cachedDefaultInstitutionId) {
         return cachedDefaultInstitutionId;
     }

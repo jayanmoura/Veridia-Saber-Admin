@@ -43,13 +43,15 @@ export default function CatalogoEspecies() {
       setSearch(inputValue);
       setPage(1);
       // Update URL query string silently without reloading page context
-      const newParams = new URLSearchParams(searchParams);
-      if (inputValue.trim()) {
-        newParams.set('q', inputValue.trim());
-      } else {
-        newParams.delete('q');
-      }
-      setSearchParams(newParams, { replace: true });
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        if (inputValue.trim()) {
+          newParams.set('q', inputValue.trim());
+        } else {
+          newParams.delete('q');
+        }
+        return newParams;
+      }, { replace: true });
     }, 300);
 
     return () => clearTimeout(handler);

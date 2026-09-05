@@ -188,9 +188,10 @@ export function LocalAdminView({
                 setProjectSaveSuccess(false);
             }, 2000);
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error saving project:', error);
-            showToast('Erro ao salvar: ' + error.message, 'error');
+            const err = error as { message?: string };
+            showToast('Erro ao salvar: ' + err.message, 'error');
         } finally {
             setSavingProject(false);
         }

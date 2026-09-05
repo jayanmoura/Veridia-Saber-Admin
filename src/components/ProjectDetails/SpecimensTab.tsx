@@ -1,4 +1,4 @@
-import { MapPin, Plus, Edit2, Trash2, Tag, Loader2 } from 'lucide-react';
+import { MapPin, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/authContext';
 import { useSpecimens } from '../../hooks/useSpecimens';
 import { SpecimenModal } from '../Modals/SpecimenModal';
@@ -6,8 +6,6 @@ import { ConfirmDeleteModal } from '../Modals/ConfirmDeleteModal';
 import { useState, useMemo } from 'react';
 import { SortableColumnHeader } from '../Tables/SortableColumnHeader';
 import { extractCodeNumber } from '../../utils/sorting';
-import { generateHerbariumLabels } from '../../utils/pdf';
-import { useToast } from '../../hooks/useToast';
 
 interface SpecimensTabProps {
     projectId: string;
@@ -15,7 +13,6 @@ interface SpecimensTabProps {
 }
 
 export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps) {
-    const { showToast } = useToast();
     const { profile } = useAuth();
     const {
         specimens,
@@ -38,42 +35,6 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('pt-BR');
-    };
-
-    const [labelLoading, setLabelLoading] = useState<number | null>(null);
-
-    const handlePrintLabel = async (specimen: any) => {
-        setLabelLoading(specimen.id);
-        try {
-            const formatStr = (dateStr?: string | null) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
-
-            const labelData = {
-                scientificName: specimen.nome_cientifico || 'Sem Identificação',
-                author: specimen.autor || undefined,
-                family: specimen.familia_nome || 'INDETERMINADA',
-                popularName: specimen.nome_popular || undefined,
-                collector: specimen.coletor || 'Sem Coletor',
-                collectorNumber: specimen.numero_coletor || undefined,
-                date: formatStr(specimen.created_at),
-                location: specimen.locais?.nome || 'Local Desconhecido',
-                notes: specimen.detalhes_localizacao || '',
-                morphology: specimen.morfologia || undefined,
-                habitat: specimen.habitat_ecologia || undefined,
-                determinant: specimen.determinador || '',
-                determinationDate: formatStr(specimen.data_determinacao),
-                coordinates: (specimen.latitude && specimen.longitude)
-                    ? `Lat: ${specimen.latitude} Long: ${specimen.longitude}`
-                    : undefined,
-                tomboNumber: specimen.tombo_codigo || specimen.id
-            };
-
-            generateHerbariumLabels([labelData], `Etiqueta_${specimen.id}.pdf`);
-        } catch (error) {
-            console.error('Error generating label:', error);
-            showToast('Erro ao gerar etiqueta', 'error');
-        } finally {
-            setLabelLoading(null);
-        }
     };
 
     const [sortKey, setSortKey] = useState<string | null>(null);
@@ -175,14 +136,6 @@ export function SpecimensTab({ projectId, readOnly = false }: SpecimensTabProps)
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handlePrintLabel(item)}
-                                                className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                title="Gerar Etiqueta"
-                                                disabled={labelLoading === item.id}
-                                            >
-                                                {labelLoading === item.id ? <Loader2 size={16} className="animate-spin" /> : <Tag size={16} />}
-                                            </button>
                                             <button
                                                 onClick={() => openEditModal(item)}
                                                 className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"

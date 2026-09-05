@@ -44,7 +44,7 @@ export default function Families() {
 
     // Actions hook
     const actions = useFamilyActions({
-        profile: profile as any,
+        profile,
         onSuccess: refetch,
         onPendingRefetch: refetchPending
     });

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned, Globe, Sprout } from 'lucide-react';
+import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned, Globe, Sprout, type LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/authContext';
 import { hasMinLevel, ROLES_CONFIG } from '../../types/auth';
@@ -10,7 +10,7 @@ import { InstallPWA } from '../InstallPWA';
 interface MenuItem {
     label: string;
     path: string;
-    icon: any;
+    icon: LucideIcon;
     minLevel?: number;
     exactLevel?: number;
     requiresLocalId?: boolean;

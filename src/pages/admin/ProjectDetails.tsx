@@ -21,7 +21,6 @@ import {
     CheckCircle,
     HardDrive
 } from 'lucide-react';
-import { generateHerbariumLabels } from '../../utils/pdf';
 import { downloadCSV } from '../../utils/csvGenerator';
 
 // Extracted components
@@ -37,6 +36,31 @@ import {
     StorageAnalysisTab
 } from '../../components/ProjectDetails';
 import { MapPin } from 'lucide-react'; // Ensure MapPin is imported if not already
+
+interface RawFamiliaRef {
+    familia_nome: string;
+}
+
+interface RawReportSpeciesRow {
+    nome_cientifico: string | null;
+    nome_popular: string | null;
+    familia: RawFamiliaRef | RawFamiliaRef[] | null;
+}
+
+interface RawCSVSpeciesRef {
+    nome_cientifico: string | null;
+    nome_popular: string | null;
+    familia: RawFamiliaRef | RawFamiliaRef[] | null;
+}
+
+interface RawCSVRow {
+    id: string | number;
+    latitude: number | null;
+    longitude: number | null;
+    detalhes_localizacao: string | null;
+    created_at: string;
+    especie: RawCSVSpeciesRef | RawCSVSpeciesRef[] | null;
+}
 
 // ============ COMPONENT ============
 export default function ProjectDetailsPage() {
@@ -86,7 +110,6 @@ export default function ProjectDetailsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [genLabelsLoading, setGenLabelsLoading] = useState(false);
     const [exportCSVLoading, setExportCSVLoading] = useState(false);
 
     // Tab config
@@ -200,7 +223,7 @@ export default function ProjectDetailsPage() {
                 doc.text('Lista de Espécies', 15, y);
                 y += 5;
 
-                const tableData = allSpecies.map((sp: any) => [
+                const tableData = (allSpecies as RawReportSpeciesRow[]).map((sp) => [
                     sp.nome_cientifico || '-',
                     sp.nome_popular || '-',
                     (Array.isArray(sp.familia) ? sp.familia[0]?.familia_nome : sp.familia?.familia_nome) || '-'
@@ -223,52 +246,6 @@ export default function ProjectDetailsPage() {
         }
     };
 
-    const handleGenerateLabels = async () => {
-        if (!project || !id) return;
-        setGenLabelsLoading(true);
-        try {
-            const { data: speciesData, error } = await supabase
-                .from('especie_local')
-                .select(`id, detalhes_localizacao, created_at, determinador, data_determinacao, coletor, numero_coletor, morfologia, habitat_ecologia,
-                    especie:especie_id(nome_cientifico, autor, nome_popular, familia:familia_id(familia_nome))`)
-                .eq('local_id', id);
-
-            if (error) throw error;
-            if (!speciesData || speciesData.length === 0) {
-                showToast('Nenhuma espécie encontrada para gerar etiquetas.', 'warning');
-                return;
-            }
-
-            const formatDate = (dateStr?: string) => dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : undefined;
-            const labels = speciesData.map((item: any) => {
-                const sp = item.especie;
-                return {
-                    scientificName: sp?.nome_cientifico || 'Sem Identificação',
-                    author: sp?.autor || undefined,
-                    family: sp?.familia?.familia_nome || 'INDETERMINADA',
-                    popularName: sp?.nome_popular,
-                    collector: item.coletor || project.nome,
-                    collectorNumber: item.numero_coletor,
-                    date: formatDate(item.created_at) || new Date().toLocaleDateString('pt-BR'),
-                    location: `${project.nome} (${project.tipo || 'Local'})`,
-                    notes: item.detalhes_localizacao || '',
-                    morphology: item.morfologia,
-                    habitat: item.habitat_ecologia,
-                    determinant: item.determinador || 'Sistema Veridia',
-                    determinationDate: formatDate(item.data_determinacao),
-                    tomboNumber: item.id
-                };
-            });
-
-            generateHerbariumLabels(labels, `Etiquetas_${project.nome.replace(/\s+/g, '_')}.pdf`);
-        } catch {
-            showToast('Erro ao gerar etiquetas.', 'error');
-        } finally {
-            setGenLabelsLoading(false);
-        }
-    };
-
-
     const handleExportCSV = async () => {
         if (!project || !id) return;
         setExportCSVLoading(true);
@@ -285,12 +262,14 @@ export default function ProjectDetailsPage() {
                 return;
             }
 
-            const csvData = speciesData.map((item: any) => {
-                const sp = item.especie;
+            const csvData = (speciesData as RawCSVRow[]).map((item) => {
+                const sp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                const rawFamilia = sp?.familia;
+                const familia = Array.isArray(rawFamilia) ? rawFamilia[0] : rawFamilia;
                 return {
                     'Nome Científico': sp?.nome_cientifico || '',
                     'Nome Popular': sp?.nome_popular || '',
-                    'Família': sp?.familia?.familia_nome || '',
+                    'Família': familia?.familia_nome || '',
                     'Data Cadastro': new Date(item.created_at).toLocaleDateString('pt-BR'),
                     'Latitude': item.latitude || '',
                     'Longitude': item.longitude || '',
@@ -375,10 +354,8 @@ export default function ProjectDetailsPage() {
                     speciesCount={speciesCount}
                     usersCount={linkedUsers.length}
                     onGenerateReport={handleGenerateReport}
-                    onGenerateLabels={handleGenerateLabels}
                     onExportCSV={handleExportCSV}
                     onDelete={() => setShowDeleteModal(true)}
-                    genLabelsLoading={genLabelsLoading}
                     exportCSVLoading={exportCSVLoading}
                 />
 

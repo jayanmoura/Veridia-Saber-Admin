@@ -54,9 +54,10 @@ export default function RichTextEditor({ content, onChange, placeholder, orgao }
             if (url && editor) {
                 editor.chain().focus().setImage({ src: url }).run();
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Erro no upload de imagem:', err);
-            showToast('Erro ao fazer upload da imagem: ' + err.message, 'error');
+            const error = err as { message?: string };
+            showToast('Erro ao fazer upload da imagem: ' + error.message, 'error');
         } finally {
             if (fileInputRef.current) {
                 fileInputRef.current.value = ''; // resets input

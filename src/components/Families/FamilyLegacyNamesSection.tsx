@@ -90,8 +90,9 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
                 });
             }
             resetForm();
-        } catch (err: any) {
-            showToast(err.message || 'Erro ao salvar nome legado.', 'error');
+        } catch (err) {
+            const error = err as { message?: string };
+            showToast(error.message || 'Erro ao salvar nome legado.', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -103,8 +104,9 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
         setActionLoading(true);
         try {
             await removeLegacyName(id);
-        } catch (err: any) {
-            showToast(err.message || 'Erro ao remover nome legado.', 'error');
+        } catch (err) {
+            const error = err as { message?: string };
+            showToast(error.message || 'Erro ao remover nome legado.', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -152,7 +154,7 @@ export function FamilyLegacyNamesSection({ familiaId }: FamilyLegacyNamesSection
                                 </label>
                                 <select
                                     value={formData.tipo}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as any }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as FamilyLegacyName['tipo'] }))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm bg-white"
                                 >
                                     <option value="sinonimo">Sinônimo</option>

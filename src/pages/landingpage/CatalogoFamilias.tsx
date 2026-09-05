@@ -8,6 +8,16 @@ import { FamilyCard } from './components/FamilyCard';
 import type { FamilyItem } from './components/FamilyCard';
 import { FamilyCardSkeleton } from './components/LoadingSkeletons';
 
+interface RawFamiliaCatalogoRow {
+  id: string;
+  familia_nome: string;
+  descricao_familia: string | null;
+  imagem_micro: string | null;
+  imagem_thumbnail: string | null;
+  imagem_referencia: string | null;
+  especie?: { count: number }[] | null;
+}
+
 export default function CatalogoFamilias() {
   const navigate = useNavigate();
   const [families, setFamilies] = useState<FamilyItem[]>([]);
@@ -51,7 +61,7 @@ export default function CatalogoFamilias() {
 
       if (error) throw error;
 
-      const formattedData: FamilyItem[] = (data || []).map((item: any) => {
+      const formattedData: FamilyItem[] = ((data || []) as RawFamiliaCatalogoRow[]).map((item) => {
         const coverImage = item.imagem_thumbnail || item.imagem_micro || null;
         return {
           id: item.id,

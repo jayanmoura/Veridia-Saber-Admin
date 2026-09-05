@@ -6,6 +6,15 @@ import { SpeciesCard } from './SpeciesCard';
 import type { SpeciesItem } from './SpeciesCard';
 import { SkeletonCard } from './SkeletonCard';
 
+interface RawFeaturedSpeciesRow {
+  id: string;
+  nome_cientifico: string;
+  nome_popular: string | null;
+  url_micro: string | null;
+  url_thumbnail: string | null;
+  familia: { familia_nome: string } | { familia_nome: string }[] | null;
+}
+
 export function SpeciesSection() {
   const [species, setSpecies] = useState<SpeciesItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +39,7 @@ export function SpeciesSection() {
 
         if (error) throw error;
 
-        const formatted: SpeciesItem[] = (data || []).map((item: any) => {
+        const formatted: SpeciesItem[] = ((data || []) as RawFeaturedSpeciesRow[]).map((item) => {
           // Trata o objeto de familia retornado como objeto único ou array
           const famObj = Array.isArray(item.familia) ? item.familia[0] : item.familia;
           return {

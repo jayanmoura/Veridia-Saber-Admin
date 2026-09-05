@@ -4,6 +4,22 @@ import { supabase } from '../lib/supabase';
 // Interface matching the 'especime' VIEW
 import type { Specimen } from '../types/domain';
 
+interface RawSpecimenEspecieRef {
+    nome_cientifico: string | null;
+    familia: { familia_nome: string } | null;
+}
+
+interface RawSpecimenImageRef {
+    url_micro: string | null;
+    url_thumbnail: string | null;
+    url_imagem: string | null;
+}
+
+interface RawSpecimenRow extends Omit<Specimen, 'especie' | 'imagens'> {
+    especie?: RawSpecimenEspecieRef | null;
+    imagens?: RawSpecimenImageRef[] | null;
+}
+
 export interface SpecimenFormData {
     local_id?: string; // Optional for global create
     institution_id?: string; // Add institution_id
@@ -89,20 +105,23 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
 
             if (error) throw error;
 
-            const formatted: Specimen[] = (data || []).map((item: any) => ({
+            const formatted: Specimen[] = ((data || []) as RawSpecimenRow[]).map((item) => ({
                 ...item,
-                tombo_codigo: item.tombo_codigo, // Ensure it's mapped
-                nome_cientifico: item.especie?.nome_cientifico,
-                familia_nome: item.especie?.familia?.familia_nome,
+                especie: undefined,
+                imagens: undefined,
+                nome_cientifico: item.especie?.nome_cientifico ?? undefined,
+                familia_nome: item.especie?.familia?.familia_nome || 'Sem família',
                 url_imagem: item.imagens?.[0]?.url_micro
                     || item.imagens?.[0]?.url_thumbnail
                     || item.imagens?.[0]?.url_imagem
+                    || undefined
             }));
 
             setSpecimens(formatted);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error fetching specimens:', err);
-            setError(err.message);
+            const error = err as { message?: string };
+            setError(error.message || 'Erro ao carregar espécimes.');
         } finally {
             setLoading(false);
         }
@@ -181,7 +200,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
 
             fetchSpecimens(); // Refresh list
             return savedId;
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error saving specimen:', err);
             // throw new Error(err.message || 'Erro ao salvar espécime.');
             return null;
@@ -200,7 +219,7 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
 
             if (error) throw error;
             fetchSpecimens();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error deleting specimen:', err);
             // Optional: handle error state
         } finally {

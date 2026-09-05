@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react';
 import { X, Smartphone, Zap, Download } from 'lucide-react';
 
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 export function InstallPWA() {
     const [supportsPWA, setSupportsPWA] = useState(false);
-    const [promptInstall, setPromptInstall] = useState<any>(null);
+    const [promptInstall, setPromptInstall] = useState<BeforeInstallPromptEvent | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [isInstalling, setIsInstalling] = useState(false);
 
     useEffect(() => {
-        const handler = (e: any) => {
+        const handler = (e: Event) => {
             e.preventDefault();
             console.log("PWA Install Triggered");
             setSupportsPWA(true);
-            setPromptInstall(e);
+            setPromptInstall(e as BeforeInstallPromptEvent);
         };
 
         window.addEventListener('beforeinstallprompt', handler);
