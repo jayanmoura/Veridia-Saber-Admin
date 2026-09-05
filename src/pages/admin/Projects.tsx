@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { ProjectsGrid } from '../../components/Cards';
 import { ProjectFormModal } from '../../components/Modals/ProjectFormModal';

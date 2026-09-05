@@ -77,9 +77,12 @@ export const mockSupabase = {
     getSession: vi.fn(() =>
       Promise.resolve({ data: { session: null }, error: null }),
     ),
-    onAuthStateChange: vi.fn((_callback: unknown) => ({
-      data: { subscription: { unsubscribe: vi.fn() } },
-    })),
+    onAuthStateChange: vi.fn((_callback: unknown) => {
+      void _callback;
+      return {
+        data: { subscription: { unsubscribe: vi.fn() } },
+      };
+    }),
     signOut: vi.fn(() => Promise.resolve({ error: null })),
     signInWithPassword: vi.fn(() =>
       Promise.resolve({ data: { session: null, user: null }, error: null }),

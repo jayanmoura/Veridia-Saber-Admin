@@ -19,7 +19,7 @@ import {
     User
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { useToast } from '../../hooks/useToast';
 
 interface Project {

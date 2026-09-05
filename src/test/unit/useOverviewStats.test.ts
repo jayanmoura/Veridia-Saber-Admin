@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 // Variável mutável para controlar o perfil por teste
 let currentProfile = { id: 'user1', role: 'Curador Mestre', local_id: null as string | null };
 
-vi.mock('../../contexts/AuthContext', () => ({
+vi.mock('../../contexts/authContext', () => ({
   useAuth: vi.fn(() => ({ profile: currentProfile })),
 }));
 

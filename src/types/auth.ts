@@ -124,3 +124,13 @@ export const getRoleDisplayInfo = (role: UserRole): RoleDisplayInfo => {
         isGlobal: config.isGlobal,
     };
 };
+
+// Lista de cargos GLOBAIS (não precisam de local_id)
+export const GLOBAL_ROLES: UserRole[] = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
+
+// Helper para verificar se um cargo é global
+export const isGlobalRole = (role: UserRole | ''): boolean => {
+  if (!role) return false;
+  return GLOBAL_ROLES.includes(role as UserRole);
+};
+

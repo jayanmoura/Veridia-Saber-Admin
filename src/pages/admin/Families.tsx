@@ -5,7 +5,7 @@
  * Refactored: ~350 lines
  */
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { FamilyModal } from '../../components/Modals/FamilyModal';
 import { FamilyTable } from '../../components/Tables';

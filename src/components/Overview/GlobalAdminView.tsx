@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { AnalyticsModal } from '../../components/Modals/AnalyticsModal';
 import { formatDistanceToNow } from 'date-fns';

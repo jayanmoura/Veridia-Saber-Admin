@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/authContext';
 
 // ============ TYPES ============
 export interface ProjectDetails {
@@ -258,7 +258,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
         try {
             switch (tab) {
-                case 'users':
+                case 'users': {
                     const { data: usersData } = await supabase
                         .from('profiles')
                         .select('id, full_name, email, role, avatar_url')
@@ -269,8 +269,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                     setLinkedUsers(usersData || []);
                     setTotalPages(Math.ceil(usersCount / itemsPerPage) || 1);
                     break;
+                }
 
-                case 'species':
+                case 'species': {
                     const { data: speciesData } = await supabase
                         .from('especie_local')
                         .select(`
@@ -331,8 +332,9 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                     setLinkedSpecies(uniqueSpeciesArray.slice(start, end + 1));
                     setTotalPages(Math.ceil(uniqueSpeciesArray.length / itemsPerPage) || 1);
                     break;
+                }
 
-                case 'families':
+                case 'families': {
                     const { data: speciesForFamilies } = await supabase
                         .from('especie_local')
                         .select(`
@@ -368,6 +370,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         setTotalPages(Math.ceil(allFamilies.length / itemsPerPage) || 1);
                     }
                     break;
+                }
 
                 case 'specimens':
                 case 'storage':

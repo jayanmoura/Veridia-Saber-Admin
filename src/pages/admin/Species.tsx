@@ -5,7 +5,7 @@
  * Refactored: ~400 lines
  */
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../../components/Modals/SpeciesModal/index';
@@ -245,7 +245,8 @@ export default function SpeciesPage() {
                     .limit(1);
 
                 if (!remaining || remaining.length === 0) {
-                    await supabase.from('especie').update({ local_id: null }).eq('id', speciesToDelete.id);
+                    const { error } = await supabase.from('especie').update({ local_id: null }).eq('id', speciesToDelete.id);
+                    if (error) throw error;
                 }
             } else {
                 // Global admin: try full delete

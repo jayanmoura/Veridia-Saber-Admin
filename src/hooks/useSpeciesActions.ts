@@ -132,7 +132,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
         } finally {
             setExportLoading(false);
         }
-    }, [isGlobalAdmin, profile]);
+    }, [isGlobalAdmin, profile, showToast]);
 
     // Generate single species report (Ficha Técnica)
     const handleGenerateSingleReport = useCallback(async (speciesId: string) => {
@@ -191,7 +191,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
         } finally {
             setSingleReportLoading(null);
         }
-    }, [profile]);
+    }, [profile, showToast]);
 
     // Generate bulk herbarium labels
     const handleGenerateLabels = useCallback(async () => {
@@ -299,7 +299,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
         } finally {
             setGenLabelsLoading(false);
         }
-    }, [isGlobalAdmin, profile, search, selectedFamily]);
+    }, [isGlobalAdmin, profile, search, selectedFamily, showToast]);
 
     // Generate single herbarium label
     const handleGenerateSingleLabel = useCallback(async (species: Species) => {
@@ -357,7 +357,7 @@ export function useSpeciesActions({ profile, search, selectedFamily }: UseSpecie
         } finally {
             setSingleLabelLoading(null);
         }
-    }, [profile]);
+    }, [profile, showToast]);
 
     return {
         exportLoading,

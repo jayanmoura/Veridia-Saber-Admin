@@ -112,6 +112,14 @@ const EmailConfirmed: React.FC = () => {
  * BotanicalCheck - Animated SVG check mark with botanical style
  */
 const BotanicalCheck: React.FC = () => {
+    const [sparkles] = React.useState(() =>
+        Array.from({ length: 6 }, (_, i) => ({
+            id: i,
+            top: `${20 + Math.random() * 60}%`,
+            left: `${20 + Math.random() * 60}%`,
+        }))
+    );
+
     return (
         <motion.div
             initial={{ scale: 0.5 }}
@@ -216,9 +224,9 @@ const BotanicalCheck: React.FC = () => {
             </svg>
 
             {/* Sparkle particles that appear at the end */}
-            {[...Array(6)].map((_, i) => (
+            {sparkles.map((particle, i) => (
                 <motion.div
-                    key={i}
+                    key={particle.id}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: [0, 1, 0], scale: [0, 1, 0.5] }}
                     transition={{
@@ -228,8 +236,8 @@ const BotanicalCheck: React.FC = () => {
                     }}
                     className="absolute w-2 h-2 bg-emerald-400 rounded-full"
                     style={{
-                        top: `${20 + Math.random() * 60}%`,
-                        left: `${20 + Math.random() * 60}%`,
+                        top: particle.top,
+                        left: particle.left,
                     }}
                 />
             ))}

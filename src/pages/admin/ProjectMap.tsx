@@ -4,7 +4,7 @@
  * Estilo consistente com os outros mapas do sistema (CartoDB + CircleMarkers)
  */
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet';
 import L from 'leaflet';

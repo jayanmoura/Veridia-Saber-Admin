@@ -8,7 +8,7 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({}),
 }));
 
-vi.mock('../../contexts/AuthContext', () => ({
+vi.mock('../../contexts/authContext', () => ({
   useAuth: vi.fn(),
 }));
 
@@ -16,9 +16,9 @@ vi.mock('../../contexts/AuthContext', () => ({
 vi.mock('../../lib/supabase');
 import { mockSupabaseResponse } from '../mocks/supabase';
 
-import Users, { isGlobalRole } from '../../pages/admin/Users';
-import { useAuth } from '../../contexts/AuthContext';
-import type { UserRole } from '../../types/auth';
+import Users from '../../pages/admin/Users';
+import { useAuth } from '../../contexts/authContext';
+import { isGlobalRole, type UserRole } from '../../types/auth';
 
 describe('Users Page RBAC', () => {
   const mockUseAuth = useAuth as Mock;

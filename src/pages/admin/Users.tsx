@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import {
     canManage,
     getRoleLevel,
     hasMinLevel,
+    isGlobalRole,
     ROLES_CONFIG,
     ROLES_LIST,
     type UserRole,
@@ -48,15 +49,6 @@ interface UserStats {
     managers: number;
     taxonomists: number;
 }
-
-// Lista de cargos GLOBAIS (não precisam de local_id)
-const GLOBAL_ROLES: UserRole[] = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior'];
-
-// Helper para verificar se um cargo é global
-export const isGlobalRole = (role: UserRole | ''): boolean => {
-    if (!role) return false;
-    return GLOBAL_ROLES.includes(role as UserRole);
-};
 
 export default function Users() {
     const { profile } = useAuth();

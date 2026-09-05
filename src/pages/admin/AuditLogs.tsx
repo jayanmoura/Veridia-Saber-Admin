@@ -11,7 +11,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '../../hooks/useToast';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { useProjects } from '../../hooks';
 import { PeriodicReportsModal } from '../../components/Modals/PeriodicReportsModal';
 

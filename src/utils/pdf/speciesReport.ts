@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { type Styles } from 'jspdf-autotable';
 import { COLORS } from './constants';
 import { addFooter, addHeader, drawHorizontalBarChart, extractFirst, extractGenusAndEpithet, getBase64FromUrl, getLogoBase64, processChartData } from './core';
 import type { ChartDataItem, PDFGeneratorContext, SingleSpeciesData, SpeciesReportData, SpeciesReportOptions } from './types';
@@ -269,7 +269,7 @@ export function generateSpeciesReport(
     });
 
     // Column Styles
-    const colStyles: any = {
+    const colStyles: Record<string | number, Partial<Styles>> = {
         0: { fontStyle: 'italic', cellWidth: 'auto' }, // Scientific
         1: { cellWidth: 40 }, // Pop
         2: { cellWidth: 40 }  // Fam

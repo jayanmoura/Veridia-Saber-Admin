@@ -9,8 +9,10 @@ import { mockSupabase, mockSupabaseResponse, resetSupabaseMocks } from '../mocks
 vi.mock('../../lib/supabase', () => ({ supabase: mockSupabase }));
 
 // ─── Importações do app (após o mock estar registrado) ──────────────────────
-import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import type { UserRole } from '../../types/auth';
+import type { Session } from '@supabase/supabase-js';
 
 // ─── Componente auxiliar ──────────────────────────────────────────────────────
 /**
@@ -195,7 +197,7 @@ describe('AuthContext', () => {
   // GRUPO: signOut
   // ===========================================================================
   describe('signOut', () => {
-    let authCallback: ((event: string, session: any) => void) | null = null;
+    let authCallback: ((event: string, session: Session | null) => void) | null = null;
 
     beforeEach(() => {
       authCallback = null;
@@ -216,8 +218,8 @@ describe('AuthContext', () => {
       // Captura o callback E dispara INITIAL_SESSION para carregar o estado inicial
       mockSupabase.auth.onAuthStateChange.mockImplementation(
         (callback: unknown) => {
-          authCallback = callback as (event: string, session: any) => void;
-          authCallback('INITIAL_SESSION', mockSession as any);
+          authCallback = callback as (event: string, session: Session | null) => void;
+          authCallback('INITIAL_SESSION', mockSession as unknown as Session);
           return { data: { subscription: { unsubscribe: vi.fn() } } };
         },
       );

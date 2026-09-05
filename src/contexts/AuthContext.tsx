@@ -1,18 +1,8 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth'; // Fix: type-only import
 import type { Session } from '@supabase/supabase-js'; // Fix: type-only import
-
-interface AuthContextType {
-    session: Session | null;
-    profile: UserProfile | null;
-    loading: boolean;
-    signIn: (email: string) => Promise<void>; // Magic link or internal logic if needed
-    signOut: () => Promise<void>;
-    isAdmin: boolean;
-}
-
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+import { AuthContext } from './authContext';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [session, setSession] = useState<Session | null>(null);
@@ -71,5 +61,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         </AuthContext.Provider>
     );
 };
-
-export const useAuth = () => useContext(AuthContext);

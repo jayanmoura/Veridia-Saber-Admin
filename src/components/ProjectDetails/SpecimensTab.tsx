@@ -1,5 +1,5 @@
 import { MapPin, Plus, Edit2, Trash2, Tag, Loader2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { useSpecimens } from '../../hooks/useSpecimens';
 import { SpecimenModal } from '../Modals/SpecimenModal';
 import { ConfirmDeleteModal } from '../Modals/ConfirmDeleteModal';

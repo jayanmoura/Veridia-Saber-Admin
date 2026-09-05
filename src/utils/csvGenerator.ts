@@ -1,4 +1,4 @@
-export const downloadCSV = (data: any[], filename: string) => {
+export const downloadCSV = (data: Record<string, unknown>[], filename: string): void => {
     if (!data.length) return;
 
     // Get headers

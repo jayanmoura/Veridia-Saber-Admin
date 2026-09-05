@@ -1,7 +1,7 @@
 import { useEffect, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { ToastProvider } from '../../contexts/ToastContext';
 import { Toaster } from '../Toaster';
 

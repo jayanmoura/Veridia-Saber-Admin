@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Upload, Loader2, MapPin } from 'lucide-react';
 
@@ -54,15 +54,14 @@ export function ProjectFormModal({
 }: ProjectFormModalProps) {
     const [emailSearch, setEmailSearch] = useState('');
 
-    // Sincronizar emailSearch com gestor_id selecionado
-    useEffect(() => {
-        if (formData.gestor_id) {
-            const user = users.find(u => u.id === formData.gestor_id);
-            if (user?.email) setEmailSearch(user.email);
-        } else {
-            setEmailSearch('');
-        }
-    }, [formData.gestor_id, users]);
+    const [prevGestorId, setPrevGestorId] = useState<string | undefined>(undefined);
+
+    // Sincronizar emailSearch com gestor_id selecionado durante o render
+    if (formData.gestor_id !== prevGestorId) {
+        setPrevGestorId(formData.gestor_id);
+        const user = users.find(u => u.id === formData.gestor_id);
+        setEmailSearch(user?.email || '');
+    }
 
     // Suprimir warning de loadingUsers (prop opcional, usada para controle externo)
     void loadingUsers;

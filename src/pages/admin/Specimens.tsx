@@ -5,7 +5,7 @@ import { specimenRepo } from '../../services/specimenRepo';
 import type { Specimen } from '../../services/types';
 import { generateHerbariumLabels } from '../../utils/pdf';
 import { SpecimenModal } from '../../components/Modals/SpecimenModal';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';

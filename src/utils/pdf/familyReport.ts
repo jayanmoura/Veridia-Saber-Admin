@@ -4,6 +4,10 @@ import { COLORS } from './constants';
 import { addFooter, addHeader, drawHorizontalBarChart, getLogoBase64 } from './core';
 import type { ChartDataItem, FamiliesReportData, FamilyDetailedData, LegacyNameData, PDFGeneratorContext, SpeciesData } from './types';
 
+interface jsPDFWithAutoTable extends jsPDF {
+    lastAutoTable: { finalY: number };
+}
+
 /**
  * Generates the Families Report with Cover Page, Conditional Chart and Detailed Table
  */
@@ -285,7 +289,7 @@ export function generateFamilyReportWithCharts(
             },
             margin: { left: 14, right: 14 }
         });
-        y = (doc as any).lastAutoTable.finalY + 15;
+        y = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
     } else {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(10);
@@ -316,7 +320,7 @@ export function generateFamilyReportWithCharts(
             headStyles: { fillColor: [100, 100, 100] }, // Gray for legacy
             margin: { left: 14, right: 14 }
         });
-        y = (doc as any).lastAutoTable.finalY + 15;
+        y = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
     }
 
     // Footer

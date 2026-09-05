@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authContext';
 import { X, Upload, Loader2, Info, List } from 'lucide-react';
 import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
 import { compressImage, compressForListing } from '../../utils/imageCompressor';

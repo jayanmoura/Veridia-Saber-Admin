@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase';
 import type { Species } from './types';
 
+interface SpeciesRawRow extends Omit<Species, 'familia'> {
+  familia?: { id?: string | number; familia_nome: string } | { id?: string | number; familia_nome: string }[] | null;
+}
+
 export const speciesRepo = {
     /**
      * List species with optional filtering
@@ -29,7 +33,7 @@ export const speciesRepo = {
         if (error) throw error;
 
         // Map response to match Species type (Supabase might return arrays for joins)
-        const mappedData = (data as any[]).map(item => ({
+        const mappedData = (data as unknown as SpeciesRawRow[]).map(item => ({
             ...item,
             familia: Array.isArray(item.familia) ? item.familia[0] : item.familia
         }));

@@ -56,7 +56,7 @@ serve(async (req) => {
             },
         )
 
-    } catch (error) {
+    } catch {
         // Erros inesperados tb retornam 200 com msg generica para segurança total
         return new Response(
             JSON.stringify({ error: 'Internal Server Error' }),

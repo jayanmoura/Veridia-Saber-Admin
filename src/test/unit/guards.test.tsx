@@ -8,12 +8,12 @@ import React from 'react';
 // ============================================================================
 
 // Faremos o mock global do hook useAuth antes de importar os componentes
-vi.mock('../../contexts/AuthContext', () => ({
+vi.mock('../../contexts/authContext', () => ({
   useAuth: vi.fn(),
 }));
 
-import { useAuth } from '../../contexts/AuthContext';
-import { PrivateRoute, OnlyGlobalAdmin } from '../../routes/index';
+import { useAuth } from '../../contexts/authContext';
+import { PrivateRoute, OnlyGlobalAdmin } from '../../routes/guards';
 import type { UserRole } from '../../types/auth';
 
 // Componente simples para detectar redirecionamentos nos testes

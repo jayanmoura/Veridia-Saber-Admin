@@ -14,7 +14,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../contexts/authContext';
 import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
 import { useToast } from '../../../hooks/useToast';
 import { SpeciesDataTab } from './SpeciesDataTab';
