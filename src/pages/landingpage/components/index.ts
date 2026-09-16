@@ -4,3 +4,4 @@ export * from './SearchBar';
 export * from './ImageGallery';
 export * from './LoadingSkeletons';
 export * from './EmptyState';
+export * from './MultiSelectDropdown';

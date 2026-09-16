@@ -285,6 +285,18 @@ export function SpeciesDataTab({
                     <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Descrição Botânica do Local
+                            </label>
+                            <textarea
+                                value={localData?.descricao_especie_local || ''}
+                                onChange={(e) => onLocalDataChange?.(prev => ({ ...prev, descricao_especie_local: e.target.value }))}
+                                rows={3}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors resize-none bg-white"
+                                placeholder="Dado extra sobre a espécie, específico deste projeto/local, complementando a descrição global..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Notas do Projeto (ex: Onde encontrar no parque)
                             </label>
                             <textarea

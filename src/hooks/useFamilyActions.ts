@@ -217,16 +217,6 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
                 throw error;
             }
 
-            // Log action
-            await supabase.from('audit_log').insert({
-                action: 'DELETE_FAMILY',
-                entity_type: 'familia',
-                entity_id: familyToDelete.id,
-                details: { familia_nome: familyName },
-                user_id: profile?.id,
-                user_name: profile?.full_name || 'Sistema'
-            });
-
             setDeletedFamilyName(familyName);
             setShowSuccessModal(true);
             onSuccess();
@@ -242,7 +232,7 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
         } finally {
             setDeleteLoading(null);
         }
-    }, [familyToDelete, profile, closeDeleteModal, onSuccess, showToast]);
+    }, [familyToDelete, closeDeleteModal, onSuccess, showToast]);
 
     // Approve pending family
     const handleApproveFamily = useCallback(async (pendingName: string) => {
@@ -269,12 +259,6 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
                 });
 
             if (insertErr) throw insertErr;
-
-            // Delete from pending
-            await supabase
-                .from('pending_families')
-                .delete()
-                .eq('familia_nome', pendingName);
 
             showToast(`Família "${pendingName}" aprovada com sucesso!`, 'success');
             onSuccess();

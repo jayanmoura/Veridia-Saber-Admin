@@ -483,17 +483,6 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             // Delete database records
             await supabase.from('imagens').delete().eq('local_id', projectToDelete.id);
 
-            // Get especie_local IDs for this project
-            const { data: especieLocalData } = await supabase
-                .from('especie_local')
-                .select('id')
-                .eq('local_id', projectToDelete.id);
-
-            if (especieLocalData && especieLocalData.length > 0) {
-                const ids = especieLocalData.map(d => d.id);
-                await supabase.from('etiquetas').delete().in('especie_local_id', ids);
-            }
-
             // Delete especimes (especie_local)
             const { error: elError } = await supabase.from('especie_local').delete().eq('local_id', projectToDelete.id);
             if (elError) throw new Error(`Não foi possível excluir espécimes: ${elError.message}`);

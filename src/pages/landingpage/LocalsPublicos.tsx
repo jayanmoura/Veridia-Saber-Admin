@@ -4,6 +4,7 @@ import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { formatarTipoLocal } from './utils/tipoLocal';
 
 interface LocalItem {
   id: string;
@@ -109,7 +110,7 @@ export default function LocalsPublicos() {
               <option value="">Todos os tipos de locais</option>
               {tiposUnicos.map((tipo) => (
                 <option key={tipo} value={tipo}>
-                  {tipo}
+                  {formatarTipoLocal(tipo)}
                 </option>
               ))}
             </select>
@@ -170,8 +171,8 @@ export default function LocalsPublicos() {
                   <div className="space-y-3">
                     {/* Badge tipo e sigla */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-forest-100 text-forest-600">
-                        {local.tipo || 'Geral'}
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-forest-100 text-forest-600">
+                        {formatarTipoLocal(local.tipo)}
                       </span>
                       {local.sigla && (
                         <span className="text-xs text-forest-600 font-mono font-bold">

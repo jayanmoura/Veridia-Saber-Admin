@@ -164,14 +164,9 @@ export function SpeciesModalRefactored({
         speciesId = data.id;
       }
 
-      // OVERRIDE LOCAL (especie_local_overrides): grava descricao_especie E notas_projeto numa única chamada
+      // OVERRIDE LOCAL (especie_local_overrides): grava descricao_especie (dado local, campo próprio) E notas_projeto numa única chamada
       if (effectiveLocalId && speciesId) {
-        // Para espécie global vinculada ou edição existente, a descrição no form é override local.
-        // Para espécie nova criada, a descrição botânica já foi gravada na tabela global `especie`.
-        const isNewGlobalSpecies = !form.selectedEspecieId && !form.isEditingExisting;
-        const descricaoTrimmed = isNewGlobalSpecies
-          ? null
-          : (form.formData.descricao_especie?.trim() || null);
+        const descricaoTrimmed = form.localData.descricao_especie_local?.trim() || null;
         const notasTrimmed = form.localData.notas_projeto?.trim() || null;
         const hasAnyOverride = Boolean(descricaoTrimmed || notasTrimmed);
 

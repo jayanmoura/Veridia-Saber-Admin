@@ -14,6 +14,7 @@ export interface LocalOption {
 }
 
 export interface LocalData {
+  descricao_especie_local: string;
   notas_projeto: string;
 }
 
@@ -69,6 +70,7 @@ export interface UseSpeciesFormReturn {
 }
 
 const INITIAL_LOCAL_DATA: LocalData = {
+  descricao_especie_local: '',
   notas_projeto: '',
 };
 
@@ -186,13 +188,8 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
         setLocalData(INITIAL_LOCAL_DATA);
       } else if (overrideData) {
         setHasExistingOverride(true);
-        if (overrideData.descricao_especie !== null && overrideData.descricao_especie !== undefined) {
-          setFormData(prev => ({
-            ...prev,
-            descricao_especie: overrideData.descricao_especie,
-          }));
-        }
         setLocalData({
+          descricao_especie_local: overrideData.descricao_especie || '',
           notas_projeto: overrideData.notas_projeto || '',
         });
       } else {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Leaf, Info, ShieldAlert, X } from 'lucide-react';
@@ -15,6 +15,9 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
 import { SpecimenPopupCard } from './components/SpecimenPopupCard';
 import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
+import { MultiSelectDropdown } from './components/MultiSelectDropdown';
+import { formatarTipoLocal } from './utils/tipoLocal';
+import { FamilyCard, type FamilyItem } from './components/FamilyCard';
 
 interface LocalDetails {
   id: string;
@@ -66,6 +69,14 @@ interface ImagemItem {
   creditos: string | null;
 }
 
+interface FamiliaDetalhes {
+  id: string;
+  familia_nome: string;
+  descricao_familia: string | null;
+  imagem_micro: string | null;
+  imagem_thumbnail: string | null;
+}
+
 export default function DetalhesLocal() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,8 +92,13 @@ export default function DetalhesLocal() {
   // Estados do Lightbox da Galeria
   const [galleryLightboxIndex, setGalleryLightboxIndex] = useState<number | null>(null);
 
-  // Filtro de busca de espécies
-  const [searchEspecie, setSearchEspecie] = useState('');
+  // Estados de visualização e filtro de espécies / famílias
+  const [modoVisualizacao, setModoVisualizacao] = useState<'especies' | 'familias'>('especies');
+  const [familiasDetalhes, setFamiliasDetalhes] = useState<FamiliaDetalhes[]>([]);
+  const [selectedFamiliaIds, setSelectedFamiliaIds] = useState<string[]>([]);
+  const [selectedEspecieIds, setSelectedEspecieIds] = useState<string[]>([]);
+  const [galeriaPage, setGaleriaPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
 
   // Novos estados para seleção de espécimes em modal
   const [modalEspecimes, setModalEspecimes] = useState<EspecimeItem[]>([]);
@@ -128,6 +144,21 @@ export default function DetalhesLocal() {
 
         if (espError) throw espError;
         especiesResult = (espData ?? []) as EspecieItem[];
+      }
+
+      // 3b. Famílias únicas deste local
+      const familiaIds = [...new Set(especiesResult.map(e => e.familia_id).filter(Boolean))] as string[];
+      let familiasResult: FamiliaDetalhes[] = [];
+
+      if (familiaIds.length > 0) {
+        const { data: famData, error: famError } = await supabase
+          .from('familia')
+          .select('id, familia_nome, descricao_familia, imagem_micro, imagem_thumbnail')
+          .in('id', familiaIds)
+          .order('familia_nome', { ascending: true });
+
+        if (famError) throw famError;
+        familiasResult = (famData ?? []) as FamiliaDetalhes[];
       }
 
       // 4. Imagens dos espécimes deste local (para galeria)
@@ -195,6 +226,7 @@ export default function DetalhesLocal() {
       setLocal(localData as LocalDetails);
       setEspecimes(especimesResult);
       setEspecies(especiesResult);
+      setFamiliasDetalhes(familiasResult);
       setGaleria(galeriaResult);
       setImagemDaEspecie(tempImagemDaEspecie);
       setImagemPorEspecime(tempImagemPorEspecime);
@@ -210,20 +242,106 @@ export default function DetalhesLocal() {
     fetchTudo();
   }, [fetchTudo]);
 
+  // Reseta a página da galeria para 1 sempre que o filtro de espécies mudar
+  useEffect(() => {
+    setGaleriaPage(1);
+  }, [selectedEspecieIds]);
+
+  const especiesFiltradas = useMemo(() => {
+    return selectedEspecieIds.length > 0
+      ? especies.filter(e => selectedEspecieIds.includes(e.id))
+      : especies;
+  }, [especies, selectedEspecieIds]);
+
+  const especiesOptions = useMemo(() => {
+    return especies.map(esp => ({
+      value: esp.id,
+      label: esp.nome_cientifico,
+      sublabel: esp.nome_popular,
+    }));
+  }, [especies]);
+
+  // Contagem de espécies por família no local atual
+  const contagemEspeciesPorFamilia = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const esp of especies) {
+      if (esp.familia_id) {
+        counts[esp.familia_id] = (counts[esp.familia_id] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [especies]);
+
+  // Lista de FamilyItem para os cards de família
+  const familiasItems: FamilyItem[] = useMemo(() => {
+    return familiasDetalhes.map(fam => ({
+      id: fam.id,
+      name: fam.familia_nome,
+      url_image: fam.imagem_thumbnail || fam.imagem_micro || null,
+      description: fam.descricao_familia || '',
+      species_count: contagemEspeciesPorFamilia[fam.id] || 0,
+    }));
+  }, [familiasDetalhes, contagemEspeciesPorFamilia]);
+
+  // Opções para o MultiSelectDropdown de famílias
+  const familiasOptions = useMemo(() => {
+    return familiasDetalhes.map(fam => ({
+      value: fam.id,
+      label: fam.familia_nome,
+      sublabel: `${contagemEspeciesPorFamilia[fam.id] || 0} ${(contagemEspeciesPorFamilia[fam.id] || 0) === 1 ? 'espécie' : 'espécies'}`,
+    }));
+  }, [familiasDetalhes, contagemEspeciesPorFamilia]);
+
+  // Famílias filtradas pelo selectedFamiliaIds
+  const familiasFiltradas = useMemo(() => {
+    return selectedFamiliaIds.length > 0
+      ? familiasItems.filter(f => selectedFamiliaIds.includes(f.id))
+      : familiasItems;
+  }, [familiasItems, selectedFamiliaIds]);
+
+  // Mapa especime_id -> especie_id para cruzar imagens da galeria com o filtro de espécies
+  const especimeParaEspecieMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const esp of especimes) {
+      if (esp.id && esp.especie_id) {
+        map.set(esp.id, esp.especie_id);
+      }
+    }
+    return map;
+  }, [especimes]);
+
+  // Galeria filtrada pelas espécies selecionadas
+  const galeriaFiltrada = useMemo(() => {
+    if (selectedEspecieIds.length === 0) {
+      return galeria;
+    }
+    const selectedSet = new Set(selectedEspecieIds);
+    return galeria.filter(img => {
+      if (img.especime_id === null) return false;
+      const espId = especimeParaEspecieMap.get(img.especime_id);
+      return espId ? selectedSet.has(espId) : false;
+    });
+  }, [galeria, selectedEspecieIds, especimeParaEspecieMap]);
+
+  // Paginação da galeria (máximo 8 imagens por vez)
+  const totalPaginas = Math.ceil(galeriaFiltrada.length / ITEMS_PER_PAGE) || 1;
+  const inicioGaleria = (galeriaPage - 1) * ITEMS_PER_PAGE;
+  const galeriaPaginada = galeriaFiltrada.slice(inicioGaleria, inicioGaleria + ITEMS_PER_PAGE);
+
   const prevGalleryImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (galleryLightboxIndex !== null) {
+    if (galleryLightboxIndex !== null && galeriaFiltrada.length > 0) {
       setGalleryLightboxIndex(prev =>
-        prev !== null ? (prev - 1 + galeria.length) % galeria.length : null
+        prev !== null ? (prev - 1 + galeriaFiltrada.length) % galeriaFiltrada.length : null
       );
     }
   };
 
   const nextGalleryImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (galleryLightboxIndex !== null) {
+    if (galleryLightboxIndex !== null && galeriaFiltrada.length > 0) {
       setGalleryLightboxIndex(prev =>
-        prev !== null ? (prev + 1) % galeria.length : null
+        prev !== null ? (prev + 1) % galeriaFiltrada.length : null
       );
     }
   };
@@ -270,11 +388,6 @@ export default function DetalhesLocal() {
   )].length;
   const totalEspecies = especies.length;
 
-  const especiesFiltradas = especies.filter(e =>
-    e.nome_cientifico.toLowerCase().includes(searchEspecie.toLowerCase()) ||
-    (e.nome_popular ?? '').toLowerCase().includes(searchEspecie.toLowerCase())
-  );
-
   // Ao montar os dados, criar mapa especie_id → TODOS os especimes daquela espécie
   const especimesPorEspecie: Record<string, EspecimeItem[]> = {};
   for (const esp of (especimes ?? [])) {
@@ -319,27 +432,17 @@ export default function DetalhesLocal() {
           <div className="md:col-span-2 space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-forest-900">{local.nome}</h1>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-forest-100 text-forest-600">
-                  {local.tipo || 'Geral'}
-                </span>
-                {local.sigla && (
-                  <span className="text-xs text-forest-600 font-mono font-bold bg-white border border-forest-200 px-2 py-0.5 rounded">
-                    {local.sigla}
-                  </span>
-                )}
-              </div>
             </div>
 
-            {/* Stats pills */}
-            <div className="flex gap-4 flex-wrap mt-4">
-              <div className="bg-forest-100 rounded-xl px-4 py-3 text-center min-w-[80px]">
+            {/* Cards de Estatísticas */}
+            <div className="flex gap-4 justify-center mx-auto flex-wrap">
+              <div className="bg-white rounded-2xl border border-forest-200 shadow-xs px-6 py-4 text-center min-w-[120px]">
                 <div className="text-2xl font-bold text-forest-400">{totalFamilias}</div>
-                <div className="text-xs text-neutral-500 uppercase tracking-wide">Famílias</div>
+                <div className="text-xs text-neutral-500 uppercase tracking-wide font-medium mt-0.5">Famílias</div>
               </div>
-              <div className="bg-forest-100 rounded-xl px-4 py-3 text-center min-w-[80px]">
+              <div className="bg-white rounded-2xl border border-forest-200 shadow-xs px-6 py-4 text-center min-w-[120px]">
                 <div className="text-2xl font-bold text-forest-400">{totalEspecies}</div>
-                <div className="text-xs text-neutral-500 uppercase tracking-wide">Espécies</div>
+                <div className="text-xs text-neutral-500 uppercase tracking-wide font-medium mt-0.5">Espécies</div>
               </div>
             </div>
 
@@ -381,28 +484,28 @@ export default function DetalhesLocal() {
           </div>
 
           {/* Coluna direita: card Resumo do Local */}
-          <div className="bg-forest-100 rounded-2xl border border-forest-200 p-6 text-xs text-left space-y-4 shadow-xs">
+          <div className="bg-white rounded-2xl border border-forest-200 p-6 text-xs text-left space-y-4 shadow-xs">
             <h3 className="font-bold text-forest-900 text-sm pb-2 border-b border-forest-200 flex items-center gap-1.5">
               <Info size={16} className="text-forest-600" />
               Resumo do Local
             </h3>
 
             <div className="space-y-3">
-              <div>
-                <span className="font-semibold text-neutral-400 block mb-0.5">Tipo</span>
-                <span className="text-forest-900 font-bold text-sm uppercase">{local.tipo || 'Geral'}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-neutral-400">Tipo:</span>
+                <span className="text-forest-900 font-bold text-sm">{formatarTipoLocal(local.tipo)}</span>
               </div>
 
               {local.sigla && (
-                <div>
-                  <span className="font-semibold text-neutral-400 block mb-0.5">Sigla</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-neutral-400">Sigla:</span>
                   <span className="text-forest-600 font-bold text-sm font-mono bg-white px-2 py-0.5 rounded border border-forest-200 inline-block">{local.sigla}</span>
                 </div>
               )}
 
               {(local.latitude !== null && local.longitude !== null) && (
                 <div>
-                  <span className="font-semibold text-neutral-400 block mb-0.5">Coordenadas Geográficas</span>
+                  <span className="font-semibold text-neutral-400 block mb-0.5">Coordenadas Geográficas:</span>
                   <span className="text-forest-600 font-medium leading-relaxed font-mono block">
                     Lat: {local.latitude}<br />
                     Long: {local.longitude}
@@ -430,6 +533,7 @@ export default function DetalhesLocal() {
                 center={[local.latitude, local.longitude]}
                 zoom={16}
                 className="text-forest-600 text-xs mt-1"
+                style={{ height: '100%', width: '100%' }}
               >
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -469,112 +573,178 @@ export default function DetalhesLocal() {
           </section>
         )}
 
-        {/* F. Espécies catalogadas */}
+        {/* F. Espécies ou Famílias catalogadas */}
         <section className="mb-12 pt-10 border-t border-forest-200">
-          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-            <h2 className="text-xl font-bold text-forest-900 flex items-center gap-2 flex-shrink-0">
-              🌿 Espécies Ocorrentes neste Local
-            </h2>
-            <input
-              type="text"
-              value={searchEspecie}
-              onChange={e => setSearchEspecie(e.target.value)}
-              placeholder="Filtrar espécies..."
-              className="text-sm border border-forest-200 rounded-lg px-3 py-2 w-48 bg-white text-forest-900 placeholder-neutral-400 focus:outline-none focus:border-forest-400"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-xl font-bold text-forest-900 flex items-center gap-2 flex-shrink-0">
+                {modoVisualizacao === 'especies'
+                  ? '🌿 Espécies Ocorrentes neste Local'
+                  : '🌿 Famílias Ocorrentes neste Local'}
+              </h2>
+
+              {/* Toggle de Abas */}
+              <div className="inline-flex p-1 bg-forest-100 rounded-xl border border-forest-200">
+                <button
+                  type="button"
+                  onClick={() => setModoVisualizacao('especies')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    modoVisualizacao === 'especies'
+                      ? 'bg-white text-forest-900 shadow-xs'
+                      : 'text-forest-600 hover:text-forest-900 bg-transparent'
+                  }`}
+                >
+                  Espécies
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoVisualizacao('familias')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    modoVisualizacao === 'familias'
+                      ? 'bg-white text-forest-900 shadow-xs'
+                      : 'text-forest-600 hover:text-forest-900 bg-transparent'
+                  }`}
+                >
+                  Famílias
+                </button>
+              </div>
+            </div>
+
+            {modoVisualizacao === 'especies' ? (
+              <MultiSelectDropdown
+                options={especiesOptions}
+                selectedValues={selectedEspecieIds}
+                onChange={setSelectedEspecieIds}
+                placeholder="Todas as espécies"
+                itemNounSingular="espécie"
+                itemNounPlural="espécies"
+              />
+            ) : (
+              <MultiSelectDropdown
+                options={familiasOptions}
+                selectedValues={selectedFamiliaIds}
+                onChange={setSelectedFamiliaIds}
+                placeholder="Todas as famílias"
+                itemNounSingular="família"
+                itemNounPlural="famílias"
+              />
+            )}
           </div>
 
-          {especiesFiltradas.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
-              <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
-              <p className="text-sm text-neutral-500 italic">
-                Nenhuma espécie encontrada.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
-              {especiesFiltradas.map((especie) => {
-                const imgUrl = imagemDaEspecie[especie.id];
-                const listaEspecimes = especimesPorEspecie[especie.id] ?? [];
+          {modoVisualizacao === 'especies' ? (
+            especiesFiltradas.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
+                <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
+                <p className="text-sm text-neutral-500 italic">
+                  Nenhuma espécie encontrada.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                {especiesFiltradas.map((especie) => {
+                  const imgUrl = imagemDaEspecie[especie.id];
+                  const listaEspecimes = especimesPorEspecie[especie.id] ?? [];
 
-                return (
-                  <div
-                    key={especie.id}
-                    onClick={() => {
-                      if (listaEspecimes.length === 1) {
-                        navigate(`/locais-publico/${local.id}/especime/${listaEspecimes[0].id}`);
-                      } else if (listaEspecimes.length > 1) {
-                        setModalEspecimes(listaEspecimes);
-                        setModalEspecieNome(especie.nome_cientifico);
-                        setModalAberto(true);
-                      }
-                    }}
-                    className="group flex flex-col bg-white rounded-2xl border border-forest-200 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 overflow-hidden h-full text-left cursor-pointer"
-                  >
-                    {/* Imagem/Fallback */}
-                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-forest-100">
-                      {imgUrl ? (
-                        <img
-                          src={imgUrl}
-                          alt={especie.nome_cientifico}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-forest-600 bg-forest-800/10">
-                          <span className="text-3xl">🌿</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Conteúdo */}
-                    <div className="p-5 flex flex-col flex-grow justify-between">
-                      <div>
-                        <h3 className="text-base font-bold italic text-forest-900 group-hover:text-forest-500 transition-colors leading-snug">
-                          {especie.nome_cientifico}
-                        </h3>
-                        {especie.nome_popular && (
-                          <p className="text-xs text-neutral-500 mt-2 leading-relaxed font-semibold capitalize">
-                            {especie.nome_popular}
-                          </p>
+                  return (
+                    <div
+                      key={especie.id}
+                      onClick={() => {
+                        if (listaEspecimes.length === 1) {
+                          navigate(`/locais-publico/${local.id}/especime/${listaEspecimes[0].id}`);
+                        } else if (listaEspecimes.length > 1) {
+                          setModalEspecimes(listaEspecimes);
+                          setModalEspecieNome(especie.nome_cientifico);
+                          setModalAberto(true);
+                        }
+                      }}
+                      className="group flex flex-col bg-white rounded-2xl border border-forest-200 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 overflow-hidden h-full text-left cursor-pointer"
+                    >
+                      {/* Imagem/Fallback */}
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-forest-100">
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={especie.nome_cientifico}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-forest-600 bg-forest-800/10">
+                            <span className="text-3xl">🌿</span>
+                          </div>
                         )}
                       </div>
 
-                      <div className="pt-4 mt-4 border-t border-forest-200 flex items-center justify-between text-forest-400 group-hover:text-forest-500 font-semibold text-xs">
-                        <span>
-                          {listaEspecimes.length > 1
-                            ? `${listaEspecimes.length} espécimes`
-                            : 'Ver espécime'}
-                        </span>
-                        <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform">→</span>
+                      {/* Conteúdo */}
+                      <div className="p-5 flex flex-col flex-grow justify-between">
+                        <div>
+                          <h3 className="text-base font-bold italic text-forest-900 group-hover:text-forest-500 transition-colors leading-snug">
+                            {especie.nome_cientifico}
+                          </h3>
+                          {especie.nome_popular && (
+                            <p className="text-xs text-neutral-500 mt-2 leading-relaxed font-semibold capitalize">
+                              {especie.nome_popular}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="pt-4 mt-4 border-t border-forest-200 flex items-center justify-between text-forest-400 group-hover:text-forest-500 font-semibold text-xs">
+                          <span>
+                            {listaEspecimes.length > 1
+                              ? `${listaEspecimes.length} espécimes`
+                              : 'Ver espécime'}
+                          </span>
+                          <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform">→</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            familiasFiltradas.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
+                <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
+                <p className="text-sm text-neutral-500 italic">
+                  Nenhuma família encontrada.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                {familiasFiltradas.map((family) => (
+                  <FamilyCard
+                    key={family.id}
+                    family={family}
+                    onClick={() => navigate(`/familias-catalogo/${family.id}`)}
+                  />
+                ))}
+              </div>
+            )
           )}
         </section>
 
         {/* G. Galeria de imagens */}
         <section className="pt-10 border-t border-forest-200">
-          {galeria.length > 0 ? (
+          {galeriaFiltrada.length > 0 ? (
             <>
-              <div className="mb-6 flex items-center gap-3">
-                <h2 className="text-xl font-bold text-forest-900">
-                  Galeria de Imagens do Local
-                </h2>
-                <span className="inline-flex px-2.5 py-1 bg-forest-100 border border-forest-200 text-forest-600 text-xs font-bold rounded-lg">
-                  {galeria.length} {galeria.length === 1 ? 'imagem' : 'imagens'}
-                </span>
+              <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-bold text-forest-900">
+                    Galeria de Imagens do Local
+                  </h2>
+                  <span className="inline-flex px-2.5 py-1 bg-forest-100 border border-forest-200 text-forest-600 text-xs font-bold rounded-lg">
+                    {galeriaFiltrada.length} {galeriaFiltrada.length === 1 ? 'imagem' : 'imagens'}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {galeria.map((img, idx) => (
+                {galeriaPaginada.map((img, idx) => (
                   <div
                     key={img.id || idx}
                     className="aspect-square rounded-xl overflow-hidden cursor-pointer border border-forest-200 bg-stone-50 hover:brightness-90 transition duration-300"
-                    onClick={() => setGalleryLightboxIndex(idx)}
+                    onClick={() => setGalleryLightboxIndex(inicioGaleria + idx)}
                   >
                     <img
                       src={img.url_thumbnail || img.url_imagem || undefined}
@@ -585,12 +755,40 @@ export default function DetalhesLocal() {
                   </div>
                 ))}
               </div>
+
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setGaleriaPage(prev => Math.max(prev - 1, 1))}
+                    disabled={galeriaPage === 1}
+                    className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    aria-label="Página anterior"
+                  >
+                    <span>←</span> Anterior
+                  </button>
+                  <span className="text-xs font-semibold text-forest-600">
+                    Página {galeriaPage} de {totalPaginas}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setGaleriaPage(prev => Math.min(prev + 1, totalPaginas))}
+                    disabled={galeriaPage === totalPaginas}
+                    className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    aria-label="Próxima página"
+                  >
+                    Próxima <span>→</span>
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs flex flex-col items-center justify-center">
               <Leaf size={40} className="text-neutral-300 mb-2 animate-pulse" />
               <p className="text-sm text-neutral-500 italic">
-                Nenhuma imagem cadastrada para este local.
+                {galeria.length === 0
+                  ? 'Nenhuma imagem cadastrada para este local.'
+                  : 'Nenhuma imagem encontrada para as espécies selecionadas.'}
               </p>
             </div>
           )}
@@ -601,7 +799,7 @@ export default function DetalhesLocal() {
 
       {/* Lightbox da Galeria (createPortal z-[100]) */}
       {galleryLightboxIndex !== null && (
-        galleryLightboxIndex >= 0 && galleryLightboxIndex < galeria.length
+        galleryLightboxIndex >= 0 && galleryLightboxIndex < galeriaFiltrada.length
       ) && createPortal(
         <div
           className="fixed inset-0 bg-black/92 flex items-center justify-center z-[100]"
@@ -618,7 +816,7 @@ export default function DetalhesLocal() {
             <X size={28} />
           </button>
 
-          {galeria.length > 1 && (
+          {galeriaFiltrada.length > 1 && (
             <>
               <button
                 onClick={prevGalleryImage}
@@ -637,14 +835,14 @@ export default function DetalhesLocal() {
 
           <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <img
-              src={galeria[galleryLightboxIndex].url_imagem || undefined}
+              src={galeriaFiltrada[galleryLightboxIndex].url_imagem || undefined}
               alt="Imagem do local ampliada"
               className="max-h-[80vh] max-w-[85vw] object-contain rounded-lg select-none"
             />
-            {galeria[galleryLightboxIndex]?.creditos && (
+            {galeriaFiltrada[galleryLightboxIndex]?.creditos && (
               <div className="w-full mt-3 pt-3 border-t border-white/20 text-center">
                 <span className="text-xs text-white/70">
-                  {galeria[galleryLightboxIndex].creditos}
+                  {galeriaFiltrada[galleryLightboxIndex].creditos}
                 </span>
               </div>
             )}

@@ -70,6 +70,11 @@ interface LocalNameItem {
   nome: string;
 }
 
+interface OverrideDetails {
+  descricao_especie: string | null;
+  notas_projeto: string | null;
+}
+
 export default function DetalhesEspecie() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -85,6 +90,7 @@ export default function DetalhesEspecie() {
   const [galleryLightboxIndex, setGalleryLightboxIndex] = useState<number | null>(null);
 
   const [especimes, setEspecimes] = useState<MapSpecimenItem[]>([]);
+  const [overrideLocal, setOverrideLocal] = useState<OverrideDetails | null>(null);
   const [localNomeMap, setLocalNomeMap] = useState<Record<number, string>>({});
   const [imagensCarrossel, setImagensCarrossel] = useState<Array<{ src: string; creditos: string | null }>>([]);
   const [galeriaCompleta, setGaleriaCompleta] = useState<GalleryImageItem[]>([]);
@@ -187,30 +193,28 @@ export default function DetalhesEspecie() {
 
       if (speciesError) throw speciesError;
 
-      // Se acessado no contexto de um local/projeto, verificar override
-      let overrideDescricao: string | null = null;
+      // Se acessado no contexto de um local/projeto, buscar override (descrição local + notas do projeto)
+      let overrideData: OverrideDetails | null = null;
       if (localIdParam) {
-        const { data: overrideData } = await supabase
+        const { data } = await supabase
           .from('especie_local_overrides')
-          .select('descricao_especie')
+          .select('descricao_especie, notas_projeto')
           .eq('especie_id', id)
           .eq('local_id', localIdParam)
           .maybeSingle();
 
-        if (overrideData?.descricao_especie) {
-          overrideDescricao = overrideData.descricao_especie;
-        }
+        overrideData = data ?? null;
       }
 
       // Montar carrossel e galeria com a nova lógica definitiva
       await montarImagensEspecie(id);
 
-      // Setar dados da espécie (imagens serão preenchidas pelo estado galeriaCompleta)
+      // Setar dados da espécie (pura, global — sem mistura com override local; imagens preenchidas pelo estado galeriaCompleta)
       setSpecies({
         ...(speciesData as unknown as Omit<SpeciesDetails, 'imagens'>),
-        descricao_especie: overrideDescricao ?? speciesData.descricao_especie,
         imagens: null
       });
+      setOverrideLocal(overrideData);
       setCurrentIndex(0);
 
       // Buscar espécimes desta espécie com coordenadas para o mapa
@@ -343,6 +347,9 @@ export default function DetalhesEspecie() {
     );
   }
 
+  // Descrição Botânica do Local substitui a global quando preenchida
+  const descricaoEfetiva = overrideLocal?.descricao_especie || species.descricao_especie;
+
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-800">
       <Navbar />
@@ -449,7 +456,7 @@ export default function DetalhesEspecie() {
           </div>
 
           {/* Coluna Direita: Resumo Taxonômico */}
-          <div className="bg-forest-100 rounded-2xl border border-forest-200 p-5 text-xs text-left space-y-3">
+          <div className="bg-white rounded-2xl border border-forest-200 p-5 text-xs text-left space-y-3 shadow-xs">
             <h3 className="font-bold text-forest-900 text-sm pb-2 border-b border-forest-200 flex items-center gap-1.5">
               <Info size={14} className="text-forest-600" />
               Resumo Taxonômico
@@ -489,14 +496,35 @@ export default function DetalhesEspecie() {
           </div>
         </div>
 
-        {/* D. Descrição Botânica */}
-        {species.descricao_especie && (
-          <div className="mb-12 space-y-4">
-            <h2 className="text-xl font-bold text-forest-900">Descrição Botânica</h2>
-            <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
-              {species.descricao_especie.split('\n').map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
+        {/* D. Descrição Botânica: descrição local substitui a global quando preenchida; Notas do Projeto é bloco à parte */}
+        {(descricaoEfetiva || overrideLocal?.notas_projeto) ? (
+          <div className="mb-12 space-y-8">
+            {descricaoEfetiva && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-forest-900">Descrição Botânica</h2>
+                <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
+                  {descricaoEfetiva.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {overrideLocal?.notas_projeto && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-forest-900">Notas do Projeto</h2>
+                <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
+                  {overrideLocal.notas_projeto.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mb-12">
+            <div className="bg-white rounded-2xl border border-forest-200 px-6 py-10 text-center shadow-xs">
+              <Leaf size={32} className="text-forest-300 mx-auto mb-3" />
+              <p className="text-sm text-forest-500 italic">Curadoria sendo feita ainda. Em breve, novos dados.</p>
             </div>
           </div>
         )}

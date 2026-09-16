@@ -17,7 +17,6 @@ interface EspecimeDetails {
   id: number;
   tombo_codigo: string | null;
   tombo_num: number | null;
-  descricao_ocorrencia: string | null;
   detalhes_localizacao: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -52,6 +51,11 @@ interface LocalDetails {
   sigla: string | null;
 }
 
+interface OverrideDetails {
+  descricao_especie: string | null;
+  notas_projeto: string | null;
+}
+
 interface ImagemDetails {
   id: string;
   url_thumbnail: string | null;
@@ -68,6 +72,7 @@ export default function DetalhesEspecimeLocal() {
   const [especie, setEspecie] = useState<EspecieDetails | null>(null);
   const [local, setLocal] = useState<LocalDetails | null>(null);
   const [imagens, setImagens] = useState<ImagemDetails[]>([]);
+  const [overrideLocal, setOverrideLocal] = useState<OverrideDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,7 +90,7 @@ export default function DetalhesEspecimeLocal() {
         .from('especie_local')
         .select(`
           id, tombo_codigo, tombo_num,
-          descricao_ocorrencia, detalhes_localizacao,
+          detalhes_localizacao,
           latitude, longitude, coletor, data_determinacao,
           morfologia, habitat_ecologia, numero_coletor,
           especie_id, local_id
@@ -105,7 +110,7 @@ export default function DetalhesEspecimeLocal() {
           .single(),
         supabase
           .from('especie_local_overrides')
-          .select('descricao_especie')
+          .select('descricao_especie, notas_projeto')
           .eq('especie_id', especimeRes.especie_id)
           .eq('local_id', localId)
           .maybeSingle(),
@@ -113,9 +118,6 @@ export default function DetalhesEspecimeLocal() {
 
       if (especieDataRes.error) throw especieDataRes.error;
       const especieRes = especieDataRes.data as EspecieDetails;
-      if (overrideRes.data?.descricao_especie) {
-        especieRes.descricao_especie = overrideRes.data.descricao_especie;
-      }
 
       // 3. Dados do local (para o breadcrumb)
       const { data: localData, error: localError } = await supabase
@@ -141,6 +143,7 @@ export default function DetalhesEspecimeLocal() {
 
       setEspecime(especimeRes);
       setEspecie(especieRes);
+      setOverrideLocal(overrideRes.data ?? null);
       setLocal(localRes);
       setImagens(imagensRes);
     } catch (err) {
@@ -239,6 +242,9 @@ export default function DetalhesEspecimeLocal() {
     );
   }
 
+  // Descrição Botânica do Local substitui a global quando preenchida
+  const descricaoEfetiva = overrideLocal?.descricao_especie || especie.descricao_especie;
+
   return (
     <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
@@ -262,7 +268,7 @@ export default function DetalhesEspecimeLocal() {
 
         {/* B. Carrossel de imagens */}
         {imagens.length > 0 ? (
-          <div className="w-full h-neutral-700 rounded-2xl overflow-hidden relative mb-8 bg-neutral-600 shadow-xs">
+          <div className="w-full h-[480px] rounded-2xl overflow-hidden relative mb-8 bg-neutral-600 shadow-xs">
             <img
               src={imagens[currentIndex]?.url_thumbnail || imagens[currentIndex]?.url_imagem || undefined}
               alt={especie.nome_popular || especie.nome_cientifico}
@@ -329,17 +335,10 @@ export default function DetalhesEspecimeLocal() {
                 {especie.nome_popular}
               </h2>
             )}
-            {especime.tombo_codigo && (
-              <div className="pt-2">
-                <span className="font-mono text-xs font-bold bg-forest-100 border border-forest-200 rounded-lg px-3 py-1.5 text-forest-600 inline-block">
-                  Tombo: {especime.tombo_codigo}
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Coluna Direita: Dados do Espécime */}
-          <div className="bg-forest-100 rounded-2xl border border-forest-200 p-5 text-xs text-left space-y-3 shadow-xs">
+          <div className="bg-white rounded-2xl border border-forest-200 p-5 text-xs text-left space-y-3 shadow-xs">
             <h3 className="font-bold text-forest-900 text-sm pb-2 border-b border-forest-200 flex items-center gap-1.5">
               <Info size={14} className="text-forest-600" />
               Dados do Espécime
@@ -391,17 +390,39 @@ export default function DetalhesEspecimeLocal() {
           </div>
         </div>
 
-        {/* D. Descrição da ocorrência */}
-        {especime.descricao_ocorrencia && (
-          <div className="mb-12 space-y-4 text-left">
-            <h2 className="text-xl font-bold text-forest-900">Descrição da Ocorrência</h2>
-            <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
-              {especime.descricao_ocorrencia.split('\n').map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
+        {/* Descrição Botânica: descrição local substitui a global quando preenchida; Notas do Projeto é bloco à parte */}
+        {(descricaoEfetiva || overrideLocal?.notas_projeto) ? (
+          <div className="mb-12 space-y-8 text-left">
+            {descricaoEfetiva && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-forest-900">Descrição Botânica</h2>
+                <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
+                  {descricaoEfetiva.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {overrideLocal?.notas_projeto && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-forest-900">Notas do Projeto</h2>
+                <div className="text-forest-600 text-sm leading-relaxed space-y-4 font-normal">
+                  {overrideLocal.notas_projeto.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mb-12 text-left">
+            <div className="bg-white rounded-2xl border border-forest-200 px-6 py-10 text-center shadow-xs">
+              <Leaf size={32} className="text-forest-300 mx-auto mb-3" />
+              <p className="text-sm text-forest-500 italic">Curadoria sendo feita ainda. Em breve, novos dados.</p>
             </div>
           </div>
         )}
+
 
         {/* E. Localização no campo */}
         {especime.detalhes_localizacao && (
