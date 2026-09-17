@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Sun, Moon, Contrast } from 'lucide-react';
+import { Menu, X, Contrast } from 'lucide-react';
 import icon from '../../../assets/icon.png';
 
 export function Navbar() {
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const adminUrl = isLocalhost ? '/login' : 'https://painel-admin.veridiasaber.com.br';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('veridia-theme') as 'light' | 'dark') || 'light';
-    }
-    return 'light';
-  });
 
   const [highContrast, setHighContrast] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -19,16 +14,6 @@ export function Navbar() {
     }
     return false;
   });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('veridia-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -40,13 +25,11 @@ export function Navbar() {
     localStorage.setItem('veridia-contrast', String(highContrast));
   }, [highContrast]);
 
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   const toggleContrast = () => {
     setHighContrast(prev => !prev);
   };
+
+  const enterBtnClass = 'inline-flex items-center justify-center font-bold text-white rounded-full bg-forest-900 hover:bg-forest-800 border border-transparent transition-all duration-200 cursor-pointer shadow-xs';
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-forest-200 px-6">
@@ -92,16 +75,8 @@ export function Navbar() {
           <Link to="/morfologia" className="hover:text-forest-900 transition-colors">Morfologia</Link>
           <Link to="/sobre" className="hover:text-forest-900 transition-colors">Sobre</Link>
 
-          {/* Botões de Acessibilidade e Tema (Desktop) */}
+          {/* Botões de Alto Contraste e Entrar (Desktop) */}
           <div className="flex items-center gap-3 pl-4 border-l border-forest-200 ml-2">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 hover:bg-forest-50 rounded-full text-forest-600 hover:text-forest-900 transition-colors cursor-pointer border border-transparent hover:border-forest-200"
-              title={theme === 'dark' ? 'Modo Claro' : 'Modo Noturno'}
-              aria-label="Alternar modo noturno"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
             <button
               onClick={toggleContrast}
               className={`p-1.5 rounded-full transition-colors border ${
@@ -114,17 +89,38 @@ export function Navbar() {
             >
               <Contrast className="w-4 h-4" />
             </button>
+
+            <a
+              href={adminUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`px-3.5 py-1.5 text-xs ${enterBtnClass} ml-1`}
+            >
+              Entrar
+            </a>
           </div>
         </div>
 
-        {/* Menu Hamburguer (Mobile) */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-1 text-forest-900 hover:bg-forest-50 rounded-lg transition-colors cursor-pointer"
-          aria-label="Alternar menu"
-        >
-          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Controles Mobile */}
+        <div className="md:hidden flex items-center gap-2">
+          <a
+            href={adminUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`px-3 py-1.5 text-xs ${enterBtnClass}`}
+          >
+            Entrar
+          </a>
+
+          {/* Menu Hamburguer (Mobile) */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1 text-forest-900 hover:bg-forest-50 rounded-lg transition-colors cursor-pointer"
+            aria-label="Alternar menu"
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Menu Drawer/Dropdown (Mobile) */}
@@ -139,35 +135,36 @@ export function Navbar() {
             <Link to="/morfologia" onClick={() => setIsMenuOpen(false)} className="hover:text-forest-900 py-1">Morfologia</Link>
             <Link to="/sobre" onClick={() => setIsMenuOpen(false)} className="hover:text-forest-900 py-1">Sobre</Link>
 
-            {/* Acessibilidade e Tema (Mobile) */}
+            {/* Acessibilidade - Alto Contraste (Mobile) */}
             <div className="border-t border-forest-200 my-1 pt-3 flex items-center justify-between gap-4">
               <span className="text-xs uppercase tracking-widest text-forest-600/60 font-bold">Acessibilidade</span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    toggleTheme();
-                    setIsMenuOpen(false);
-                  }}
-                  className="p-2 hover:bg-forest-50 rounded-full text-forest-600 hover:text-forest-900 transition-colors border border-forest-200"
-                  aria-label="Alternar modo noturno"
-                >
-                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => {
-                    toggleContrast();
-                    setIsMenuOpen(false);
-                  }}
-                  className={`p-2 rounded-full transition-colors border ${
-                    highContrast
-                      ? 'bg-forest-900 text-white border-forest-900'
-                      : 'hover:bg-forest-50 text-forest-600 hover:text-forest-900 border-forest-200'
-                  }`}
-                  aria-label="Alternar alto contraste"
-                >
-                  <Contrast className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  toggleContrast();
+                  setIsMenuOpen(false);
+                }}
+                className={`p-2 rounded-full transition-colors border ${
+                  highContrast
+                    ? 'bg-forest-900 text-white border-forest-900'
+                    : 'hover:bg-forest-50 text-forest-600 hover:text-forest-900 border-forest-200'
+                }`}
+                aria-label="Alternar alto contraste"
+              >
+                <Contrast className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Link Entrar (Mobile Drawer) */}
+            <div className="border-t border-forest-200 pt-3">
+              <a
+                href={adminUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
+                className={`w-full py-2.5 px-4 text-xs ${enterBtnClass}`}
+              >
+                Entrar
+              </a>
             </div>
           </div>
         </div>

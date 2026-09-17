@@ -4,6 +4,7 @@ import { Leaf, ShieldAlert } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { FloatingLeaves } from './components/FloatingLeaves';
 
 interface ConteudoOrgaoItem {
   id: number;
@@ -117,7 +118,7 @@ export default function MorfologiaPage() {
       <main className="flex-grow container mx-auto px-6 py-12 max-w-6xl text-left">
         {/* Header da página */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-forest-100 to-forest-50 border border-forest-200 p-8 md:p-10 mb-12 flex items-center justify-between shadow-xs">
-          <div className="max-w-2xl z-10">
+          <div className="max-w-xl lg:max-w-2xl z-10 relative pointer-events-none select-text">
             <span className="text-xs uppercase tracking-widest text-forest-600 font-bold">
               Estudo Botânico
             </span>
@@ -128,24 +129,7 @@ export default function MorfologiaPage() {
               Estude a estrutura externa das plantas — raízes, caules, folhas, flores, frutos e sementes. Compreenda a anatomia descritiva que auxilia na identificação das espécies botânicas no campo.
             </p>
           </div>
-          <div className="hidden md:block text-forest-400/15 flex-shrink-0 mr-4 z-0">
-            <svg
-              width="100"
-              height="100"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-24 h-24 transform rotate-12"
-            >
-              <path d="M2 22C2 22 17 21 22 2C22 2 13 3 11 11C9 13 6 14.5 2 22Z" />
-              <path d="M9 13C9 13 13 14 18 11.5" />
-              <path d="M12 10C12 10 15.5 10 18.5 7" />
-              <path d="M5.5 17C5.5 17 8 18 10 16.5" />
-            </svg>
-          </div>
+          <FloatingLeaves count={12} className="absolute inset-0 z-0 w-full h-full" />
         </div>
 
         {/* Órgãos Cadastrados */}

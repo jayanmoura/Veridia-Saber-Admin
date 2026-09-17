@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BookOpen, MapPin, RefreshCw } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
@@ -94,10 +94,7 @@ export default function SobrePage() {
           
           {/* Card A */}
           <div className="text-left space-y-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-forest-400 w-8 h-8">
-              <path d="M12 2C6 2 2 8 2 12c0 5.5 4.5 9 10 9s10-3.5 10-9C22 8 18 2 12 2z"/>
-              <path d="M12 2v19M2 12h20"/>
-            </svg>
+            <BookOpen className="text-forest-400 w-8 h-8" strokeWidth={1.5} />
             <h3 className="font-semibold text-forest-900 text-lg">
               Catálogo Científico
             </h3>
@@ -108,10 +105,7 @@ export default function SobrePage() {
 
           {/* Card B */}
           <div className="text-left space-y-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-forest-400 w-8 h-8">
-              <path d="M12 2C6 2 2 8 2 12c0 5.5 4.5 9 10 9s10-3.5 10-9C22 8 18 2 12 2z"/>
-              <path d="M12 2v19M2 12h20"/>
-            </svg>
+            <MapPin className="text-forest-400 w-8 h-8" strokeWidth={1.5} />
             <h3 className="font-semibold text-forest-900 text-lg">
               Coleta em Campo
             </h3>
@@ -122,10 +116,7 @@ export default function SobrePage() {
 
           {/* Card C */}
           <div className="text-left space-y-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-forest-400 w-8 h-8">
-              <path d="M12 2C6 2 2 8 2 12c0 5.5 4.5 9 10 9s10-3.5 10-9C22 8 18 2 12 2z"/>
-              <path d="M12 2v19M2 12h20"/>
-            </svg>
+            <RefreshCw className="text-forest-400 w-8 h-8" strokeWidth={1.5} />
             <h3 className="font-semibold text-forest-900 text-lg">
               Sincronização Automática
             </h3>

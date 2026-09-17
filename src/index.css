@@ -110,161 +110,108 @@ body {
     animation: fadeIn 0.2s ease-out forwards;
 }
 
-/* ─── Modo Escuro / Dark Mode ────────────────────────────────────────── */
-html.dark,
-html.dark body {
+/* ─── Animações Botânicas ────────────────────────────────────────────── */
+@keyframes leaf-breeze {
+    0%, 100% {
+        transform: rotate(-6deg) translateY(0px);
+    }
+    50% {
+        transform: rotate(6deg) translateY(-5px);
+    }
+}
+
+.animate-leaf-breeze {
+    animation: leaf-breeze 3.5s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-leaf-breeze {
+        animation: none !important;
+        transform: none !important;
+    }
+}
+
+/* ─── Alto Contraste ─────────────────────────────────────────────────── */
+html.contrast,
+html.contrast body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+html.contrast nav,
+html.contrast .bg-white,
+html.contrast .bg-neutral-50,
+html.contrast .bg-neutral-100 {
+    background-color: #ffffff !important;
+    border-color: #000000 !important;
+}
+
+html.contrast .text-primary,
+html.contrast .text-forest-600,
+html.contrast .text-forest-900,
+html.contrast .text-neutral-800,
+html.contrast .text-neutral-700,
+html.contrast .text-neutral-600 {
+    color: #000000 !important;
+}
+
+html.contrast .bg-surface-alt,
+html.contrast .bg-primary-subtle,
+html.contrast .bg-forest-50 {
+    background-color: #ffffff !important;
+}
+
+html.contrast .border-primary-subtle,
+html.contrast .border-forest-200,
+html.contrast .border-neutral-100 {
+    border-color: #000000 !important;
+}
+
+html.contrast .bg-primary,
+html.contrast .bg-forest-900 {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+html.contrast .border-primary,
+html.contrast .border-forest-900 {
+    border-color: #000000 !important;
+}
+
+html.contrast .hover\:bg-primary-subtle:hover,
+html.contrast .hover\:bg-forest-50:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* ─── Alto Contraste no Footer (permanece verde escuro com texto claro) ─── */
+html.contrast footer {
     background-color: var(--color-forest-950) !important;
+    border-color: #ffffff !important;
+}
+
+html.contrast footer * {
+    background-color: transparent !important;
+}
+
+html.contrast footer span,
+html.contrast footer p,
+html.contrast footer h3,
+html.contrast footer a {
+    color: #ffffff !important;
+}
+
+html.contrast footer h3 {
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+}
+
+html.contrast footer a:hover {
+    text-decoration: underline !important;
     color: var(--color-forest-200) !important;
 }
 
-html.dark nav,
-html.dark footer,
-html.dark .bg-white {
-    background-color: var(--color-forest-900) !important;
-    border-color: var(--color-forest-800) !important;
-}
-
-/* Substituição das cores botânicas no dark mode */
-html.dark .text-primary {
-    color: var(--color-forest-400) !important;
-}
-html.dark .text-forest-600 {
-    color: var(--color-forest-400) !important;
-}
-html.dark .bg-surface-alt {
-    background-color: var(--color-forest-950) !important;
-}
-html.dark .bg-primary-subtle {
-    background-color: var(--color-forest-800) !important;
-}
-html.dark .border-primary-subtle {
-    border-color: var(--color-forest-800) !important;
-}
-html.dark .bg-primary {
-    background-color: var(--color-forest-600) !important;
-    color: white !important;
-}
-html.dark .hover\:bg-primary-hover:hover {
-    background-color: var(--color-forest-600) !important;
-}
-html.dark .border-primary {
-    border-color: var(--color-forest-400) !important;
-}
-
-/* Tabelas e Accordions em Dark Mode */
-html.dark .bg-neutral-50 {
-    background-color: var(--color-forest-950) !important;
-}
-html.dark .bg-neutral-100 {
-    background-color: var(--color-forest-900) !important;
-}
-html.dark .border-neutral-100 {
-    border-color: var(--color-forest-800) !important;
-}
-html.dark .text-neutral-800 {
-    color: var(--color-forest-50) !important;
-}
-html.dark .text-neutral-700 {
-    color: var(--color-forest-200) !important;
-}
-html.dark .text-neutral-600 {
-    color: var(--color-forest-400) !important;
-}
-
-/* ─── Alto Contraste (Modo Claro) ─────────────────────────────────────── */
-html.contrast:not(.dark),
-html.contrast:not(.dark) body {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-}
-
-html.contrast:not(.dark) nav,
-html.contrast:not(.dark) footer,
-html.contrast:not(.dark) .bg-white,
-html.contrast:not(.dark) .bg-neutral-50,
-html.contrast:not(.dark) .bg-neutral-100 {
-    background-color: #ffffff !important;
-    border-color: #000000 !important;
-}
-
-html.contrast:not(.dark) .text-primary,
-html.contrast:not(.dark) .text-forest-600,
-html.contrast:not(.dark) .text-neutral-800,
-html.contrast:not(.dark) .text-neutral-700,
-html.contrast:not(.dark) .text-neutral-600 {
-    color: #000000 !important;
-}
-
-html.contrast:not(.dark) .bg-surface-alt,
-html.contrast:not(.dark) .bg-primary-subtle {
-    background-color: #ffffff !important;
-}
-html.contrast:not(.dark) .border-primary-subtle,
-html.contrast:not(.dark) .border-neutral-100 {
-    border-color: #000000 !important;
-}
-
-html.contrast:not(.dark) .bg-primary {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-html.contrast:not(.dark) .border-primary {
-    border-color: #000000 !important;
-}
-html.contrast:not(.dark) .hover\:bg-primary-subtle:hover {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-/* ─── Alto Contraste (Modo Escuro / Noturno) ────────────────────────── */
-html.contrast.dark,
-html.contrast.dark body {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-html.contrast.dark nav,
-html.contrast.dark footer,
-html.contrast.dark .bg-white,
-html.contrast.dark .bg-neutral-50,
-html.contrast.dark .bg-neutral-100 {
-    background-color: #000000 !important;
-    border-color: #ffffff !important;
-}
-
-html.contrast.dark .text-primary,
-html.contrast.dark .text-forest-600,
-html.contrast.dark .text-forest-900,
-html.contrast.dark .text-forest-800,
-html.contrast.dark .text-neutral-800,
-html.contrast.dark .text-neutral-700,
-html.contrast.dark .text-neutral-600 {
-    color: #ffffff !important;
-}
-
-html.contrast.dark .bg-surface-alt,
-html.contrast.dark .bg-forest-50,
-html.contrast.dark .bg-primary-subtle {
-    background-color: #000000 !important;
-}
-html.contrast.dark .border-primary-subtle,
-html.contrast.dark .border-forest-200,
-html.contrast.dark .border-b-forest-200,
-html.contrast.dark .border-neutral-100 {
-    border-color: #ffffff !important;
-}
-
-html.contrast.dark .bg-primary,
-html.contrast.dark .bg-forest-900 {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-}
-html.contrast.dark .border-primary,
-html.contrast.dark .border-forest-900 {
-    border-color: #ffffff !important;
-}
-html.contrast.dark .hover\:bg-primary-subtle:hover,
-html.contrast.dark .hover\:bg-forest-50:hover {
-    background-color: #ffffff !important;
-    color: #000000 !important;
+html.contrast footer .border-t {
+    border-color: rgba(255, 255, 255, 0.4) !important;
 }
