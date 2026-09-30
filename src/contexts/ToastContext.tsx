@@ -1,6 +1,6 @@
 import { useState, useCallback, type ReactNode } from 'react';
 import { ToastContext } from './toastContext';
-import type { Toast, ToastType } from '../types/toast';
+import type { Toast, ToastType, ToastAction } from '../types/toast';
 
 const DEFAULT_DURATION: Record<ToastType, number> = {
   success: 4000,
@@ -16,19 +16,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType, duration?: number) => {
+  const showToast = useCallback((message: string, type: ToastType, duration?: number, action?: ToastAction) => {
     const id = crypto.randomUUID();
     const newToast: Toast = {
       id,
       message,
       type,
       duration: duration ?? DEFAULT_DURATION[type],
+      action,
     };
     setToasts(prev => {
       const next = [...prev, newToast];
       return next.length > 4 ? next.slice(-4) : next;
     });
   }, []);
+
 
   return (
     <ToastContext.Provider value={{ toasts, showToast, dismissToast }}>

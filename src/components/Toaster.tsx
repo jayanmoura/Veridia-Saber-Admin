@@ -63,13 +63,26 @@ export function Toaster() {
             <span className="flex-1 text-sm font-medium leading-snug">
               {toast.message}
             </span>
+            {toast.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  toast.action?.onClick();
+                  dismissToast(toast.id);
+                }}
+                className="shrink-0 px-2.5 py-1 text-xs font-semibold bg-white text-gray-900 rounded shadow-sm hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                {toast.action.label}
+              </button>
+            )}
             <button
               onClick={() => dismissToast(toast.id)}
-              className="shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
+              className="shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors cursor-pointer"
               aria-label="Fechar notificação"
             >
               <X size={16} />
             </button>
+
           </div>
         );
       })}

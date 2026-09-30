@@ -59,3 +59,6 @@ export { useFamilyActions } from './useFamilyActions';
 export { usePeriodicReports } from './usePeriodicReports';
 export type { UsePeriodicReportsOptions, UsePeriodicReportsReturn } from './usePeriodicReports';
 export type { PeriodicReport, PeriodicReportType, PeriodicReportData } from '../types/domain';
+
+export { useVersionCheck } from './useVersionCheck';
+export type { UseVersionCheckReturn } from './useVersionCheck';

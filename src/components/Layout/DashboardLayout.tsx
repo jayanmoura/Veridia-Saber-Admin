@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '../../contexts/authContext';
 import { ToastProvider } from '../../contexts/ToastContext';
 import { Toaster } from '../Toaster';
+import { AdminUpdateNotifier } from '../AdminUpdateNotifier';
 
 export function DashboardLayout() {
     const { profile } = useAuth();
@@ -15,6 +16,7 @@ export function DashboardLayout() {
 
         return (
         <ToastProvider>
+            <AdminUpdateNotifier />
             <div className="min-h-screen bg-gray-50 flex">
                 <Sidebar />
 

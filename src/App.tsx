@@ -1,7 +1,8 @@
-import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { adminRouter } from './routes';
-import { lazy } from 'react';
+import { lazy, useEffect, useRef } from 'react';
+import { useVersionCheck } from './hooks/useVersionCheck';
 
 import LandingPage from './pages/landingpage/LandingPage';
 import Privacy from './pages/landingpage/Privacy';
@@ -21,11 +22,61 @@ const MorfologiaOrgaoPage = lazy(() => import('./pages/landingpage/MorfologiaOrg
 const SobrePage = lazy(() => import('./pages/landingpage/SobrePage'));
 const CriadorPage = lazy(() => import('./pages/landingpage/CriadorPage'));
 
+function PublicAppLayout() {
+  const { updateAvailable } = useVersionCheck();
+  const location = useLocation();
+  const prevPathnameRef = useRef<string>(location.pathname);
+
+  // Recarrega na proxima navegacao de rota ao detectar versao nova
+  useEffect(() => {
+    if (!updateAvailable) {
+      return;
+    }
+
+    if (prevPathnameRef.current !== location.pathname) {
+      window.location.reload();
+    }
+  }, [location.pathname, updateAvailable]);
+
+  // Atualiza referencia do pathname
+  useEffect(() => {
+    prevPathnameRef.current = location.pathname;
+  }, [location.pathname]);
+
+  // Recarrega quando a aba estiver oculta
+  useEffect(() => {
+    if (!updateAvailable) {
+      return;
+    }
+
+    if (document.hidden) {
+      window.location.reload();
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        window.location.reload();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [updateAvailable]);
+
+  return <Outlet />;
+}
+
 const publicRouter = createBrowserRouter([
   {
-    path: '/',
-    element: <LandingPage />,
-  },
+    element: <PublicAppLayout />,
+    children: [
+      {
+        path: '/',
+        element: <LandingPage />,
+      },
   {
     path: '/catalogo',
     element: <CatalogoEspecies />,
@@ -106,7 +157,10 @@ const publicRouter = createBrowserRouter([
     path: '*',
     element: <Navigate to="/" replace />
   }
+    ]
+  }
 ]);
+
 
 function App() {
   // Detect environment
