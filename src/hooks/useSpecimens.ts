@@ -162,11 +162,10 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
         if (!projectId) return null;
         setActionLoading(true);
         try {
-            const payload = {
+            const basePayload = {
                 especie_id: formData.especie_id,
                 local_id: Number(projectId),
                 institution_id: institutionId,
-                created_by: profileId,
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude) : null,
                 detalhes_localizacao: formData.detalhes_localizacao || null,
@@ -180,10 +179,10 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
             let savedId: number | null = null;
 
             if (editingSpecimen) {
-                // UPDATE table especie_local
+                // UPDATE table especie_local - não alterar created_by
                 const { error } = await supabase
                     .from('especie_local')
-                    .update(payload)
+                    .update(basePayload)
                     .eq('id', editingSpecimen.id);
                 if (error) throw error;
                 savedId = Number(editingSpecimen.id);
@@ -191,7 +190,10 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                 // INSERT into table especie_local
                 const { data, error } = await supabase
                     .from('especie_local')
-                    .insert(payload)
+                    .insert({
+                        ...basePayload,
+                        created_by: profileId,
+                    })
                     .select('id')
                     .single();
                 if (error) throw error;

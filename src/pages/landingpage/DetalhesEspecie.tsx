@@ -7,7 +7,8 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 // Leaflet
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, Marker, Popup } from 'react-leaflet';
+import { BaseTileLayer } from '../../components/Maps/BaseTileLayer';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -550,10 +551,7 @@ export default function DetalhesEspecie() {
                 zoom={14}
                 style={{ height: '100%', width: '100%' }}
               >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
+                <BaseTileLayer />
                 <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
                   {especimes.map(ponto => (
                     <Marker

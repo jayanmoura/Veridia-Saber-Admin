@@ -1,10 +1,17 @@
 import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import { BaseTileLayer } from './BaseTileLayer';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/authContext';
 import { Loader2, Filter, X, Map as MapIcon, Layers } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
+import { fetchProfileNames } from '../../services/profileNames';
+import { createDotIcon, createClusterIcon } from '../../pages/landingpage/components/mapMarkerIcons';
+import { SpecimenPopupCard } from '../../pages/landingpage/components/SpecimenPopupCard';
 
 interface LocationData {
     id: string;
@@ -16,6 +23,12 @@ interface LocationData {
     date: string;
     image?: string;
     user_id: string | null; // Added to track plant owner
+    origem: 'painel' | 'app';
+    tombo?: string | null;
+    local_nome?: string | null;
+    nome_popular?: string | null;
+    coletor_texto?: string | null;
+    cadastrado_por?: string | null;
 }
 
 interface RawPlantaColecaoRow {
@@ -33,8 +46,8 @@ interface RawPlantaColecaoRow {
 
 interface RawEspecieLocalHeatmapRef {
     nome_cientifico: string | null;
+    nome_popular: string | null;
     familia: { familia_nome: string } | { familia_nome: string }[] | null;
-    created_by: string | null;
     imagens: { url_imagem: string | null; url_thumbnail: string | null }[] | null;
 }
 
@@ -43,6 +56,10 @@ interface RawEspecieLocalHeatmapRow {
     latitude: number;
     longitude: number;
     created_at: string;
+    created_by: string | null;
+    tombo_codigo: string | null;
+    coletor: string | null;
+    locais: { nome: string } | { nome: string }[] | null;
     especie: RawEspecieLocalHeatmapRef | RawEspecieLocalHeatmapRef[] | null;
 }
 
@@ -97,10 +114,14 @@ export function GlobalHeatmap() {
                     latitude, 
                     longitude,
                     created_at,
+                    created_by,
+                    tombo_codigo,
+                    coletor,
+                    locais:local_id(nome),
                     especie:especie_id (
                         nome_cientifico,
+                        nome_popular,
                         familia:familia_id(familia_nome),
-                        created_by,
                         imagens(url_imagem, url_thumbnail)
                     )
                 `)
@@ -120,28 +141,66 @@ export function GlobalHeatmap() {
                 collector: 'Usuário do App',
                 date: item.data_registro,
                 image: item.fotos && item.fotos.length > 0 ? item.fotos[0] : undefined,
-                user_id: item.user_id
+                user_id: item.user_id,
+                origem: 'app',
+                tombo: null,
+                local_nome: null,
+                nome_popular: null,
+                coletor_texto: null,
+                cadastrado_por: null,
             }));
 
             // Map especie_local
             const mappedEspecieLocal: LocationData[] = ((especieLocalData || []) as RawEspecieLocalHeatmapRow[]).map((item) => {
                 const especie = Array.isArray(item.especie) ? item.especie[0] : item.especie;
                 const familia = Array.isArray(especie?.familia) ? especie.familia[0] : especie?.familia;
+                const localObj = Array.isArray(item.locais) ? item.locais[0] : item.locais;
+
                 return {
                     id: `especie_local_${item.id}`,
                     latitude: Number(item.latitude),
                     longitude: Number(item.longitude),
                     species_name: especie?.nome_cientifico || 'Não Identificada',
                     family_name: familia?.familia_nome || 'Sem Família',
-                    collector: 'Painel Web',
+                    collector: item.coletor || 'Não informado',
                     date: item.created_at,
                     image: especie?.imagens?.[0]?.url_thumbnail || especie?.imagens?.[0]?.url_imagem || undefined,
-                    user_id: especie?.created_by || null
+                    user_id: item.created_by || null,
+                    origem: 'painel',
+                    tombo: item.tombo_codigo || null,
+                    local_nome: localObj?.nome || null,
+                    nome_popular: especie?.nome_popular || null,
+                    coletor_texto: item.coletor || null,
+                    cadastrado_por: null,
                 };
             });
 
             // Combine both sources
-            const allLocations = [...mappedPlantas, ...mappedEspecieLocal];
+            const rawCombined = [...mappedPlantas, ...mappedEspecieLocal];
+
+            // Resolve cadastrado_por usando fetchProfileNames
+            const userIds = rawCombined.map(l => l.user_id).filter((id): id is string => Boolean(id));
+            const profileNames = await fetchProfileNames(userIds);
+
+            const allLocations: LocationData[] = rawCombined.map((loc) => {
+                const nomePerfil = loc.user_id ? profileNames.get(loc.user_id) : null;
+                let cadastradoPor = nomePerfil;
+                if (!cadastradoPor) {
+                    if (loc.origem === 'painel') {
+                        cadastradoPor = loc.coletor_texto || 'Não informado';
+                    } else if (loc.origem === 'app') {
+                        cadastradoPor = 'Usuário do App';
+                    } else {
+                        cadastradoPor = 'Não informado';
+                    }
+                }
+
+                return {
+                    ...loc,
+                    cadastrado_por: cadastradoPor,
+                };
+            });
+
             setLocations(allLocations);
 
             // Extract unique families for filter
@@ -177,14 +236,6 @@ export function GlobalHeatmap() {
     const center: [number, number] = filteredLocations.length > 0
         ? [filteredLocations[0].latitude, filteredLocations[0].longitude]
         : [-14.2350, -51.9253]; // Brazil Center
-
-    const getTileUrl = () => {
-        switch (mapStyle) {
-            case 'dark': return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            case 'satellite': return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-            default: return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-        }
-    };
 
     return (
         <div className="space-y-4">
@@ -284,45 +335,36 @@ export function GlobalHeatmap() {
                     scrollWheelZoom={true}
                 >
                     <MapController />
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        url={getTileUrl()}
-                        maxNativeZoom={19}
-                        maxZoom={22}
-                    />
+                    <BaseTileLayer style={mapStyle} />
 
-                    {filteredLocations.map((loc) => (
-                        <CircleMarker
-                            key={loc.id}
-                            center={[loc.latitude, loc.longitude]}
-                            radius={6}
-                            fillColor={getMarkerColor(loc.user_id)}
-                            color="#ffffff"
-                            weight={1}
-                            opacity={0.8}
-                            fillOpacity={0.7}
-                        >
-                            <Popup>
-                                <div className="p-1">
-                                    <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block mb-1">
-                                        {loc.family_name}
-                                    </span>
-                                    <h3 className="font-bold text-gray-900 mb-1">{loc.species_name}</h3>
+                    <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                        {filteredLocations.map((loc) => {
+                            const coletorExibicao = loc.coletor_texto && loc.coletor_texto !== loc.cadastrado_por ? loc.coletor_texto : null;
 
-                                    {loc.image && (
-                                        <div className="w-full h-32 mb-2 rounded-lg overflow-hidden bg-gray-100">
-                                            <img src={loc.image} alt={loc.species_name} className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-
-                                    <div className="text-xs text-gray-500 space-y-1">
-                                        <p><strong>Coletor:</strong> {loc.collector}</p>
-                                        <p><strong>Data:</strong> {new Date(loc.date).toLocaleDateString('pt-BR')}</p>
-                                    </div>
-                                </div>
-                            </Popup>
-                        </CircleMarker>
-                    ))}
+                            return (
+                                <Marker
+                                    key={loc.id}
+                                    position={[loc.latitude, loc.longitude]}
+                                    icon={createDotIcon(getMarkerColor(loc.user_id))}
+                                >
+                                    <Popup maxWidth={260} autoPan={false}>
+                                        <SpecimenPopupCard
+                                            imagemUrl={loc.image}
+                                            nomeCientifico={loc.species_name}
+                                            nomePopular={loc.nome_popular}
+                                            familiaNome={loc.family_name}
+                                            tombo={loc.tombo}
+                                            localNome={loc.local_nome}
+                                            cadastradoPor={loc.cadastrado_por}
+                                            coletor={coletorExibicao}
+                                            dataRegistro={loc.date}
+                                            origem={loc.origem === 'painel' ? 'Painel' : 'Aplicativo'}
+                                        />
+                                    </Popup>
+                                </Marker>
+                            );
+                        })}
+                    </MarkerClusterGroup>
                 </MapContainer>
             </div>
         </div>

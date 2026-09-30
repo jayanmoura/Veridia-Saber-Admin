@@ -1,6 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet';
+import { MapContainer, Popup, useMap, Marker } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import { BaseTileLayer } from './BaseTileLayer';
+import { createDotIcon, createClusterIcon } from '../../pages/landingpage/components/mapMarkerIcons';
+import { SpecimenPopupCard } from '../../pages/landingpage/components/SpecimenPopupCard';
 import { supabase } from '../../lib/supabase';
 import { Loader2, Layers, Map as MapIcon, RotateCcw } from 'lucide-react';
 import L from 'leaflet';
@@ -220,13 +226,6 @@ export function ProjectMapViz() {
         return plants; // Show all if mode is 'plants' but no specific project focussed (Raw View)
     }, [viewMode, focussedProject, plants]);
 
-    const getTileUrl = () => {
-        switch (mapStyle) {
-            case 'dark': return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            case 'satellite': return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-            default: return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-        }
-    };
 
     return (
         <div className="space-y-4">
@@ -289,12 +288,7 @@ export function ProjectMapViz() {
                 <MapContainer center={[-14.2350, -51.9253]} zoom={4} maxZoom={22} style={{ height: '100%', width: '100%' }}>
                     <MapController />
                     <ZoomHandler target={mapTarget} />
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        url={getTileUrl()}
-                        maxNativeZoom={19}
-                        maxZoom={22}
-                    />
+                    <BaseTileLayer style={mapStyle} />
 
                     {/* Render Project Markers (Balloons) */}
                     {viewMode === 'projects' && projectClusters.map(cluster => (
@@ -309,33 +303,26 @@ export function ProjectMapViz() {
                     ))}
 
                     {/* Render Individual Plants */}
-                    {viewMode === 'plants' && visiblePlants.map(plant => (
-                        <CircleMarker
-                            key={plant.id}
-                            center={[plant.latitude, plant.longitude]}
-                            radius={6}
-                            fillColor="#4F46E5" // Indigo
-                            color="#fff"
-                            weight={1}
-                            opacity={0.8}
-                            fillOpacity={0.7}
-                        >
-                            <Popup>
-                                <div className="p-1">
-                                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
-                                        {plant.family_name}
-                                    </span>
-                                    <h3 className="font-bold text-gray-900 mb-1">{plant.species_name}</h3>
-                                    <p className="text-xs text-gray-500 mb-2">{plant.project_name}</p>
-                                    {plant.image && (
-                                        <div className="w-full h-24 rounded overflow-hidden">
-                                            <img src={plant.image} className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                </div>
-                            </Popup>
-                        </CircleMarker>
-                    ))}
+                    {viewMode === 'plants' && (
+                        <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                            {visiblePlants.map(plant => (
+                                <Marker
+                                    key={plant.id}
+                                    position={[plant.latitude, plant.longitude]}
+                                    icon={createDotIcon('#4F46E5')}
+                                >
+                                    <Popup maxWidth={260} autoPan={false}>
+                                        <SpecimenPopupCard
+                                            imagemUrl={plant.image}
+                                            nomeCientifico={plant.species_name}
+                                            familiaNome={plant.family_name}
+                                            localNome={plant.project_name}
+                                        />
+                                    </Popup>
+                                </Marker>
+                            ))}
+                        </MarkerClusterGroup>
+                    )}
                 </MapContainer>
             </div>
         </div>

@@ -7,7 +7,8 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 // Leaflet
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, CircleMarker, Popup } from 'react-leaflet';
+import { BaseTileLayer } from '../../components/Maps/BaseTileLayer';
 import 'leaflet/dist/leaflet.css';
 import { MapBoundsUpdater } from './components/MapBoundsUpdater';
 
@@ -460,10 +461,7 @@ export default function DetalhesEspecimeLocal() {
                 zoom={17}
                 style={{ height: '100%', width: '100%' }}
               >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
+                <BaseTileLayer />
                 <CircleMarker
                   center={[especime.latitude, especime.longitude]}
                   radius={8}

@@ -1,18 +1,25 @@
 /**
  * ProjectMap - Mapa exclusivo para usuários de nível Local.
  * Mostra apenas espécies do projeto vinculado ao local_id do usuário.
- * Estilo consistente com os outros mapas do sistema (CartoDB + CircleMarkers)
+ * Estilo consistente com os outros mapas do sistema (Marker com cluster + BaseTileLayer)
  */
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Marker } from 'react-leaflet';
+import { MapContainer, Popup, useMap, Marker } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import { BaseTileLayer } from '../../components/Maps/BaseTileLayer';
 import L from 'leaflet';
 import { MapPinned, AlertTriangle, Loader2, Leaf, Layers, User, FileText } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { specimenRepo } from '../../services/specimenRepo'; // Import Repo
+import { fetchProfileNames } from '../../services/profileNames';
+import { createDotIcon, createClusterIcon } from '../../pages/landingpage/components/mapMarkerIcons';
+import { SpecimenPopupCard } from '../../pages/landingpage/components/SpecimenPopupCard';
 
 // Utility to create project center icon
 const createProjectCenterIcon = (name: string) => {
@@ -50,13 +57,15 @@ interface SpeciesLocation {
     latitude: number | null;
     longitude: number | null;
     descricao_ocorrencia: string | null;
+    created_by?: string | null;
+    coletor?: string | null;
+    created_at?: string | null;
     especie: {
         id: string;
         nome_cientifico: string;
         nome_popular: string | null;
         familia?: { familia_nome: string } | null;
         imagens?: { url_imagem: string; url_thumbnail?: string | null }[] | null;
-        created_by?: string | null; // Who created the species
     } | null;
 }
 
@@ -66,6 +75,9 @@ interface RawMapSpecimenRow {
     latitude: number | null;
     longitude: number | null;
     descricao_ocorrencia: string | null;
+    created_by?: string | null;
+    coletor?: string | null;
+    created_at?: string | null;
     especie?: SpeciesLocation['especie'] | SpeciesLocation['especie'][] | null;
 }
 
@@ -98,6 +110,7 @@ export default function ProjectMap() {
     const [project, setProject] = useState<ProjectData | null>(null);
     const [species, setSpecies] = useState<SpeciesLocation[]>([]);
     const [taxonomists, setTaxonomists] = useState<TaxonomistData[]>([]);
+    const [profileNames, setProfileNames] = useState<Map<string, string>>(new Map());
     const [selectedTaxonomist, setSelectedTaxonomist] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -146,10 +159,18 @@ export default function ProjectMap() {
                     latitude: sp.latitude,
                     longitude: sp.longitude,
                     descricao_ocorrencia: sp.descricao_ocorrencia,
+                    created_by: sp.created_by,
+                    coletor: sp.coletor,
+                    created_at: sp.created_at,
                     especie: (Array.isArray(sp.especie) ? sp.especie[0] : sp.especie) ?? null
                 }));
 
                 setSpecies(mappedSpecies);
+
+                // Fetch creator profile names
+                const creatorIds = mappedSpecies.map(s => s.created_by).filter((id): id is string => Boolean(id));
+                const namesMap = await fetchProfileNames(creatorIds);
+                setProfileNames(namesMap);
 
                 // Fetch taxonomists from this project (only for Gestor de Acervo)
                 if (profile.role === 'Gestor de Acervo') {
@@ -173,18 +194,22 @@ export default function ProjectMap() {
         fetchData();
     }, [profile?.local_id, profile?.role]);
 
-    const getTileUrl = () => {
-        switch (mapStyle) {
-            case 'satellite': return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-            default: return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+    const getCadastradoPor = (sp: SpeciesLocation): string => {
+        if (sp.created_by) {
+            const fromMap = profileNames.get(sp.created_by);
+            if (fromMap) return fromMap;
+            const fromTax = taxonomists.find(t => t.id === sp.created_by);
+            if (fromTax?.full_name) return fromTax.full_name;
         }
+        return sp.coletor || 'Não informado';
     };
 
-    // Filter species with valid coordinates and optional taxonomist filter
+    // Filter species with valid coordinates and optional taxonomist filter (usando created_by do espécime)
     const validSpecies = useMemo(() => {
         let filtered = species.filter(s => s.latitude && s.longitude);
         if (selectedTaxonomist) {
-            filtered = filtered.filter(s => s.especie?.created_by === selectedTaxonomist);
+            filtered = filtered.filter(s => s.created_by === selectedTaxonomist);
         }
         return filtered;
     }, [species, selectedTaxonomist]);
@@ -379,12 +404,7 @@ export default function ProjectMap() {
                         species={validSpecies.filter(s => s.latitude && s.longitude).map(s => ({ latitude: s.latitude!, longitude: s.longitude! }))}
                         projectCenter={project?.latitude && project?.longitude ? [project.latitude, project.longitude] : undefined}
                     />
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        url={getTileUrl()}
-                        maxNativeZoom={19}
-                        maxZoom={22}
-                    />
+                    <BaseTileLayer style={mapStyle} />
 
                     {/* Project center marker */}
                     {project?.latitude && project?.longitude && (
@@ -394,54 +414,36 @@ export default function ProjectMap() {
                         />
                     )}
 
-                    {/* Species markers */}
-                    {validSpecies.map((sp) => (
-                        <CircleMarker
-                            key={sp.id}
-                            center={[sp.latitude!, sp.longitude!]}
-                            radius={8}
-                            fillColor={getMarkerColor(sp.especie?.created_by)}
-                            color="#fff"
-                            weight={2}
-                            opacity={1}
-                            fillOpacity={0.8}
-                        >
-                            <Popup>
-                                <div className="w-[180px]">
-                                    {/* Image on top */}
-                                    {(sp.especie?.imagens?.[0]?.url_thumbnail || sp.especie?.imagens?.[0]?.url_imagem) && (
-                                        <div className="w-full aspect-square rounded-t overflow-hidden">
-                                            <img
-                                                src={sp.especie.imagens[0].url_thumbnail || sp.especie.imagens[0].url_imagem}
-                                                alt={sp.especie.nome_cientifico}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    )}
+                    {/* Species markers com Cluster */}
+                    <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
+                        {validSpecies.map((sp) => {
+                            const cadastradoPor = getCadastradoPor(sp);
+                            const coletorExibicao = sp.coletor && sp.coletor !== cadastradoPor ? sp.coletor : null;
 
-                                    {/* Info section */}
-                                    <div className="py-1.5 text-xs">
-                                        {/* Família */}
-                                        {sp.especie?.familia?.familia_nome && (
-                                            <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Família: </span><span className="text-forest-600">{sp.especie.familia.familia_nome}</span></p>
-                                        )}
-                                        {/* Espécie */}
-                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Espécie: </span><span className="text-forest-600 italic">{sp.especie?.nome_cientifico || 'Desconhecida'}</span></p>
-                                        {/* Localização */}
-                                        <p style={{ margin: 0 }}><span className="text-gray-900 font-bold">Local: </span><span className="text-forest-600">{sp.latitude?.toFixed(5)}, {sp.longitude?.toFixed(5)}</span></p>
-
-                                        {/* Tombo */}
-                                        {sp.tombo_codigo && (
-                                            <p style={{ margin: 0, marginTop: '2px' }} className="pt-1 border-t border-gray-100 mt-1">
-                                                <span className="text-gray-900 font-bold text-[10px] uppercase">Tombo: </span>
-                                                <span className="font-mono font-bold text-gray-700 text-[10px]">{sp.tombo_codigo}</span>
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </Popup>
-                        </CircleMarker>
-                    ))}
+                            return (
+                                <Marker
+                                    key={sp.id}
+                                    position={[sp.latitude!, sp.longitude!]}
+                                    icon={createDotIcon(getMarkerColor(sp.created_by))}
+                                >
+                                    <Popup maxWidth={260} autoPan={false}>
+                                        <SpecimenPopupCard
+                                            imagemUrl={sp.especie?.imagens?.[0]?.url_thumbnail || sp.especie?.imagens?.[0]?.url_imagem}
+                                            nomeCientifico={sp.especie?.nome_cientifico}
+                                            nomePopular={sp.especie?.nome_popular}
+                                            familiaNome={sp.especie?.familia?.familia_nome}
+                                            tombo={sp.tombo_codigo}
+                                            localNome={project?.nome}
+                                            cadastradoPor={cadastradoPor}
+                                            coletor={coletorExibicao}
+                                            dataRegistro={sp.created_at}
+                                            origem="Painel"
+                                        />
+                                    </Popup>
+                                </Marker>
+                            );
+                        })}
+                    </MarkerClusterGroup>
                 </MapContainer>
 
                 {/* Empty state */}

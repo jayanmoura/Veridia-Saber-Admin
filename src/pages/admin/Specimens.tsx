@@ -264,14 +264,13 @@ export default function Specimens() {
         setActionLoading(true);
 
         try {
-            const payload = {
+            const basePayload = {
                 especie_id: formData.especie_id,
                 local_id: parseInt(formData.local_id), // Cast to number
                 // institution_id should ideally come from the selected Project or current user's org.
                 // For now, let's use profile's institution_id or fallback.
                 // A specimen belongs to the project's institution usually.
                 institution_id: formData.institution_id || profile?.institution_id || null,
-                created_by: profile?.id,
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude) : null,
                 detalhes_localizacao: formData.detalhes_localizacao || null,
@@ -285,10 +284,13 @@ export default function Specimens() {
             let savedId: number | null = null;
 
             if (editingSpecimen) {
-                const updated = await specimenRepo.updateSpecimen(Number(editingSpecimen.id), payload);
+                const updated = await specimenRepo.updateSpecimen(Number(editingSpecimen.id), basePayload);
                 savedId = updated?.id || editingSpecimen.id;
             } else {
-                const created = await specimenRepo.createSpecimen(payload);
+                const created = await specimenRepo.createSpecimen({
+                    ...basePayload,
+                    created_by: profile?.id,
+                });
                 savedId = created?.id || null;
             }
 

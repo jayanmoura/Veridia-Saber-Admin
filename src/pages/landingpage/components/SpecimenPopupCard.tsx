@@ -7,6 +7,10 @@ interface SpecimenPopupCardProps {
   familiaNome?: string | null;
   tombo?: string | null;
   localNome?: string | null;
+  cadastradoPor?: string | null;
+  coletor?: string | null;
+  dataRegistro?: string | null;
+  origem?: string | null;
 }
 
 /**
@@ -15,9 +19,12 @@ interface SpecimenPopupCardProps {
  * DetalhesEspecie e DetalhesLocal para manter a mesma aparência em todos os
  * mapas do site.
  *
- * Mostra apenas dados públicos e não-sensíveis: nome científico, nome popular
+ * Mostra dados públicos e não-sensíveis: nome científico, nome popular
  * (só o primeiro, quando há vários separados por vírgula), família, código do
  * espécime (tombo) e o projeto/instituição ao qual o registro está vinculado.
+ *
+ * Campos extras (cadastradoPor, coletor, dataRegistro, origem) são de uso
+ * exclusivo do painel administrativo (dados de usuário nunca são expostos no site público).
  */
 export function SpecimenPopupCard({
   imagemUrl,
@@ -26,8 +33,18 @@ export function SpecimenPopupCard({
   familiaNome,
   tombo,
   localNome,
+  cadastradoPor,
+  coletor,
+  dataRegistro,
+  origem,
 }: SpecimenPopupCardProps) {
   const primeiroNomePopular = nomePopular?.split(',')[0]?.trim() || null;
+
+  let dataFormatada: string | null = null;
+  if (dataRegistro) {
+    const d = new Date(dataRegistro);
+    dataFormatada = isNaN(d.getTime()) ? dataRegistro : d.toLocaleDateString('pt-BR');
+  }
 
   return (
     <div className="text-left font-sans w-[200px]">
@@ -63,6 +80,18 @@ export function SpecimenPopupCard({
           )}
           {localNome && (
             <div><strong className="text-forest-900">Projeto vinculado:</strong> {localNome}</div>
+          )}
+          {cadastradoPor && (
+            <div><strong className="text-forest-900">Cadastrado por:</strong> {cadastradoPor}</div>
+          )}
+          {coletor && (
+            <div><strong className="text-forest-900">Coletor:</strong> {coletor}</div>
+          )}
+          {dataFormatada && (
+            <div><strong className="text-forest-900">Data:</strong> {dataFormatada}</div>
+          )}
+          {origem && (
+            <div><strong className="text-forest-900">Origem:</strong> {origem}</div>
           )}
         </div>
       </div>
