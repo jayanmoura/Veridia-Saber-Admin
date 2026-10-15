@@ -7,6 +7,9 @@ import { Footer } from './components/Footer';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { SANITIZE_CONFIG } from './morfologiaSanitize';
+import { normalizeOrgaoMarkdown } from './morfologiaMarkdown';
+import { getModeloOrgao } from './components/morfologia3d/modelosMorfologia';
+import { PainelModelo3D } from './components/morfologia3d/PainelModelo3D';
 
 interface TopicoItem {
   id: number;
@@ -37,6 +40,7 @@ export default function MorfologiaOrgaoPage() {
   const [aberto, setAberto] = useState<number | null>(null);
 
   const orgaoDecodificado = decodeURIComponent(orgao ?? '');
+  const modelo = getModeloOrgao(orgaoDecodificado);
 
   const fetchTopicos = useCallback(async () => {
     if (!orgao) return;
@@ -102,6 +106,78 @@ export default function MorfologiaOrgaoPage() {
     );
   }
 
+  const listaTopicosConteudo = topicos.length === 0 ? (
+    <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
+      <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
+      <p className="text-sm text-neutral-500 italic">
+        Nenhum tópico cadastrado para este órgão.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {topicos.map((topico) => (
+        <div
+          key={topico.id}
+          id={`topico-${topico.id}`}
+          className="bg-white rounded-2xl border border-forest-200 overflow-hidden hover:border-forest-400 transition-all duration-300 shadow-xs scroll-mt-28"
+        >
+          {/* Header do tópico — clicável */}
+          <button
+            onClick={() => setAberto(aberto === topico.id ? null : topico.id)}
+            className="w-full flex items-center justify-between p-5 text-left cursor-pointer bg-transparent border-none outline-none"
+          >
+            <div className="flex items-center gap-3 min-w-0 pr-4">
+              <span className="text-forest-400 font-mono text-sm font-bold flex-shrink-0">
+                {String(topico.ordem).padStart(2, '0')}
+              </span>
+              <span className="font-semibold text-forest-900 truncate leading-snug">
+                {topico.titulo}
+              </span>
+            </div>
+            <span
+              className={`text-forest-600 text-sm transform transition-transform duration-300 flex-shrink-0 ${
+                aberto === topico.id ? 'rotate-180' : ''
+              }`}
+            >
+              ▼
+            </span>
+          </button>
+
+          {/* Conteúdo expandido */}
+          {aberto === topico.id && (
+            <div className="px-5 pb-5 border-t border-forest-200 bg-neutral-50/30">
+              {topico.conteudo ? (
+                <div
+                  className="pt-4
+                             [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-forest-900 [&_h1]:mb-3 [&_h1]:mt-4
+                             [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-forest-900 [&_h2]:mb-2 [&_h2]:mt-4
+                             [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-forest-600 [&_h3]:mb-2 [&_h3]:mt-3
+                             [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:text-neutral-700
+                             [&_strong]:font-semibold [&_strong]:text-forest-900
+                             [&_em]:italic [&_em]:text-neutral-700
+                             [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1
+                             [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1
+                             [&_li]:leading-relaxed [&_li]:text-neutral-700
+                             [&_blockquote]:border-l-4 [&_blockquote]:border-forest-400
+                             [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-neutral-500
+                             [&_blockquote]:my-3
+                             [&_hr]:border-forest-200 [&_hr]:my-4"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(marked(normalizeOrgaoMarkdown(topico.conteudo ?? '')) as string, SANITIZE_CONFIG)
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-neutral-500 italic pt-4 font-normal">
+                  Conteúdo em breve.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-forest-50 text-neutral-800">
       <Navbar />
@@ -130,76 +206,16 @@ export default function MorfologiaOrgaoPage() {
           </p>
         </div>
 
-        {/* Lista de tópicos Accordion */}
-        {topicos.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs">
-            <Leaf size={40} className="mx-auto text-neutral-300 mb-2 animate-pulse" />
-            <p className="text-sm text-neutral-500 italic">
-              Nenhum tópico cadastrado para este órgão.
-            </p>
+        {/* Lista de tópicos Accordion (com modelo 3D quando disponível) */}
+        {modelo ? (
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-8 lg:items-start">
+            <div>
+              {listaTopicosConteudo}
+            </div>
+            <PainelModelo3D modelo={modelo} />
           </div>
         ) : (
-          <div className="space-y-4">
-            {topicos.map((topico) => (
-              <div
-                key={topico.id}
-                className="bg-white rounded-2xl border border-forest-200 overflow-hidden hover:border-forest-400 transition-all duration-300 shadow-xs"
-              >
-                {/* Header do tópico — clicável */}
-                <button
-                  onClick={() => setAberto(aberto === topico.id ? null : topico.id)}
-                  className="w-full flex items-center justify-between p-5 text-left cursor-pointer bg-transparent border-none outline-none"
-                >
-                  <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <span className="text-forest-400 font-mono text-sm font-bold flex-shrink-0">
-                      {String(topico.ordem).padStart(2, '0')}
-                    </span>
-                    <span className="font-semibold text-forest-900 truncate leading-snug">
-                      {topico.titulo}
-                    </span>
-                  </div>
-                  <span
-                    className={`text-forest-600 text-sm transform transition-transform duration-300 flex-shrink-0 ${
-                      aberto === topico.id ? 'rotate-180' : ''
-                    }`}
-                  >
-                    ▼
-                  </span>
-                </button>
-
-                {/* Conteúdo expandido */}
-                {aberto === topico.id && (
-                  <div className="px-5 pb-5 border-t border-forest-200 bg-neutral-50/30">
-                    {topico.conteudo ? (
-                      <div
-                        className="pt-4
-                                   [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-forest-900 [&_h1]:mb-3 [&_h1]:mt-4
-                                   [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-forest-900 [&_h2]:mb-2 [&_h2]:mt-4
-                                   [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-forest-600 [&_h3]:mb-2 [&_h3]:mt-3
-                                   [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:text-neutral-700
-                                   [&_strong]:font-semibold [&_strong]:text-forest-900
-                                   [&_em]:italic [&_em]:text-neutral-700
-                                   [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1
-                                   [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1
-                                   [&_li]:leading-relaxed [&_li]:text-neutral-700
-                                   [&_blockquote]:border-l-4 [&_blockquote]:border-forest-400
-                                   [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-neutral-500
-                                   [&_blockquote]:my-3
-                                   [&_hr]:border-forest-200 [&_hr]:my-4"
-                        dangerouslySetInnerHTML={{
-                          __html: DOMPurify.sanitize(marked(topico.conteudo ?? '') as string, SANITIZE_CONFIG)
-                        }}
-                      />
-                    ) : (
-                      <p className="text-sm text-neutral-500 italic pt-4 font-normal">
-                        Conteúdo em breve.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          listaTopicosConteudo
         )}
       </main>
 

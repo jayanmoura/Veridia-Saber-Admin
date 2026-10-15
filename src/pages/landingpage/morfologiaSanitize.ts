@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { normalizeOrgaoMarkdown } from './morfologiaMarkdown';
 
 marked.setOptions({
   breaks: true,
@@ -25,6 +26,7 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 });
 
 export function sanitizeOrgaoConteudo(conteudo: string | null | undefined): string {
-  const rawHtml = marked(conteudo ?? '') as string;
+  const rawHtml = marked(normalizeOrgaoMarkdown(conteudo ?? '')) as string;
   return DOMPurify.sanitize(rawHtml, SANITIZE_CONFIG);
 }
+
