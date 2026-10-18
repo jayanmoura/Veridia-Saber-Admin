@@ -21,7 +21,7 @@ const GlobalMap = lazy(() => import('../pages/admin/GlobalMap'));
 const ProjectMapViz = lazy(() => import('../components/Maps/ProjectMapViz').then(m => ({ default: m.ProjectMapViz })));
 const Unauthorized = lazy(() => import('../pages/Unauthorized'));
 
-import { GLOBAL_MANAGEMENT_ROLES, SCIENTIFIC_CATALOG_ROLES, GLOBAL_MAP_ROLES, USER_MANAGEMENT_ROLES, LOCAL_PROJECT_ROLES } from './roleConstants';
+import { GLOBAL_MANAGEMENT_ROLES, FAMILIES_MANAGEMENT_ROLES, SCIENTIFIC_CATALOG_ROLES, GLOBAL_MAP_ROLES, USER_MANAGEMENT_ROLES, LOCAL_PROJECT_ROLES } from './roleConstants';
 import { PrivateRoute } from './guards';
 
 export const adminRouter = createBrowserRouter([
@@ -115,12 +115,17 @@ export const adminRouter = createBrowserRouter([
                 ],
             },
             {
-                element: <RequireRole allowedRoles={SCIENTIFIC_CATALOG_ROLES} redirectTo="/unauthorized" />,
+                element: <RequireRole allowedRoles={FAMILIES_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
                 children: [
                     {
                         path: 'families',
                         element: <Families />,
                     },
+                ],
+            },
+            {
+                element: <RequireRole allowedRoles={SCIENTIFIC_CATALOG_ROLES} redirectTo="/unauthorized" />,
+                children: [
                     {
                         path: 'species',
                         element: <Species />,

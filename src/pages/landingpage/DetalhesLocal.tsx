@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Leaf, Info, ShieldAlert, X } from 'lucide-react';
+import { ImageGallery } from './components/ImageGallery';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -90,16 +91,14 @@ export default function DetalhesLocal() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados do Lightbox da Galeria
-  const [galleryLightboxIndex, setGalleryLightboxIndex] = useState<number | null>(null);
+
 
   // Estados de visualização e filtro de espécies / famílias
   const [modoVisualizacao, setModoVisualizacao] = useState<'especies' | 'familias'>('especies');
   const [familiasDetalhes, setFamiliasDetalhes] = useState<FamiliaDetalhes[]>([]);
   const [selectedFamiliaIds, setSelectedFamiliaIds] = useState<string[]>([]);
   const [selectedEspecieIds, setSelectedEspecieIds] = useState<string[]>([]);
-  const [galeriaPage, setGaleriaPage] = useState(1);
-  const ITEMS_PER_PAGE = 8;
+
 
   // Novos estados para seleção de espécimes em modal
   const [modalEspecimes, setModalEspecimes] = useState<EspecimeItem[]>([]);
@@ -243,10 +242,7 @@ export default function DetalhesLocal() {
     fetchTudo();
   }, [fetchTudo]);
 
-  // Reseta a página da galeria para 1 sempre que o filtro de espécies mudar
-  useEffect(() => {
-    setGaleriaPage(1);
-  }, [selectedEspecieIds]);
+
 
   const especiesFiltradas = useMemo(() => {
     return selectedEspecieIds.length > 0
@@ -324,28 +320,7 @@ export default function DetalhesLocal() {
     });
   }, [galeria, selectedEspecieIds, especimeParaEspecieMap]);
 
-  // Paginação da galeria (máximo 8 imagens por vez)
-  const totalPaginas = Math.ceil(galeriaFiltrada.length / ITEMS_PER_PAGE) || 1;
-  const inicioGaleria = (galeriaPage - 1) * ITEMS_PER_PAGE;
-  const galeriaPaginada = galeriaFiltrada.slice(inicioGaleria, inicioGaleria + ITEMS_PER_PAGE);
 
-  const prevGalleryImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (galleryLightboxIndex !== null && galeriaFiltrada.length > 0) {
-      setGalleryLightboxIndex(prev =>
-        prev !== null ? (prev - 1 + galeriaFiltrada.length) % galeriaFiltrada.length : null
-      );
-    }
-  };
-
-  const nextGalleryImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (galleryLightboxIndex !== null && galeriaFiltrada.length > 0) {
-      setGalleryLightboxIndex(prev =>
-        prev !== null ? (prev + 1) % galeriaFiltrada.length : null
-      );
-    }
-  };
 
   if (loading) {
     return (
@@ -724,130 +699,21 @@ export default function DetalhesLocal() {
 
         {/* G. Galeria de imagens */}
         <section className="pt-10 border-t border-forest-200">
-          {galeriaFiltrada.length > 0 ? (
-            <>
-              <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-forest-900">
-                    Galeria de Imagens do Local
-                  </h2>
-                  <span className="inline-flex px-2.5 py-1 bg-forest-100 border border-forest-200 text-forest-600 text-xs font-bold rounded-lg">
-                    {galeriaFiltrada.length} {galeriaFiltrada.length === 1 ? 'imagem' : 'imagens'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {galeriaPaginada.map((img, idx) => (
-                  <div
-                    key={img.id || idx}
-                    className="aspect-square rounded-xl overflow-hidden cursor-pointer border border-forest-200 bg-stone-50 hover:brightness-90 transition duration-300"
-                    onClick={() => setGalleryLightboxIndex(inicioGaleria + idx)}
-                  >
-                    <img
-                      src={img.url_thumbnail || img.url_imagem || undefined}
-                      alt="Imagem do espécime no local"
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {totalPaginas > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setGaleriaPage(prev => Math.max(prev - 1, 1))}
-                    disabled={galeriaPage === 1}
-                    className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
-                    aria-label="Página anterior"
-                  >
-                    <span>←</span> Anterior
-                  </button>
-                  <span className="text-xs font-semibold text-forest-600">
-                    Página {galeriaPage} de {totalPaginas}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setGaleriaPage(prev => Math.min(prev + 1, totalPaginas))}
-                    disabled={galeriaPage === totalPaginas}
-                    className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
-                    aria-label="Próxima página"
-                  >
-                    Próxima <span>→</span>
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs flex flex-col items-center justify-center">
-              <Leaf size={40} className="text-neutral-300 mb-2 animate-pulse" />
-              <p className="text-sm text-neutral-500 italic">
-                {galeria.length === 0
-                  ? 'Nenhuma imagem cadastrada para este local.'
-                  : 'Nenhuma imagem encontrada para as espécies selecionadas.'}
-              </p>
-            </div>
-          )}
+          <ImageGallery
+            images={galeriaFiltrada}
+            title="Galeria de Imagens do Local"
+            badgeUnit={{ singular: 'imagem', plural: 'imagens' }}
+            defaultAlt="Imagem do espécime no local"
+            emptyMessage={
+              galeria.length === 0
+                ? 'Nenhuma imagem cadastrada para este local.'
+                : 'Nenhuma imagem encontrada para as espécies selecionadas.'
+            }
+          />
         </section>
       </main>
 
       <Footer />
-
-      {/* Lightbox da Galeria (createPortal z-[100]) */}
-      {galleryLightboxIndex !== null && (
-        galleryLightboxIndex >= 0 && galleryLightboxIndex < galeriaFiltrada.length
-      ) && createPortal(
-        <div
-          className="fixed inset-0 bg-black/92 flex items-center justify-center z-[100]"
-          onClick={() => setGalleryLightboxIndex(null)}
-        >
-          <button
-            className="absolute top-6 right-6 text-white hover:text-neutral-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              setGalleryLightboxIndex(null);
-            }}
-            aria-label="Fechar galeria"
-          >
-            <X size={28} />
-          </button>
-
-          {galeriaFiltrada.length > 1 && (
-            <>
-              <button
-                onClick={prevGalleryImage}
-                className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl font-bold shadow-md cursor-pointer transition-all z-10 select-none border border-white/20"
-              >
-                ‹
-              </button>
-              <button
-                onClick={nextGalleryImage}
-                className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl font-bold shadow-md cursor-pointer transition-all z-10 select-none border border-white/20"
-              >
-                ›
-              </button>
-            </>
-          )}
-
-          <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={galeriaFiltrada[galleryLightboxIndex].url_imagem || undefined}
-              alt="Imagem do local ampliada"
-              className="max-h-[80vh] max-w-[85vw] object-contain rounded-lg select-none"
-            />
-            {galeriaFiltrada[galleryLightboxIndex]?.creditos && (
-              <div className="w-full mt-3 pt-3 border-t border-white/20 text-center">
-                <span className="text-xs text-white/70">
-                  {galeriaFiltrada[galleryLightboxIndex].creditos}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Modal de seleção de espécimes (createPortal z-[100]) */}
       {modalAberto && createPortal(

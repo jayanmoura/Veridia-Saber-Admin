@@ -1,191 +1,210 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { X, Leaf } from 'lucide-react';
 
 export interface GalleryImage {
-  id: string;
-  url: string;
-  thumbnail_url?: string | null;
-  caption?: string | null;
-  species_name?: string;
+  id?: string | number;
+  url_imagem?: string | null;
+  url_thumbnail?: string | null;
+  url_micro?: string | null;
+  creditos?: string | null;
+  alt?: string;
 }
 
-interface ImageGalleryProps {
+export interface ImageGalleryProps {
   images: GalleryImage[];
+  title?: string;
+  badgeUnit?: { singular: string; plural: string };
+  defaultAlt?: string;
+  emptyMessage?: string;
 }
 
-/**
- * ImageGallery - Grid de imagens botânicas com suporte a Lightbox (via createPortal)
- */
-export function ImageGallery({ images }: ImageGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+const ITEMS_PER_PAGE = 8;
 
-  if (!images || images.length === 0) return null;
+export function ImageGallery({
+  images,
+  title,
+  badgeUnit = { singular: 'foto', plural: 'fotos' },
+  defaultAlt = 'Foto botânica',
+  emptyMessage
+}: ImageGalleryProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [prevImages, setPrevImages] = useState(images);
 
-  const openLightbox = (index: number) => {
-    setSelectedIndex(index);
-  };
+  // Reseta para a primeira página sempre que a lista de imagens for alterada
+  if (images !== prevImages) {
+    setPrevImages(images);
+    setCurrentPage(1);
+  }
 
-  const closeLightbox = () => {
-    setSelectedIndex(null);
-  };
-
-  const showNext = () => {
-    if (selectedIndex === null) return;
-    setSelectedIndex((selectedIndex + 1) % images.length);
-  };
-
-  const showPrev = () => {
-    if (selectedIndex === null) return;
-    setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
-  };
-
-  return (
-    <>
-      {/* Grid de Imagens */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {images.map((image, index) => (
-          <div
-            key={image.id || index}
-            onClick={() => openLightbox(index)}
-            className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-stone-100 border border-emerald-950/[0.04] shadow-xs"
-          >
-            {/* Imagem */}
-            <img
-              src={image.thumbnail_url || image.url}
-              alt={image.caption || image.species_name || 'Foto botânica'}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-              loading="lazy"
-            />
-
-            {/* Overlay Hover */}
-            <div className="absolute inset-0 bg-emerald-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-              <div className="p-3 bg-white/20 backdrop-blur-xs rounded-full text-white transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                <Maximize2 className="w-5 h-5" />
-              </div>
-            </div>
-
-            {/* Nome da espécie no rodapé da imagem (se disponível) */}
-            {image.species_name && (
-              <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/70 via-black/35 to-transparent text-left pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">
-                  {image.species_name}
-                </p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Lightbox Modal (Portal) */}
-      {selectedIndex !== null && (
-        <LightboxPortal
-          images={images}
-          currentIndex={selectedIndex}
-          onClose={closeLightbox}
-          onNext={showNext}
-          onPrev={showPrev}
-        />
-      )}
-    </>
-  );
-}
-
-interface LightboxPortalProps {
-  images: GalleryImage[];
-  currentIndex: number;
-  onClose: () => void;
-  onNext: () => void;
-  onPrev: () => void;
-}
-
-function LightboxPortal({ images, currentIndex, onClose, onNext, onPrev }: LightboxPortalProps) {
-  const currentImage = images[currentIndex];
-
-  // Atalhos de teclado (Esc, Setas)
+  // Teclas de atalho e scroll lock para o Lightbox
   useEffect(() => {
+    if (lightboxIndex === null) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight') onNext();
-      if (e.key === 'ArrowLeft') onPrev();
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : null));
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % images.length : null));
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    // Bloquear scroll do body quando aberto
+    const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = originalOverflow;
     };
-  }, [onClose, onNext, onPrev]);
+  }, [lightboxIndex, images.length]);
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in">
-      {/* Botão de Fechar */}
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 z-10 p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all cursor-pointer"
-        aria-label="Fechar galeria"
-      >
-        <X className="w-6 h-6" />
-      </button>
+  if (!images || images.length === 0) {
+    if (!emptyMessage) return null;
+    return (
+      <div className="text-center py-16 bg-white rounded-3xl border border-forest-200 shadow-xs flex flex-col items-center justify-center">
+        <Leaf size={40} className="text-neutral-300 mb-2 animate-pulse" />
+        <p className="text-sm text-neutral-500 italic">
+          {emptyMessage}
+        </p>
+      </div>
+    );
+  }
 
-      {/* Botões de Navegação */}
-      {images.length > 1 && (
-        <>
-          <button
-            onClick={onPrev}
-            className="absolute left-4 lg:left-8 z-10 p-3 bg-white/5 hover:bg-white/15 text-white rounded-full transition-all cursor-pointer"
-            aria-label="Imagem anterior"
-          >
-            <ChevronLeft className="w-7 h-7" />
-          </button>
+  const totalPaginas = Math.ceil(images.length / ITEMS_PER_PAGE) || 1;
+  const inicio = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginadas = images.slice(inicio, inicio + ITEMS_PER_PAGE);
 
-          <button
-            onClick={onNext}
-            className="absolute right-4 lg:right-8 z-10 p-3 bg-white/5 hover:bg-white/15 text-white rounded-full transition-all cursor-pointer"
-            aria-label="Próxima imagem"
-          >
-            <ChevronRight className="w-7 h-7" />
-          </button>
-        </>
+  return (
+    <>
+      {title && (
+        <div className="mb-6 flex items-center gap-3">
+          <h2 className="text-xl font-bold text-forest-900">
+            {title}
+          </h2>
+          <span className="inline-flex px-2.5 py-1 bg-forest-100 border border-forest-200 text-forest-600 text-xs font-bold rounded-lg">
+            {images.length} {images.length === 1 ? badgeUnit.singular : badgeUnit.plural}
+          </span>
+        </div>
       )}
 
-      {/* Conteúdo Principal da Imagem */}
-      <div className="max-w-5xl max-h-[80vh] px-4 flex flex-col items-center">
-        <div className="relative overflow-hidden rounded-xl shadow-2xl">
-          <img
-            src={currentImage.url}
-            alt={currentImage.caption || currentImage.species_name || 'Foto ampliada'}
-            className="max-w-full max-h-[70vh] object-contain mx-auto"
-          />
-        </div>
-
-        {/* Rodapé do Lightbox com Legendas */}
-        {(currentImage.species_name || currentImage.caption) && (
-          <div className="mt-4 text-center text-white max-w-2xl px-4">
-            {currentImage.species_name && (
-              <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-400 font-serif italic">
-                {currentImage.species_name}
-              </h4>
-            )}
-            {currentImage.caption && (
-              <p className="text-xs lg:text-sm text-stone-300 mt-1 leading-relaxed">
-                {currentImage.caption}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Indicador de Página/Contador */}
-        {images.length > 1 && (
-          <div className="absolute bottom-6 px-4 py-1.5 bg-white/5 rounded-full text-xs font-semibold tracking-wider text-stone-400">
-            {currentIndex + 1} de {images.length}
-          </div>
-        )}
+      {/* Grid de Imagens */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {paginadas.map((img, idx) => {
+          const miniatura = img.url_thumbnail || img.url_micro || img.url_imagem;
+          const globalIndex = inicio + idx;
+          return (
+            <div
+              key={img.id ?? globalIndex}
+              className="aspect-square rounded-xl overflow-hidden cursor-pointer border border-forest-200 bg-stone-50 hover:brightness-90 transition duration-300"
+              onClick={() => setLightboxIndex(globalIndex)}
+            >
+              <img
+                src={miniatura || undefined}
+                alt={img.alt || defaultAlt}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          );
+        })}
       </div>
-    </div>,
-    document.body
+
+      {/* Paginação: escondida quando houver 8 imagens ou menos */}
+      {totalPaginas > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+            aria-label="Página anterior"
+          >
+            <span>←</span> Anterior
+          </button>
+          <span className="text-xs font-semibold text-forest-600">
+            Página {currentPage} de {totalPaginas}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPaginas))}
+            disabled={currentPage === totalPaginas}
+            className="px-3.5 py-1.5 rounded-lg border border-forest-200 bg-white text-forest-900 text-sm font-medium hover:bg-forest-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+            aria-label="Próxima página"
+          >
+            Próxima <span>→</span>
+          </button>
+        </div>
+      )}
+
+      {/* Lightbox Modal (Portal z-[100]) */}
+      {lightboxIndex !== null && lightboxIndex >= 0 && lightboxIndex < images.length && createPortal(
+        <div
+          className="fixed inset-0 bg-black/92 flex items-center justify-center z-[100]"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            type="button"
+            className="absolute top-6 right-6 text-white hover:text-neutral-300 transition-colors p-2 cursor-pointer bg-black/40 rounded-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex(null);
+            }}
+            aria-label="Fechar galeria"
+          >
+            <X size={28} />
+          </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : null));
+                }}
+                className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl font-bold shadow-md cursor-pointer transition-all z-10 select-none border border-white/20"
+                aria-label="Imagem anterior"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((prev) => (prev !== null ? (prev + 1) % images.length : null));
+                }}
+                className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl font-bold shadow-md cursor-pointer transition-all z-10 select-none border border-white/20"
+                aria-label="Próxima imagem"
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <div
+            className="flex flex-col items-center max-w-full max-h-full p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={images[lightboxIndex].url_imagem || undefined}
+              alt={images[lightboxIndex].alt || defaultAlt}
+              className="max-h-[80vh] max-w-[85vw] object-contain rounded-lg select-none"
+            />
+            {images[lightboxIndex].creditos && (
+              <div className="w-full mt-3 pt-3 border-t border-white/20 text-center">
+                <span className="text-xs text-white/70">
+                  {images[lightboxIndex].creditos}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

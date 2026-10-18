@@ -1,6 +1,11 @@
 // Global admin route permission matrix.
 // Dashboard, project detail, and local/project-scoped routes remain under PrivateRoute only.
 export const GLOBAL_MANAGEMENT_ROLES = ['Curador Mestre', 'Coordenador Científico'] as const;
+export const FAMILIES_MANAGEMENT_ROLES = [
+  'Curador Mestre',
+  'Coordenador Científico',
+  'Taxonomista Sênior'
+] as const;
 export const SCIENTIFIC_CATALOG_ROLES = [
   'Curador Mestre',
   'Coordenador Científico',

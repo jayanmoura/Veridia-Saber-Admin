@@ -8,6 +8,7 @@
   --color-forest-600: #4a7c5a;   /* verde médio — texto secundário, ícones */
   --color-forest-400: #7ab08a;   /* verde claro — bordas, divisores sutis */
   --color-forest-200: #c4deca;   /* verde muito claro — fundos de seção alternados */
+  --color-forest-100: #dcebe0;   /* verde pálido — transições e fundos suaves */
   --color-forest-50:  #f0f7f2;   /* verde quase branco — background padrão de página */
 
   /* === TERRA — tom complementar (usa com parcimônia) === */
