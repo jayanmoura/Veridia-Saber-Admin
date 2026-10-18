@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
 import { PendingCuratorshipModal, type PendingItem } from '../../components/Modals/PendingCuratorshipModal';
@@ -12,9 +11,12 @@ import {
     Award,
     Leaf,
     CheckCircle,
-    AlertTriangle
+    AlertTriangle,
+    Loader2
 } from 'lucide-react';
-import type { GlobalStats, RecentSpecies, RecentWorkItem } from '../../hooks';
+import type { GlobalStats, RecentWorkItem } from '../../hooks';
+import { useToast } from '../../hooks/useToast';
+import { speciesRepo } from '../../services/speciesRepo';
 import type { Species } from '../../types/domain';
 
 interface FieldTaxonomistViewProps {
@@ -25,37 +27,35 @@ interface FieldTaxonomistViewProps {
     refetch: () => Promise<void>;
 }
 
-function toSpeciesFromRecent(work: RecentSpecies): Species {
-    return {
-        id: work.id,
-        nome_cientifico: work.nome_cientifico,
-        created_at: work.created_at,
-        created_by: work.created_by,
-        familia_id: work.familia_id ?? undefined,
-        local_id: work.local_id != null ? String(work.local_id) : null,
-        familia: Array.isArray(work.familia) ? work.familia[0] : work.familia,
-        creator: work.creator,
-    };
-}
-
 /**
  * Overview view for Taxonomista de Campo.
  * Similar to SeniorView but without Nova Família action (RBAC restriction).
  */
 export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading, refetch }: FieldTaxonomistViewProps) {
+    const { showToast } = useToast();
     const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const [editingWork, setEditingWork] = useState<Species | null>(null);
+    const [loadingWorkId, setLoadingWorkId] = useState<string | null>(null);
 
     const handleNewSpecies = () => {
         setEditingWork(null);
         setIsSpeciesModalOpen(true);
     };
 
-    const handleEditWork = (work: RecentWorkItem) => {
-        if (work.type === 'especie') {
-            setEditingWork(toSpeciesFromRecent(work));
+    const handleEditWork = async (work: RecentWorkItem) => {
+        if (work.type !== 'especie') return;
+        const itemKey = `${work.type}-${work.id}`;
+        setLoadingWorkId(itemKey);
+        try {
+            const fullSpecies = await speciesRepo.getFullSpeciesForEdit(work.id);
+            setEditingWork(fullSpecies);
             setIsSpeciesModalOpen(true);
+        } catch (err) {
+            console.error('Erro ao buscar espécie para edição:', err);
+            showToast('Erro ao carregar dados da espécie.', 'error');
+        } finally {
+            setLoadingWorkId(null);
         }
     };
 
@@ -139,10 +139,15 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
                                         <td className="px-4 py-4 text-right">
                                             <button
                                                 onClick={() => handleEditWork(work)}
-                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                disabled={loadingWorkId === `${work.type}-${work.id}`}
+                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Editar"
                                             >
-                                                <Pencil size={18} />
+                                                {loadingWorkId === `${work.type}-${work.id}` ? (
+                                                    <Loader2 size={18} className="animate-spin text-emerald-600" />
+                                                ) : (
+                                                    <Pencil size={18} />
+                                                )}
                                             </button>
                                         </td>
                                     </tr>
@@ -165,11 +170,14 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
                 onClose={() => setIsPendingModalOpen(false)}
                 items={pendingSpecies}
                 onFix={async (item) => {
-                    const { data } = await supabase.from('especie').select('*, familia(familia_nome), imagens(url_imagem, local_id)').eq('id', item.id).single();
-                    if (data) {
-                        setEditingWork(data as Species);
+                    try {
+                        const fullSpecies = await speciesRepo.getFullSpeciesForEdit(item.id);
+                        setEditingWork(fullSpecies);
                         setIsPendingModalOpen(false);
                         setIsSpeciesModalOpen(true);
+                    } catch (err) {
+                        console.error('Erro ao buscar espécie para curadoria:', err);
+                        showToast('Erro ao carregar dados da espécie.', 'error');
                     }
                 }}
             />

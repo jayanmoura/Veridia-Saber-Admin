@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
 import { FamilyModal } from '../../components/Modals/FamilyModal';
@@ -13,9 +12,13 @@ import {
     Award,
     Globe,
     CheckCircle,
-    AlertTriangle
+    AlertTriangle,
+    Loader2
 } from 'lucide-react';
-import type { GlobalStats, RecentFamily, RecentSpecies, RecentWorkItem } from '../../hooks';
+import type { GlobalStats, RecentWorkItem } from '../../hooks';
+import { useToast } from '../../hooks/useToast';
+import { speciesRepo } from '../../services/speciesRepo';
+import { familyRepo } from '../../services/familyRepo';
 import type { Species, Family } from '../../types/domain';
 
 interface SeniorViewProps {
@@ -26,51 +29,46 @@ interface SeniorViewProps {
     refetch: () => Promise<void>;
 }
 
-function toSpeciesFromRecent(work: RecentSpecies): Species {
-    return {
-        id: work.id,
-        nome_cientifico: work.nome_cientifico,
-        created_at: work.created_at,
-        created_by: work.created_by,
-        familia_id: work.familia_id ?? undefined,
-        local_id: work.local_id != null ? String(work.local_id) : null,
-        familia: Array.isArray(work.familia) ? work.familia[0] : work.familia,
-        creator: work.creator,
-    };
-}
-
-function toFamilyFromRecent(work: RecentFamily): Family {
-    return {
-        id: work.id,
-        familia_nome: work.familia_nome,
-        created_at: work.created_at,
-        created_by: work.created_by,
-        creator: work.creator,
-    };
-}
-
 /**
  * Overview view for Taxonomista Sênior.
  */
 export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch }: SeniorViewProps) {
+    const { showToast } = useToast();
     const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const [editingWork, setEditingWork] = useState<Species | null>(null);
     const [editingFamily, setEditingFamily] = useState<Family | null>(null);
+    const [loadingWorkId, setLoadingWorkId] = useState<string | null>(null);
 
     const handleNewSpecies = () => {
         setEditingWork(null);
         setIsSpeciesModalOpen(true);
     };
 
-    const handleEditWork = (work: RecentWorkItem) => {
-        if (work.type === 'familia') {
-            setEditingFamily(toFamilyFromRecent(work));
-            setIsFamilyModalOpen(true);
-        } else {
-            setEditingWork(toSpeciesFromRecent(work));
-            setIsSpeciesModalOpen(true);
+    const handleEditWork = async (work: RecentWorkItem) => {
+        const itemKey = `${work.type}-${work.id}`;
+        setLoadingWorkId(itemKey);
+        try {
+            if (work.type === 'familia') {
+                const fullFamily = await familyRepo.getFamilyById(work.id);
+                setEditingFamily(fullFamily);
+                setIsFamilyModalOpen(true);
+            } else {
+                const fullSpecies = await speciesRepo.getFullSpeciesForEdit(work.id);
+                setEditingWork(fullSpecies);
+                setIsSpeciesModalOpen(true);
+            }
+        } catch (err) {
+            console.error('Erro ao buscar registro para edição:', err);
+            showToast(
+                work.type === 'familia'
+                    ? 'Erro ao carregar dados da família.'
+                    : 'Erro ao carregar dados da espécie.',
+                'error'
+            );
+        } finally {
+            setLoadingWorkId(null);
         }
     };
 
@@ -184,10 +182,15 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
                                         <td className="px-4 py-4 text-right">
                                             <button
                                                 onClick={() => handleEditWork(work)}
-                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                disabled={loadingWorkId === `${work.type}-${work.id}`}
+                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Editar"
                                             >
-                                                <Pencil size={18} />
+                                                {loadingWorkId === `${work.type}-${work.id}` ? (
+                                                    <Loader2 size={18} className="animate-spin text-emerald-600" />
+                                                ) : (
+                                                    <Pencil size={18} />
+                                                )}
                                             </button>
                                         </td>
                                     </tr>
@@ -210,11 +213,14 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
                 onClose={() => setIsPendingModalOpen(false)}
                 items={pendingSpecies}
                 onFix={async (item) => {
-                    const { data } = await supabase.from('especie').select('*, familia(familia_nome), imagens(url_imagem, local_id)').eq('id', item.id).single();
-                    if (data) {
-                        setEditingWork(data as Species);
+                    try {
+                        const fullSpecies = await speciesRepo.getFullSpeciesForEdit(item.id);
+                        setEditingWork(fullSpecies);
                         setIsPendingModalOpen(false);
                         setIsSpeciesModalOpen(true);
+                    } catch (err) {
+                        console.error('Erro ao buscar espécie para curadoria:', err);
+                        showToast('Erro ao carregar dados da espécie.', 'error');
                     }
                 }}
             />

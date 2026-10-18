@@ -136,6 +136,20 @@ export const speciesRepo = {
             console.warn('Erro ao carregar miniaturas dos espécimes no local:', err);
             return [];
         }
+    },
+
+    /**
+     * Get full species data for editing in modals
+     */
+    async getFullSpeciesForEdit(id: string): Promise<Species> {
+        const { data, error } = await supabase
+            .from('especie')
+            .select('*, familia(familia_nome), imagens(url_imagem, local_id)')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        return data as Species;
     }
 };
 

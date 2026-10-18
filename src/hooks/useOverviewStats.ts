@@ -347,12 +347,16 @@ export function useOverviewStats(): UseOverviewStatsReturn {
             .select('*', { count: 'exact', head: true })
             .eq('created_by', profile.id);
 
-        const { data: mySpecies } = await supabase
+        const { data: mySpecies, error: mySpeciesError } = await supabase
             .from('especie')
-            .select('family_id')
+            .select('familia_id')
             .eq('created_by', profile.id);
 
-        const uniqueFamilies = new Set(mySpecies?.map(s => s.family_id).filter(Boolean)).size;
+        if (mySpeciesError) {
+            console.warn('Error fetching personal species families:', mySpeciesError);
+        }
+
+        const uniqueFamilies = new Set(mySpecies?.map(s => s.familia_id).filter(Boolean)).size;
 
         setStats(prev => ({ ...prev, species: mySpeciesCount || 0, families: uniqueFamilies }));
     }, [profile?.id]);

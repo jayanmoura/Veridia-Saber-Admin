@@ -279,4 +279,20 @@ describe('useOverviewStats — fetchPersonalStats (Consulente)', () => {
       expect(result.current.loading).toBe(false);
     });
   });
+
+  it('seleciona familia_id (não family_id) e calcula contagem de famílias únicas', async () => {
+    mockSupabaseResponse('especie', 'select', {
+      data: [{ familia_id: 'fam-1' }, { familia_id: 'fam-2' }, { familia_id: 'fam-1' }],
+      error: null,
+      count: 3,
+    });
+
+    const { result } = renderHook(() => useOverviewStats());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(supabase.from).toHaveBeenCalledWith('especie');
+    expect(result.current.stats.families).toBe(2);
+    expect(result.current.stats.species).toBe(3);
+  });
 });
