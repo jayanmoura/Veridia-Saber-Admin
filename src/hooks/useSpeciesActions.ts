@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { generateSingleSpeciesReport, generateSpeciesReport } from '../utils/pdf';
 import { getRoleLevel, type UserRole } from '../types/auth';
 import { useToast } from './useToast';
+import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
 
 interface Profile {
     id: string;
@@ -133,7 +134,12 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
                     id, nome_cientifico, nome_popular, descricao_especie,
                     cuidados_luz, cuidados_agua, cuidados_temperatura,
                     cuidados_substrato, cuidados_nutrientes,
-                    familia(familia_nome), locais(nome), imagens(url_imagem)
+                    familia(familia_nome), locais(nome),
+                    imagens(url_imagem, url_thumbnail, url_micro),
+                    especie_local(
+                        local_id,
+                        imagens(url_micro, url_thumbnail, url_imagem)
+                    )
                 `)
                 .eq('id', speciesId)
                 .single();
@@ -167,10 +173,28 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
                 }
             }
 
+            // Escolha da imagem via pickSpeciesThumbnail (Tipo B do espécime primeiro, Tipo A da espécie de fallback)
+            const userLocalId = profile?.local_id !== null && profile?.local_id !== undefined ? String(profile.local_id) : null;
+            const rawEspecieLocal = (speciesData.especie_local || []) as {
+                local_id?: string | number | null;
+                imagens?: { url_micro?: string | null; url_thumbnail?: string | null; url_imagem?: string | null }[] | null;
+            }[];
+            const filteredEspecieLocal = userLocalId
+                ? rawEspecieLocal.filter((el) => el.local_id !== null && el.local_id !== undefined && String(el.local_id) === userLocalId)
+                : rawEspecieLocal;
+
+            const specimenImages = filteredEspecieLocal.flatMap((el) => el.imagens || []);
+            const speciesImages = speciesData.imagens || [];
+            const chosenImage = pickSpeciesThumbnail({ specimenImages, speciesImages });
+
             const safeName = speciesData.nome_cientifico.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
 
             await generateSingleSpeciesReport(
-                { ...speciesData, ...localDetails },
+                {
+                    ...speciesData,
+                    ...localDetails,
+                    imagens: chosenImage ? [{ url_imagem: chosenImage.full }] : null,
+                },
                 `ficha_${safeName}.pdf`,
                 { userName: profile?.full_name, userRole: profile?.role }
             );

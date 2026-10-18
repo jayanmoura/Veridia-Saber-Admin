@@ -52,6 +52,16 @@ export interface Species {
     url_micro?: string | null;
     local_id?: string | number | null;
   }[] | null;
+  especie_local?: {
+    id?: string | number;
+    local_id?: string | number | null;
+    descricao_ocorrencia?: string | null;
+    imagens?: {
+      url_micro?: string | null;
+      url_thumbnail?: string | null;
+      url_imagem?: string | null;
+    }[] | null;
+  }[] | null;
   created_at?: string | null;
   created_by?: string | null;
   creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/authContext';
+import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
 
 // ============ TYPES ============
 export interface AuditLog {
@@ -278,7 +279,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         try {
             const { data: recentData } = await supabase
                 .from('especie_local')
-                .select(`id, created_at, especie:especie_id(id, nome_cientifico, nome_popular), imagens!especime_id(url_imagem, url_thumbnail, url_micro)`)
+                .select(`id, created_at, especie:especie_id(id, nome_cientifico, nome_popular, imagens(url_imagem, url_thumbnail, url_micro)), imagens!especime_id(url_imagem, url_thumbnail, url_micro)`)
                 .eq('local_id', profile.local_id)
                 .order('created_at', { ascending: false })
                 .limit(5);
@@ -287,20 +288,32 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 const mapped = (recentData as Array<{
                     id: string | number;
                     created_at: string;
-                    especie: { nome_cientifico: string; nome_popular?: string | null } | { nome_cientifico: string; nome_popular?: string | null }[] | null;
+                    especie: {
+                        nome_cientifico: string;
+                        nome_popular?: string | null;
+                        imagens?: { url_imagem?: string; url_thumbnail?: string; url_micro?: string }[] | null;
+                    } | {
+                        nome_cientifico: string;
+                        nome_popular?: string | null;
+                        imagens?: { url_imagem?: string; url_thumbnail?: string; url_micro?: string }[] | null;
+                    }[] | null;
                     imagens: { url_micro?: string; url_thumbnail?: string; url_imagem?: string }[] | null;
                 }>)
                     .filter(item => item.especie)
                     .map(item => {
                         const esp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                        const thumbResult = pickSpeciesThumbnail({
+                            specimenImages: item.imagens,
+                            speciesImages: esp?.imagens,
+                        });
                         return {
                             id: String(item.id),
                             nome_cientifico: esp?.nome_cientifico || '',
                             nome_popular: esp?.nome_popular || null,
                             created_at: String(item.created_at),
-                            imagem_url: item.imagens?.[0]?.url_micro || null,
-                            imagem_thumbnail: item.imagens?.[0]?.url_thumbnail || null,
-                            imagem_original: item.imagens?.[0]?.url_imagem || null,
+                            imagem_url: thumbResult?.thumb || null,
+                            imagem_thumbnail: thumbResult?.thumb || null,
+                            imagem_original: thumbResult?.full || null,
                         };
                     });
                 setRecentLocalSpecies(mapped);

@@ -153,8 +153,12 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     .select(`
                         *,
                         familia (familia_nome),
-                        imagens (url_imagem, url_thumbnail, local_id),
-                        especie_local!inner (local_id, descricao_ocorrencia)
+                        imagens (url_imagem, url_thumbnail, url_micro, local_id),
+                        especie_local!inner (
+                            local_id,
+                            descricao_ocorrencia,
+                            imagens (url_micro, url_thumbnail, url_imagem)
+                        )
                     `, { count: 'exact' })
                     .eq('especie_local.local_id', userLocalId)
                     .order('nome_cientifico')
@@ -165,8 +169,12 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     .select(`
                         *,
                         familia (familia_nome),
-                        imagens (url_imagem, url_thumbnail, local_id),
-                        especie_local (local_id, descricao_ocorrencia)
+                        imagens (url_imagem, url_thumbnail, url_micro, local_id),
+                        especie_local (
+                            local_id,
+                            descricao_ocorrencia,
+                            imagens (url_micro, url_thumbnail, url_imagem)
+                        )
                     `, { count: 'exact' })
                     .order('nome_cientifico')
                     .range(from, to);
@@ -238,6 +246,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
             // Fetch overrides for local user context
             const overrideMap = new Map<string, string>();
+
             if (!isGlobalAdmin && userLocalId && data && data.length > 0) {
                 const speciesIds = (data as RawSpeciesRow[]).map((s) => s.id);
                 const { data: overrides } = await supabase
@@ -265,9 +274,19 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                     );
                 }
 
+                // Filtrar espécimes pelo local_id quando for usuário local
+                const filteredEspecieLocal = !isGlobalAdmin && userLocalId && item.especie_local
+                    ? item.especie_local.filter((el) => String(el.local_id) === String(userLocalId))
+                    : item.especie_local;
+
                 const effectiveDescricao = overrideMap.get(item.id) ?? item.descricao_especie;
 
-                return { ...item, descricao_especie: effectiveDescricao, imagens: filteredImages };
+                return {
+                    ...item,
+                    descricao_especie: effectiveDescricao,
+                    imagens: filteredImages,
+                    especie_local: filteredEspecieLocal,
+                };
             });
 
             setSpecies(formattedData);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/authContext';
+import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
 
 // ============ TYPES ============
 export interface ProjectDetails {
@@ -359,18 +360,35 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                         };
 
                         if (speciesMap.has(s.id)) {
-                            speciesMap.get(s.id)!.specimens!.push(specimenInfo);
+                            const existing = speciesMap.get(s.id)!;
+                            existing.specimens!.push(specimenInfo);
+                            // Se a espécie ainda não tem foto ou se este espécime trouxer foto Tipo B válida, atualiza
+                            if (item.imagens && item.imagens.length > 0) {
+                                const bestThumb = pickSpeciesThumbnail({
+                                    specimenImages: item.imagens,
+                                    speciesImages: s.imagens || []
+                                });
+                                if (bestThumb) {
+                                    existing.imagem = bestThumb.thumb;
+                                    existing.imagem_thumbnail = bestThumb.thumb;
+                                    existing.imagem_original = bestThumb.full;
+                                }
+                            }
                         } else {
                             const familia = Array.isArray(s.familia) ? s.familia[0] : s.familia;
+                            const thumbResult = pickSpeciesThumbnail({
+                                specimenImages: item.imagens || [],
+                                speciesImages: s.imagens || []
+                            });
                             speciesMap.set(s.id, {
                                 id: s.id,
                                 nome_cientifico: s.nome_cientifico,
                                 nome_popular: s.nome_popular,
                                 familia_id: s.familia_id,
                                 familia,
-                                imagem: imgEspecie?.url_micro || null,
-                                imagem_thumbnail: imgEspecie?.url_thumbnail || null,
-                                imagem_original: imgEspecie?.url_imagem || null,
+                                imagem: thumbResult?.thumb || null,
+                                imagem_thumbnail: thumbResult?.thumb || null,
+                                imagem_original: thumbResult?.full || null,
                                 specimens: [specimenInfo]
                             });
                         }

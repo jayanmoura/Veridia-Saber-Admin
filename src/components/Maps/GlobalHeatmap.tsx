@@ -12,6 +12,7 @@ import { useToast } from '../../hooks/useToast';
 import { fetchProfileNames } from '../../services/profileNames';
 import { createDotIcon, createClusterIcon } from '../../pages/landingpage/components/mapMarkerIcons';
 import { SpecimenPopupCard } from '../../pages/landingpage/components/SpecimenPopupCard';
+import { pickSpeciesThumbnail } from '../../utils/speciesThumbnail';
 
 interface LocationData {
     id: string;
@@ -48,7 +49,7 @@ interface RawEspecieLocalHeatmapRef {
     nome_cientifico: string | null;
     nome_popular: string | null;
     familia: { familia_nome: string } | { familia_nome: string }[] | null;
-    imagens: { url_imagem: string | null; url_thumbnail: string | null }[] | null;
+    imagens: { url_imagem?: string | null; url_thumbnail?: string | null; url_micro?: string | null }[] | null;
 }
 
 interface RawEspecieLocalHeatmapRow {
@@ -60,6 +61,7 @@ interface RawEspecieLocalHeatmapRow {
     tombo_codigo: string | null;
     coletor: string | null;
     locais: { nome: string } | { nome: string }[] | null;
+    imagens?: { url_imagem?: string | null; url_thumbnail?: string | null; url_micro?: string | null }[] | null;
     especie: RawEspecieLocalHeatmapRef | RawEspecieLocalHeatmapRef[] | null;
 }
 
@@ -118,11 +120,12 @@ export function GlobalHeatmap() {
                     tombo_codigo,
                     coletor,
                     locais:local_id(nome),
+                    imagens:imagens!imagens_especime_id_fkey(url_micro, url_thumbnail, url_imagem),
                     especie:especie_id (
                         nome_cientifico,
                         nome_popular,
                         familia:familia_id(familia_nome),
-                        imagens(url_imagem, url_thumbnail)
+                        imagens(url_imagem, url_thumbnail, url_micro)
                     )
                 `)
                 .not('latitude', 'is', null)
@@ -156,6 +159,11 @@ export function GlobalHeatmap() {
                 const familia = Array.isArray(especie?.familia) ? especie.familia[0] : especie?.familia;
                 const localObj = Array.isArray(item.locais) ? item.locais[0] : item.locais;
 
+                const thumbResult = pickSpeciesThumbnail({
+                    specimenImages: item.imagens,
+                    speciesImages: especie?.imagens,
+                });
+
                 return {
                     id: `especie_local_${item.id}`,
                     latitude: Number(item.latitude),
@@ -164,7 +172,7 @@ export function GlobalHeatmap() {
                     family_name: familia?.familia_nome || 'Sem Família',
                     collector: item.coletor || 'Não informado',
                     date: item.created_at,
-                    image: especie?.imagens?.[0]?.url_thumbnail || especie?.imagens?.[0]?.url_imagem || undefined,
+                    image: thumbResult?.thumb || undefined,
                     user_id: item.created_by || null,
                     origem: 'painel',
                     tombo: item.tombo_codigo || null,

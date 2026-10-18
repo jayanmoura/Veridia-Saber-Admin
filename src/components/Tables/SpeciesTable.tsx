@@ -2,6 +2,7 @@ import { Leaf, FileText, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } fr
 import { useState, useMemo } from 'react';
 import { SortableColumnHeader } from './SortableColumnHeader';
 import { extractCodeNumber } from '../../utils/sorting';
+import { pickSpeciesThumbnail } from '../../utils/speciesThumbnail';
 
 export interface SpeciesItem {
     id: string;
@@ -9,7 +10,11 @@ export interface SpeciesItem {
     nome_cientifico: string;
     nome_popular: string | null;
     familia?: { familia_nome: string };
-    imagens?: { url_imagem: string; url_thumbnail?: string | null }[];
+    imagens?: { id?: string; url_imagem: string; url_thumbnail?: string | null; url_micro?: string | null; local_id?: string | number | null }[] | null;
+    especie_local?: {
+        local_id?: string | number | null;
+        imagens?: { url_micro?: string | null; url_thumbnail?: string | null; url_imagem?: string | null }[] | null;
+    }[] | null;
     created_by_name?: string | null;
     creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
 }
@@ -124,7 +129,12 @@ export function SpeciesTable({
                             ))
                         ) : sortedSpecies.length > 0 ? (
                             sortedSpecies.map((specie) => {
-                                const imageUrl = specie.imagens?.[0]?.url_thumbnail || specie.imagens?.[0]?.url_imagem;
+                                const specimenImages = (specie.especie_local || []).flatMap((el) => el.imagens || []);
+                                const thumbResult = pickSpeciesThumbnail({
+                                    specimenImages,
+                                    speciesImages: specie.imagens || []
+                                });
+                                const imageUrl = thumbResult?.thumb;
 
                                 return (
                                     <tr key={specie.id} className="group hover:bg-gray-50/80 transition-colors">

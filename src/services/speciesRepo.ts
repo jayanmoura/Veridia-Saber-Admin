@@ -16,7 +16,7 @@ export const speciesRepo = {
     /**
      * List species with optional filtering
      */
-    async listSpecies(filters: { search?: string, limit?: number } = {}) {
+    async listSpecies(filters: { search?: string; limit?: number; localId?: string | number | null } = {}) {
         let query = supabase
             .from('especie')
             .select(`
@@ -24,7 +24,11 @@ export const speciesRepo = {
                 nome_cientifico,
                 nome_popular,
                 familia:familia_id(id, familia_nome),
-                imagens(url_imagem)
+                imagens(url_imagem, url_thumbnail, url_micro),
+                especie_local(
+                    local_id,
+                    imagens(url_micro, url_thumbnail, url_imagem)
+                )
             `)
             .order('nome_cientifico');
 
@@ -39,11 +43,25 @@ export const speciesRepo = {
         const { data, error } = await query;
         if (error) throw error;
 
+        // Contexto de local: quando filters.localId estiver preenchido, filtramos no front-end
+        // para considerar apenas espécimes daquele local (o filtro no join aninhado do PostgREST
+        // excluiria a espécie caso ela não tivesse espécimes no local em questão).
+        const targetLocalId = filters.localId !== undefined && filters.localId !== null && String(filters.localId).trim() !== ''
+            ? String(filters.localId)
+            : null;
+
         // Map response to match Species type (Supabase might return arrays for joins)
-        const mappedData = (data as unknown as SpeciesRawRow[]).map(item => ({
-            ...item,
-            familia: Array.isArray(item.familia) ? item.familia[0] : item.familia
-        }));
+        const mappedData = (data as unknown as SpeciesRawRow[]).map(item => {
+            const especieLocalFiltered = targetLocalId && item.especie_local
+                ? item.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && String(el.local_id) === targetLocalId)
+                : item.especie_local;
+
+            return {
+                ...item,
+                familia: Array.isArray(item.familia) ? item.familia[0] : item.familia,
+                especie_local: especieLocalFiltered
+            };
+        });
 
         return mappedData as Species[];
     },
@@ -51,22 +69,37 @@ export const speciesRepo = {
     /**
      * Get a single species by ID
      */
-    async getSpeciesById(id: string) {
+    async getSpeciesById(id: string, localId?: string | number | null) {
         const { data, error } = await supabase
             .from('especie')
             .select(`
                 *,
                 familia:familia_id(id, familia_nome),
-                imagens(url_imagem)
+                imagens(url_imagem, url_thumbnail, url_micro),
+                especie_local(
+                    local_id,
+                    imagens(url_micro, url_thumbnail, url_imagem)
+                )
             `)
             .eq('id', id)
             .single();
 
         if (error) throw error;
 
+        // Contexto de local: filtrar espécimes do local se especificado
+        const targetLocalId = localId !== undefined && localId !== null && String(localId).trim() !== ''
+            ? String(localId)
+            : null;
+
+        const rawItem = data as unknown as SpeciesRawRow;
+        const especieLocalFiltered = targetLocalId && rawItem.especie_local
+            ? rawItem.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && String(el.local_id) === targetLocalId)
+            : rawItem.especie_local;
+
         const mappedData = {
             ...data,
-            familia: Array.isArray(data.familia) ? data.familia[0] : data.familia
+            familia: Array.isArray(data.familia) ? data.familia[0] : data.familia,
+            especie_local: especieLocalFiltered
         };
 
         return mappedData as Species;
