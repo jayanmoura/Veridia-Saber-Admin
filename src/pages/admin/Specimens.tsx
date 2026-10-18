@@ -105,7 +105,7 @@ export default function Specimens() {
         // é modificado dentro deste mesmo efeito (via setSearchParams), o que
         // causaria um loop de re-execução se incluído nas deps. Este efeito
         // deve rodar apenas quando o profile muda (login/troca de usuário).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- loadSpecimens e searchParams excluídos para evitar loop (searchParams é modificado no efeito)
     }, [profile]);
 
     const loadSpecimens = async (localIdOverride?: string) => {

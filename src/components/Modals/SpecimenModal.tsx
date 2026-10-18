@@ -142,7 +142,7 @@ export function SpecimenModal({
         // via useState e não precisa constar. 'formData.local_id' também
         // não é necessário pois o efeito já lê o valor mais recente via
         // closure no momento em que roda, disparado pelas deps corretas.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- images e recriado a cada render pelo hook useSpecimenImages; inclusao causaria loop de reset
     }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId]);
 
     // Species Search Effect

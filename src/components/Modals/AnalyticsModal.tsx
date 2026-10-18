@@ -71,7 +71,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
         } finally {
             setLoading(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- funcoes de busca internas recriadas a cada render; gatilho real e period
     }, [period]);
 
     useEffect(() => {

@@ -537,7 +537,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         // causaria corrida com o efeito de "Page change" (ambos disparariam
         // ao trocar de aba, um buscando a página antiga). Este efeito já
         // reage a `activeTab`/`project`, que é o gatilho correto.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchTabData e projectId excluídos para evitar corrida com efeito de paginação
     }, [activeTab, project]);
 
     // Page change
@@ -550,7 +550,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         // Incluir `activeTab` aqui faria este efeito também disparar na troca
         // de aba, competindo com o efeito de "Tab change" acima e buscando a
         // página errada (currentPage ainda não resetado para 1 nesse render).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab e fetchTabData excluídos pois este efeito deve reagir exclusivamente a currentPage
     }, [currentPage]);
 
     return {

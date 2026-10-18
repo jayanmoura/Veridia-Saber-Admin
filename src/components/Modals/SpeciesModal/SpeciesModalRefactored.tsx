@@ -107,7 +107,7 @@ export function SpeciesModalRefactored({
     // resetar o formulário/imagens repetidamente. Este efeito já reage
     // corretamente a 'isOpen' e 'initialData?.id', que são os gatilhos
     // reais de troca de espécie/abertura do modal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form e images sao novos a cada render e causariam reset continuo do formulario
   }, [isOpen, initialData?.id]);
 
   // Handle form submission
