@@ -20,64 +20,57 @@ import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 import { MultiSelectDropdown } from './components/MultiSelectDropdown';
 import { formatarTipoLocal } from './utils/tipoLocal';
 import { FamilyCard, type FamilyItem } from './components/FamilyCard';
+import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow, LocalRow } from '../../types/db';
 
-interface LocalDetails {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  cidade: string | null;
-  estado: string | null;
-  tipo: string | null;
-  sigla: string | null;
-  imagem_capa: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  historia: string | null;
-  endereco: string | null;
-  contato: string | null;
-}
+type LocalDetails = Pick<
+  LocalRow,
+  | 'id'
+  | 'nome'
+  | 'descricao'
+  | 'cidade'
+  | 'estado'
+  | 'tipo'
+  | 'sigla'
+  | 'imagem_capa'
+  | 'latitude'
+  | 'longitude'
+  | 'historia'
+  | 'endereco'
+  | 'contato'
+>;
 
-interface EspecimeItem {
-  id: number;
-  tombo_codigo: string | null;
-  tombo_num: number | null;
-  latitude: number | null;
-  longitude: number | null;
-  descricao_ocorrencia: string | null;
-  detalhes_localizacao: string | null;
-  coletor: string | null;
-  data_determinacao: string | null;
-  especie_id: string;
-}
+type EspecimeItem = Pick<
+  EspecieLocalRow,
+  | 'id'
+  | 'tombo_codigo'
+  | 'tombo_num'
+  | 'latitude'
+  | 'longitude'
+  | 'descricao_ocorrencia'
+  | 'detalhes_localizacao'
+  | 'coletor'
+  | 'data_determinacao'
+  | 'especie_id'
+>;
 
-interface EspecieItem {
-  id: string;
-  nome_cientifico: string;
-  nome_popular: string | null;
-  familia_id: string | null;
-  familia: {
-    familia_nome: string;
-  } | {
-    familia_nome: string;
-  }[] | null;
-}
+type EspecieItem = Pick<
+  EspecieRow,
+  'id' | 'nome_cientifico' | 'nome_popular' | 'familia_id'
+> & {
+  familia: Pick<FamiliaRow, 'familia_nome'> | Pick<FamiliaRow, 'familia_nome'>[] | null;
+};
 
-interface ImagemItem {
-  id: string;
-  especime_id: number | null;
-  url_thumbnail: string | null;
-  url_micro: string | null;
-  url_imagem: string | null;
-  creditos: string | null;
-}
+type ImagemItem = Pick<
+  ImagemRow,
+  'id' | 'especime_id' | 'url_thumbnail' | 'url_micro' | 'creditos'
+> & {
+  url_imagem: ImagemRow['url_imagem'] | null;
+};
 
-interface FamiliaDetalhes {
-  id: string;
-  familia_nome: string;
-  descricao_familia: string | null;
-  imagem_micro: string | null;
-  imagem_thumbnail: string | null;
-}
+type FamiliaDetalhes = Pick<
+  FamiliaRow,
+  'id' | 'familia_nome' | 'descricao_familia' | 'imagem_micro' | 'imagem_thumbnail'
+>;
 
 export default function DetalhesLocal() {
   const { id } = useParams<{ id: string }>();
@@ -108,6 +101,7 @@ export default function DetalhesLocal() {
 
   const fetchTudo = useCallback(async () => {
     if (!id) return;
+    const localId = Number(id);
     setLoading(true);
     setError(null);
     try {
@@ -115,7 +109,7 @@ export default function DetalhesLocal() {
       const { data: localData, error: localError } = await supabase
         .from('locais')
         .select('id, nome, descricao, cidade, estado, tipo, sigla, imagem_capa, latitude, longitude, historia, endereco, contato')
-        .eq('id', id)
+        .eq('id', !isNaN(localId) ? localId : id)
         .single();
 
       if (localError) throw localError;
@@ -124,7 +118,7 @@ export default function DetalhesLocal() {
       const { data: especimesData, error: especimesError } = await supabase
         .from('especie_local')
         .select('id, tombo_codigo, tombo_num, latitude, longitude, detalhes_localizacao, descricao_ocorrencia, coletor, data_determinacao, especie_id')
-        .eq('local_id', id)
+        .eq('local_id', !isNaN(localId) ? localId : id)
         .order('tombo_num', { ascending: true });
 
       if (especimesError) throw especimesError;

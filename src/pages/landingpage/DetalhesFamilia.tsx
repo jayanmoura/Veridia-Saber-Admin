@@ -5,6 +5,7 @@ import { Leaf, Info, ShieldAlert, X, BookOpen, ExternalLink } from 'lucide-react
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow } from '../../types/db';
 
 // Leaflet
 import { MapContainer, Marker, Popup } from 'react-leaflet';
@@ -17,48 +18,46 @@ import { MapBoundsUpdater } from './components/MapBoundsUpdater';
 import { SpecimenPopupCard } from './components/SpecimenPopupCard';
 import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 
-interface FamilyDetails {
-  id: string;
-  familia_nome: string;
-  autoria_taxonomica: string | null;
-  caracteristicas: string | null;
-  descricao_familia: string | null;
-  imagem_referencia: string | null;
-  imagem_thumbnail: string | null;
-  imagem_micro: string | null;
-  distribuicao_geografica: string | null;
-  fonte_referencia: string | null;
-  link_referencia: string | null;
-}
+type FamilyDetails = Pick<
+  FamiliaRow,
+  | 'id'
+  | 'familia_nome'
+  | 'autoria_taxonomica'
+  | 'caracteristicas'
+  | 'descricao_familia'
+  | 'imagem_referencia'
+  | 'imagem_thumbnail'
+  | 'imagem_micro'
+  | 'distribuicao_geografica'
+  | 'fonte_referencia'
+  | 'link_referencia'
+>;
 
-interface SpeciesListItem {
-  id: string;
-  nome_cientifico: string;
-  nome_popular: string | null;
-  codigo_vs: string | null;
-}
+type SpeciesListItem = Pick<
+  EspecieRow,
+  'id' | 'nome_cientifico' | 'nome_popular' | 'codigo_vs'
+>;
 
-interface FamilyImageItem {
-  id: string;
-  especie_id: string | null;
-  especime_id: number | null;
-  url_thumbnail: string | null;
-  url_micro: string | null;
-  url_imagem: string | null;
-  creditos: string | null;
-}
+type FamilyImageItem = Pick<
+  ImagemRow,
+  'id' | 'especie_id' | 'especime_id' | 'url_thumbnail' | 'url_micro' | 'creditos'
+> & {
+  url_imagem: ImagemRow['url_imagem'] | null;
+};
 
-interface MapSpecimenItem {
-  id: number;
-  latitude: number;
-  longitude: number;
-  detalhes_localizacao: string | null;
-  descricao_ocorrencia: string | null;
-  coletor: string | null;
-  especie_id: string;
-  tombo_codigo: string | null;
-  tombo_num: number | null;
-  local_id: number | null;
+interface MapSpecimenItem extends Pick<
+  EspecieLocalRow,
+  | 'id'
+  | 'detalhes_localizacao'
+  | 'descricao_ocorrencia'
+  | 'coletor'
+  | 'especie_id'
+  | 'tombo_codigo'
+  | 'tombo_num'
+  | 'local_id'
+> {
+  latitude: NonNullable<EspecieLocalRow['latitude']>;
+  longitude: NonNullable<EspecieLocalRow['longitude']>;
 }
 
 export default function DetalhesFamilia() {

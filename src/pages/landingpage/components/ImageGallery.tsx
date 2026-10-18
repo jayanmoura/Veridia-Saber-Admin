@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Leaf } from 'lucide-react';
+import type { ImagemRow } from '../../../types/db';
 
 export interface GalleryImage {
-  id?: string | number;
-  url_imagem?: string | null;
-  url_thumbnail?: string | null;
-  url_micro?: string | null;
-  creditos?: string | null;
-  alt?: string;
+  id?: ImagemRow['id'] | number;
+  url_imagem?: ImagemRow['url_imagem'] | null;
+  url_thumbnail?: ImagemRow['url_thumbnail'];
+  url_micro?: ImagemRow['url_micro'];
+  creditos?: ImagemRow['creditos'];
+  alt?: string; // derivado no front
 }
 
 export interface ImageGalleryProps {

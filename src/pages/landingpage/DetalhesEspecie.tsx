@@ -5,6 +5,9 @@ import { ImageGallery } from './components/ImageGallery';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow, LocalRow } from '../../types/db';
+import type { Tables } from '../../types/database.types';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 // Leaflet
 import { MapContainer, Marker, Popup } from 'react-leaflet';
@@ -18,63 +21,59 @@ import { SpecimenPopupCard } from './components/SpecimenPopupCard';
 import { createDotIcon, createClusterIcon } from './components/mapMarkerIcons';
 
 interface SpeciesImage {
-  id?: string;
-  url_imagem: string;
-  url_thumbnail: string | null;
-  url_micro?: string | null;
-  creditos?: string | null;
+  id?: ImagemRow['id'];
+  url_imagem: ImagemRow['url_imagem'];
+  url_thumbnail: ImagemRow['url_thumbnail'];
+  url_micro?: ImagemRow['url_micro'];
+  creditos?: ImagemRow['creditos'];
 }
 
-interface SpeciesDetails {
-  id: string;
-  nome_cientifico: string;
-  autor: string | null;
-  nome_popular: string | null;
-  familia_id: string;
-  codigo_vs: string | null;
-  descricao_especie: string | null;
-  cuidados_luz: string | null;
-  cuidados_agua: string | null;
-  cuidados_temperatura: string | null;
-  cuidados_substrato: string | null;
-  cuidados_nutrientes: string | null;
-  familia: {
-    id: string;
-    familia_nome: string;
-  } | null;
+type SpeciesQueryResult = Pick<
+  EspecieRow,
+  | 'id'
+  | 'nome_cientifico'
+  | 'autor'
+  | 'nome_popular'
+  | 'familia_id'
+  | 'descricao_especie'
+  | 'cuidados_luz'
+  | 'cuidados_agua'
+  | 'cuidados_temperatura'
+  | 'cuidados_substrato'
+  | 'cuidados_nutrientes'
+> & {
+  codigo_vs?: EspecieRow['codigo_vs'];
+  familia: Pick<FamiliaRow, 'id' | 'familia_nome'> | null;
+};
+
+interface SpeciesDetails extends SpeciesQueryResult {
   imagens: SpeciesImage[] | null;
 }
 
-interface GalleryImageItem {
-  id?: string;
-  especime_id: number | null;
-  url_thumbnail: string | null;
-  url_micro: string | null;
-  url_imagem: string;
-  creditos: string | null;
+type GalleryImageItem = Pick<
+  ImagemRow,
+  'url_imagem' | 'especime_id' | 'url_thumbnail' | 'url_micro' | 'creditos'
+> & {
+  id?: ImagemRow['id'];
+};
+
+interface MapSpecimenItem extends Pick<
+  EspecieLocalRow,
+  | 'id'
+  | 'detalhes_localizacao'
+  | 'descricao_ocorrencia'
+  | 'coletor'
+  | 'tombo_codigo'
+  | 'tombo_num'
+  | 'local_id'
+> {
+  latitude: NonNullable<EspecieLocalRow['latitude']>;
+  longitude: NonNullable<EspecieLocalRow['longitude']>;
 }
 
-interface MapSpecimenItem {
-  id: number;
-  latitude: number;
-  longitude: number;
-  detalhes_localizacao: string | null;
-  descricao_ocorrencia: string | null;
-  coletor: string | null;
-  tombo_codigo: string | null;
-  tombo_num: number | null;
-  local_id: number | null;
-}
+type LocalNameItem = Pick<LocalRow, 'id' | 'nome'>;
 
-interface LocalNameItem {
-  id: number;
-  nome: string;
-}
-
-interface OverrideDetails {
-  descricao_especie: string | null;
-  notas_projeto: string | null;
-}
+type OverrideDetails = Pick<Tables<'especie_local_overrides'>, 'descricao_especie' | 'notas_projeto'>;
 
 export default function DetalhesEspecie() {
   const { id } = useParams<{ id: string }>();
@@ -173,7 +172,7 @@ export default function DetalhesEspecie() {
     setLoading(true);
     setError(null);
     try {
-      const { data: speciesData, error: speciesError } = await supabase
+      const { data: speciesData, error: speciesError }: { data: SpeciesQueryResult | null; error: PostgrestError | null } = await supabase
         .from('especie')
         .select(`
           id,
@@ -193,15 +192,17 @@ export default function DetalhesEspecie() {
         .single();
 
       if (speciesError) throw speciesError;
+      if (!speciesData) throw new Error('Espécie não encontrada');
 
       // Se acessado no contexto de um local/projeto, buscar override (descrição local + notas do projeto)
       let overrideData: OverrideDetails | null = null;
       if (localIdParam) {
+        const localIdNum = Number(localIdParam);
         const { data } = await supabase
           .from('especie_local_overrides')
           .select('descricao_especie, notas_projeto')
           .eq('especie_id', id)
-          .eq('local_id', localIdParam)
+          .eq('local_id', !isNaN(localIdNum) ? localIdNum : localIdParam)
           .maybeSingle();
 
         overrideData = data ?? null;
@@ -212,7 +213,7 @@ export default function DetalhesEspecie() {
 
       // Setar dados da espécie (pura, global — sem mistura com override local; imagens preenchidas pelo estado galeriaCompleta)
       setSpecies({
-        ...(speciesData as unknown as Omit<SpeciesDetails, 'imagens'>),
+        ...speciesData,
         imagens: null
       });
       setOverrideLocal(overrideData);

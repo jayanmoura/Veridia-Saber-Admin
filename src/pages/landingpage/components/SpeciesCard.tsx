@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
+import type { EspecieRow, ImagemRow } from '../../../types/db';
 
 export interface SpeciesItem {
-  id: string;
-  name_scientific: string;
-  name_popular: string | null;
-  family_name: string;
-  url_micro: string | null;
+  id: EspecieRow['id'];
+  // Campos derivados no front:
+  name_scientific: EspecieRow['nome_cientifico']; // derivado no front (nome_cientifico)
+  name_popular: EspecieRow['nome_popular']; // derivado no front (nome_popular)
+  family_name: string; // derivado no front (join familia.familia_nome)
+  url_micro: ImagemRow['url_micro']; // derivado no front (join imagens)
 }
 
 interface SpeciesCardProps {

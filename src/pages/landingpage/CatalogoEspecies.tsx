@@ -6,10 +6,11 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import type { SpeciesItem } from './components/SpeciesCard';
 import { SkeletonCard } from './components/SkeletonCard';
+import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow } from '../../types/db';
 
 interface FamilyOption {
-  id: string;
-  name: string;
+  id: FamiliaRow['id'];
+  name: FamiliaRow['familia_nome']; // derivado no front (familia_nome)
 }
 
 export default function CatalogoEspecies() {
@@ -66,7 +67,7 @@ export default function CatalogoEspecies() {
         .order('familia_nome', { ascending: true });
 
       if (error) throw error;
-      setFamilies((data || []).map((f: { id: string; familia_nome: string }) => ({
+      setFamilies((data || []).map((f: Pick<FamiliaRow, 'id' | 'familia_nome'>) => ({
         id: f.id,
         name: f.familia_nome
       })));
@@ -109,20 +110,13 @@ export default function CatalogoEspecies() {
       const { data, error, count } = await query;
 
       if (error) throw error;
-
       const especieIds = (data || []).map(item => item.id);
-      let imagensTipoA: Array<{
-        id: string;
-        especie_id: string | null;
-        url_micro: string | null;
-        url_thumbnail: string | null;
-      }> = [];
-      let imagensTipoB: Array<{
-        id: string;
-        especime_id: number | null;
-        url_micro: string | null;
-        url_thumbnail: string | null;
-      }> = [];
+      let imagensTipoA: Array<
+        Pick<ImagemRow, 'id' | 'especie_id' | 'url_micro' | 'url_thumbnail'>
+      > = [];
+      let imagensTipoB: Array<
+        Pick<ImagemRow, 'id' | 'especime_id' | 'url_micro' | 'url_thumbnail'>
+      > = [];
       const especimeParaEspecie: Record<number, string> = {};
 
       if (especieIds.length > 0) {
@@ -145,7 +139,7 @@ export default function CatalogoEspecies() {
 
         if (especimesError) throw especimesError;
 
-        const especimesFormatados = (especimes ?? []) as Array<{ id: number; especie_id: string }>;
+        const especimesFormatados = (especimes ?? []) as Array<Pick<EspecieLocalRow, 'id' | 'especie_id'>>;
         const especimeIds = especimesFormatados.map(e => e.id);
         for (const esp of especimesFormatados) {
           especimeParaEspecie[esp.id] = esp.especie_id;
@@ -186,7 +180,7 @@ export default function CatalogoEspecies() {
         }
       }
 
-      const formattedData: SpeciesItem[] = (data || []).map((item: { id: string; nome_cientifico: string; nome_popular: string | null; familia_id: string | null; familia: { familia_nome: string } | { familia_nome: string }[] | null; codigo_vs?: string | null }) => {
+      const formattedData: SpeciesItem[] = (data || []).map((item: Pick<EspecieRow, 'id' | 'nome_cientifico' | 'nome_popular' | 'familia_id'> & { familia: Pick<FamiliaRow, 'familia_nome'> | Pick<FamiliaRow, 'familia_nome'>[] | null; codigo_vs?: EspecieRow['codigo_vs'] }) => {
         const famObj = Array.isArray(item.familia) ? item.familia[0] : item.familia;
         return {
           id: item.id,

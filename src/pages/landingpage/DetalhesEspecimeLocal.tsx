@@ -5,6 +5,8 @@ import { ImageGallery } from './components/ImageGallery';
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow, LocalRow } from '../../types/db';
+import type { Tables } from '../../types/database.types';
 
 // Leaflet
 import { MapContainer, CircleMarker, Popup } from 'react-leaflet';
@@ -14,56 +16,40 @@ import { MapBoundsUpdater } from './components/MapBoundsUpdater';
 
 const SPECIMEN_MARKER_COLOR = '#4a7c5a';
 
-interface EspecimeDetails {
-  id: number;
-  tombo_codigo: string | null;
-  tombo_num: number | null;
-  detalhes_localizacao: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  coletor: string | null;
-  data_determinacao: string | null;
-  morfologia: string | null;
-  habitat_ecologia: string | null;
-  numero_coletor: string | null;
-  especie_id: string;
-  local_id: string;
-}
+type EspecimeDetails = Pick<
+  EspecieLocalRow,
+  | 'id'
+  | 'tombo_codigo'
+  | 'tombo_num'
+  | 'detalhes_localizacao'
+  | 'latitude'
+  | 'longitude'
+  | 'coletor'
+  | 'data_determinacao'
+  | 'morfologia'
+  | 'habitat_ecologia'
+  | 'numero_coletor'
+  | 'especie_id'
+  | 'local_id'
+>;
 
-interface EspecieDetails {
-  id: string;
-  nome_cientifico: string;
-  nome_popular: string | null;
-  familia_id: string | null;
-  autor: string | null;
-  descricao_especie: string | null;
-  familia: {
-    id: string;
-    familia_nome: string;
-  } | {
-    id: string;
-    familia_nome: string;
-  }[] | null;
-}
+type EspecieDetails = Pick<
+  EspecieRow,
+  'id' | 'nome_cientifico' | 'nome_popular' | 'familia_id' | 'autor' | 'descricao_especie'
+> & {
+  familia: Pick<FamiliaRow, 'id' | 'familia_nome'> | Pick<FamiliaRow, 'id' | 'familia_nome'>[] | null;
+};
 
-interface LocalDetails {
-  id: string;
-  nome: string;
-  sigla: string | null;
-}
+type LocalDetails = Pick<LocalRow, 'id' | 'nome' | 'sigla'>;
 
-interface OverrideDetails {
-  descricao_especie: string | null;
-  notas_projeto: string | null;
-}
+type OverrideDetails = Pick<Tables<'especie_local_overrides'>, 'descricao_especie' | 'notas_projeto'>;
 
-interface ImagemDetails {
-  id: string;
-  url_thumbnail: string | null;
-  url_micro: string | null;
-  url_imagem: string | null;
-  creditos: string | null;
-}
+type ImagemDetails = Pick<
+  ImagemRow,
+  'id' | 'url_thumbnail' | 'url_micro' | 'creditos'
+> & {
+  url_imagem: ImagemRow['url_imagem'] | null;
+};
 
 export default function DetalhesEspecimeLocal() {
   const { localId, especimeId } = useParams<{ localId: string; especimeId: string }>();
@@ -83,6 +69,8 @@ export default function DetalhesEspecimeLocal() {
 
   const fetchTudo = useCallback(async () => {
     if (!especimeId || !localId) return;
+    const especimeIdNum = Number(especimeId);
+    const localIdNum = Number(localId);
     setLoading(true);
     setError(null);
     try {
@@ -96,7 +84,7 @@ export default function DetalhesEspecimeLocal() {
           morfologia, habitat_ecologia, numero_coletor,
           especie_id, local_id
         `)
-        .eq('id', especimeId)
+        .eq('id', !isNaN(especimeIdNum) ? especimeIdNum : especimeId)
         .single();
 
       if (especimeError) throw especimeError;
@@ -113,7 +101,7 @@ export default function DetalhesEspecimeLocal() {
           .from('especie_local_overrides')
           .select('descricao_especie, notas_projeto')
           .eq('especie_id', especimeRes.especie_id)
-          .eq('local_id', localId)
+          .eq('local_id', !isNaN(localIdNum) ? localIdNum : localId)
           .maybeSingle(),
       ]);
 
@@ -124,7 +112,7 @@ export default function DetalhesEspecimeLocal() {
       const { data: localData, error: localError } = await supabase
         .from('locais')
         .select('id, nome, sigla')
-        .eq('id', localId)
+        .eq('id', !isNaN(localIdNum) ? localIdNum : localId)
         .single();
 
       if (localError) throw localError;
@@ -134,7 +122,7 @@ export default function DetalhesEspecimeLocal() {
       const { data: imagensData, error: imgError } = await supabase
         .from('imagens')
         .select('id, url_thumbnail, url_micro, url_imagem, creditos')
-        .eq('especime_id', parseInt(especimeId))
+        .eq('especime_id', !isNaN(especimeIdNum) ? especimeIdNum : parseInt(especimeId))
         .filter('especie_id', 'is', null)
         .not('url_thumbnail', 'is', null)
         .order('created_at', { ascending: true });

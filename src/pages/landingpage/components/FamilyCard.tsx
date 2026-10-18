@@ -1,9 +1,12 @@
+import type { FamiliaRow } from '../../../types/db';
+
 export interface FamilyItem {
-  id: string;
-  name: string;
-  url_image: string | null;
-  species_count: number;
-  description: string | null;
+  id: FamiliaRow['id'];
+  // Campos derivados no front:
+  name: FamiliaRow['familia_nome']; // derivado no front (familia_nome)
+  url_image: string | null; // derivado no front (imagem_thumbnail || imagem_micro)
+  species_count: number; // derivado no front (contagem agregada de espécies)
+  description: FamiliaRow['descricao_familia']; // derivado no front (descricao_familia)
 }
 
 interface FamilyCardProps {
