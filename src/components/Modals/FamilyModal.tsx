@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/authContext';
 import { X, Upload, Loader2, Info, List } from 'lucide-react';
 import { FamilyLegacyNamesSection } from '../Families/FamilyLegacyNamesSection';
 import { compressImage, compressForListing } from '../../utils/imageCompressor';
-import { uploadFile, getStorageUrl } from '../../utils/storage';
+import { uploadFile, getStorageUrl, replaceImageCleanup } from '../../utils/storage';
 import { useToast } from '../../hooks/useToast';
 
 import type { Family } from '../../types/domain';
@@ -234,6 +234,13 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
         setLoading(true);
 
         try {
+            // Guardar URLs antigas antes do upload
+            const oldImages = [
+                initialData?.imagem_referencia,
+                initialData?.imagem_thumbnail,
+                initialData?.imagem_micro,
+            ];
+
             // Upload image if there's a new one
             const { original: imageUrl, thumbnail: thumbnailUrl, micro: microUrl } = await uploadImage();
 
@@ -257,6 +264,15 @@ export function FamilyModal({ isOpen, onClose, onSave, initialData }: FamilyModa
                     .eq('id', initialData.id);
 
                 if (error) throw error;
+
+                if (imageFile) {
+                    try {
+                        await replaceImageCleanup(oldImages, [imageUrl, thumbnailUrl, microUrl]);
+                    } catch (cleanupError) {
+                        console.warn('Erro ao remover imagens antigas da família:', cleanupError);
+                        showToast('A imagem foi trocada, mas a anterior não pôde ser removida.', 'warning');
+                    }
+                }
             } else {
                 // Insert new - include created_by and created_by_name
                 const { error } = await supabase

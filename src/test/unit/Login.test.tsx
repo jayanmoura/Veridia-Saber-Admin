@@ -2,11 +2,6 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock do InstallPWA antes de qualquer import do componente
-vi.mock('../../components/InstallPWA', () => ({
-  InstallPWA: () => null,
-}));
-
 // Mock do supabase — padrão compartilhado com os outros testes
 vi.mock('../../lib/supabase');
 import '../mocks/supabase'; // registra o mockSupabase como implementação do módulo

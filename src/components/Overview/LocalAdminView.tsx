@@ -23,7 +23,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { ProjectData, LocalStats, RecentLocalSpecies, LocalFamily } from '../../hooks';
-import { uploadFile } from '../../utils/storage';
+import { uploadFile, replaceImageCleanup } from '../../utils/storage';
 import { useToast } from '../../hooks/useToast';
 
 interface LocalAuditLog {
@@ -158,7 +158,8 @@ export function LocalAdminView({
 
         setSavingProject(true);
         try {
-            let newCoverUrl = projectData?.imagem_capa;
+            const oldCoverUrl = projectData?.imagem_capa;
+            let newCoverUrl = oldCoverUrl;
 
             if (editCoverFile) {
                 const fileExt = editCoverFile.name.split('.').pop();
@@ -179,6 +180,15 @@ export function LocalAdminView({
                 .eq('id', profile.local_id);
 
             if (error) throw error;
+
+            if (editCoverFile && oldCoverUrl) {
+                try {
+                    await replaceImageCleanup([oldCoverUrl], [newCoverUrl]);
+                } catch (cleanupError) {
+                    console.warn('Erro ao remover imagem antiga do local:', cleanupError);
+                    showToast('A imagem foi trocada, mas a anterior não pôde ser removida.', 'warning');
+                }
+            }
 
             setProjectSaveSuccess(true);
             await refetch();

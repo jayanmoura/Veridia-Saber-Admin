@@ -193,3 +193,81 @@ export async function deleteImageVariants(urls: Array<string | null | undefined>
       : new Error(String(firstRejected.reason));
   }
 }
+
+/**
+ * Remove variantes antigas de imagem após substituição, exceto aquelas
+ * cujo caminho (bucket/path) coincide com alguma das novas URLs.
+ * Ignora valores vazios/nulos.
+ */
+export async function replaceImageCleanup(
+  oldUrls: Array<string | null | undefined>,
+  newUrls: Array<string | null | undefined>
+): Promise<void> {
+  const newKeys = new Set<string>();
+  for (const url of newUrls) {
+    if (!url || typeof url !== 'string' || !url.trim()) continue;
+    const parsed = parseStorageUrl(url);
+    if (parsed) {
+      newKeys.add(`${parsed.bucket}/${parsed.path}`);
+    } else {
+      newKeys.add(url.trim());
+    }
+  }
+
+  const urlsToDelete: string[] = [];
+  for (const url of oldUrls) {
+    if (!url || typeof url !== 'string' || !url.trim()) continue;
+    const parsed = parseStorageUrl(url);
+    const key = parsed ? `${parsed.bucket}/${parsed.path}` : url.trim();
+    if (!newKeys.has(key)) {
+      urlsToDelete.push(url);
+    }
+  }
+
+  if (urlsToDelete.length === 0) return;
+  await deleteImageVariants(urlsToDelete);
+}
+
+export type StorageListItem =
+  | { name: string; path: string; type: 'dir'; file_count: number }
+  | { name: string; path: string; type: 'file'; size: number; modified: string };
+
+export interface ListFilesResult {
+  items: StorageListItem[];
+  truncated: boolean;
+}
+
+/**
+ * Lista itens (pastas e arquivos) de um bucket no storage self-hosted.
+ * Normaliza o prefix removendo barras no início e no fim.
+ */
+export async function listFiles(bucket: string, prefix: string): Promise<ListFilesResult> {
+  const token = await getAccessToken();
+  const cleanPrefix = prefix.replace(/^\/+|\/+$/g, '');
+
+  const response = await fetch(`${UPLOAD_API_URL}/list`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bucket, prefix: cleanPrefix }),
+  });
+
+  if (response.status === 401) {
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
+  if (!response.ok) {
+    const errObj = await response.json().catch(() => ({}));
+    throw new Error(errObj.error || `List failed: ${response.status}`);
+  }
+
+  const data = await response.json().catch(() => ({ items: [], truncated: false }));
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    truncated: Boolean(data.truncated),
+  };
+}
+
+

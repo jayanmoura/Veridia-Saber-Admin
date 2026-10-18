@@ -41,6 +41,8 @@ O cliente Supabase é instanciado com `persistSession: false` e `autoRefreshToke
 O Vite está configurado com `vite-plugin-pwa` em modo `autoUpdate`, com service worker habilitado inclusive em desenvolvimento. O cache máximo por arquivo é 5MB.
 
 > **Implicação**: O painel admin é instalável como app nativo em mobile/desktop. O componente `InstallPWA.tsx` detecta suporte e exibe o prompt.
+>
+> ⚠️ O plugin foi removido em 18/10/2026 (sem manifest nem service worker no build).
 
 ---
 

@@ -20,7 +20,8 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import RichTextEditor from '../../components/RichTextEditor';
 import { SuccessModal } from '../../components/Modals/SuccessModal';
-import { deleteFile, getStorageUrl } from '../../utils/storage';
+import { deleteFile, getStorageUrl, listFiles, type StorageListItem } from '../../utils/storage';
+import { useToast } from '../../hooks/useToast';
 
 interface ContentItem {
     id: number;
@@ -33,17 +34,17 @@ interface ContentItem {
 interface StorageFileItem {
     id: string;
     name: string;
+    path: string;
     publicUrl: string;
-    created_at?: string;
-    updated_at?: string;
-    last_accessed_at?: string;
-    metadata?: Record<string, unknown>;
+    size?: number;
+    modified?: string;
 }
 
 const ORGAOS = ['Raiz', 'Caule', 'Folha', 'Flor', 'Fruto', 'Semente'];
 const PASTAS_ARQUIVOS = ['Raiz', 'Caule', 'Folha', 'Flor', 'Fruto', 'Semente', 'Outros'];
 
 export default function EducationalContent() {
+    const { showToast } = useToast();
     const [items, setItems] = useState<ContentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTab, setSelectedTab] = useState('Raiz');
@@ -224,29 +225,57 @@ export default function EducationalContent() {
         setIsFilesModalOpen(true);
         setCurrentFolder(null);
         setFilesLoading(true);
-        const counts: Record<string, number> = {};
-        for (const pasta of PASTAS_ARQUIVOS) {
-            const { data } = await supabase.storage.from('imagens_conteudo').list(pasta);
-            counts[pasta] = data ? data.filter(f => f.name !== '.emptyFolderPlaceholder').length : 0;
+        try {
+            const { items: rootItems } = await listFiles('imagens_conteudo', '');
+            const dirCounts: Record<string, number> = {};
+            for (const item of rootItems) {
+                if (item.type === 'dir') {
+                    dirCounts[item.name] = item.file_count;
+                }
+            }
+            const counts: Record<string, number> = {};
+            for (const pasta of PASTAS_ARQUIVOS) {
+                counts[pasta] = dirCounts[pasta] ?? 0;
+            }
+            setFolderCounts(counts);
+        } catch (err) {
+            console.error('Erro ao listar pastas:', err);
+            const error = err as { message?: string };
+            showToast(error.message || 'Erro ao carregar contagem de arquivos.', 'error');
+            setFolderCounts({});
+        } finally {
+            setFilesLoading(false);
         }
-        setFolderCounts(counts);
-        setFilesLoading(false);
     };
 
     const openFolder = async (pasta: string) => {
         setCurrentFolder(pasta);
         setFilesLoading(true);
         setSelectedFiles(new Set());
-        const { data } = await supabase.storage.from('imagens_conteudo').list(pasta);
-        if (data) {
-            const filesWithUrls = data.filter(f => f.name !== '.emptyFolderPlaceholder').map(f => {
-                return { ...f, publicUrl: getStorageUrl('imagens_conteudo', `${pasta}/${f.name}`) };
-            });
+        try {
+            const result = await listFiles('imagens_conteudo', pasta);
+            if (result.truncated) {
+                showToast('Apenas os primeiros 2000 arquivos foram listados nesta pasta.', 'warning');
+            }
+            const filesWithUrls: StorageFileItem[] = result.items
+                .filter((f): f is Extract<StorageListItem, { type: 'file' }> => f.type === 'file')
+                .map(f => ({
+                    id: f.path,
+                    name: f.name,
+                    path: f.path,
+                    size: f.size,
+                    modified: f.modified,
+                    publicUrl: getStorageUrl('imagens_conteudo', f.path),
+                }));
             setFolderFiles(filesWithUrls);
-        } else {
+        } catch (err) {
+            console.error('Erro ao listar arquivos da pasta:', err);
+            const error = err as { message?: string };
+            showToast(error.message || 'Erro ao listar arquivos da pasta.', 'error');
             setFolderFiles([]);
+        } finally {
+            setFilesLoading(false);
         }
-        setFilesLoading(false);
     };
 
     const toggleFileSelection = (fileName: string) => {
@@ -304,17 +333,34 @@ export default function EducationalContent() {
             setFeedbackModal({ isOpen: true, title: 'Sucesso', message: 'Imagens excluídas com sucesso!', variant: 'success' });
             setSelectedFiles(new Set()); 
             
-            const { data } = await supabase.storage.from('imagens_conteudo').list(currentFolder);
-            if (data) {
-                const filesWithUrls = data.filter(f => f.name !== '.emptyFolderPlaceholder').map(f => {
-                    return { ...f, publicUrl: getStorageUrl('imagens_conteudo', `${currentFolder}/${f.name}`) };
-                });
+            try {
+                const result = await listFiles('imagens_conteudo', currentFolder);
+                if (result.truncated) {
+                    showToast('Apenas os primeiros 2000 arquivos foram listados nesta pasta.', 'warning');
+                }
+                const filesWithUrls: StorageFileItem[] = result.items
+                    .filter((f): f is Extract<StorageListItem, { type: 'file' }> => f.type === 'file')
+                    .map(f => ({
+                        id: f.path,
+                        name: f.name,
+                        path: f.path,
+                        size: f.size,
+                        modified: f.modified,
+                        publicUrl: getStorageUrl('imagens_conteudo', f.path),
+                    }));
                 setFolderFiles(filesWithUrls);
-            } else {
+                setFolderCounts(prev => ({
+                    ...prev,
+                    [currentFolder]: filesWithUrls.length,
+                }));
+            } catch (listErr) {
+                console.error('Erro ao recarregar arquivos após exclusão:', listErr);
+                const error = listErr as { message?: string };
+                showToast(error.message || 'Erro ao recarregar arquivos após exclusão.', 'error');
                 setFolderFiles([]);
             }
         } catch (e) {
-            console.error('Erro ao excluir imagens no Supabase:', e);
+            console.error('Erro ao excluir imagens no storage:', e);
             const error = e as { message?: string };
             setFeedbackModal({ isOpen: true, title: 'Erro de Exclusão', message: 'Falha ao remover imagens: ' + (error.message || 'erro desconhecido'), variant: 'warning' });
         } finally {

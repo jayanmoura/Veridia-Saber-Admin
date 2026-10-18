@@ -25,10 +25,6 @@
   --color-neutral-50:  #fafcfa;  /* branco botânico — fundo base */
 
   /* === SEMÂNTICOS (mapeiam para os acima) === */
-  --color-primary:          var(--color-forest-900);
-  --color-primary-hover:    var(--color-forest-800);
-  --color-primary-subtle:   var(--color-forest-200);
-  --color-primary-bg:       var(--color-forest-50);
   --color-accent:           var(--color-earth-800);
   --color-accent-subtle:    var(--color-earth-200);
   --color-text-base:        var(--color-neutral-950);
@@ -37,14 +33,6 @@
   --color-surface-alt:      var(--color-forest-50);
   --color-border:           var(--color-forest-400);
   --color-border-subtle:    var(--color-forest-200);
-
-  /* === ALIASES DE COMPATIBILIDADE — remover gradualmente === */
-  --color-primary-50:  var(--color-forest-50);
-  --color-primary-100: var(--color-forest-200);
-  --color-primary-500: var(--color-forest-600);
-  --color-primary-600: var(--color-forest-800);
-  --color-primary-700: var(--color-forest-900);
-  --color-primary-900: var(--color-forest-950);
 }
 
 /* Custom Utilities if needed */
@@ -148,7 +136,6 @@ html.contrast .bg-neutral-100 {
     border-color: #000000 !important;
 }
 
-html.contrast .text-primary,
 html.contrast .text-forest-600,
 html.contrast .text-forest-900,
 html.contrast .text-neutral-800,
@@ -158,29 +145,24 @@ html.contrast .text-neutral-600 {
 }
 
 html.contrast .bg-surface-alt,
-html.contrast .bg-primary-subtle,
 html.contrast .bg-forest-50 {
     background-color: #ffffff !important;
 }
 
-html.contrast .border-primary-subtle,
 html.contrast .border-forest-200,
 html.contrast .border-neutral-100 {
     border-color: #000000 !important;
 }
 
-html.contrast .bg-primary,
 html.contrast .bg-forest-900 {
     background-color: #000000 !important;
     color: #ffffff !important;
 }
 
-html.contrast .border-primary,
 html.contrast .border-forest-900 {
     border-color: #000000 !important;
 }
 
-html.contrast .hover\:bg-primary-subtle:hover,
 html.contrast .hover\:bg-forest-50:hover {
     background-color: #000000 !important;
     color: #ffffff !important;

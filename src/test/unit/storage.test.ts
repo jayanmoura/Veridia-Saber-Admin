@@ -6,6 +6,8 @@ import {
   deleteFile,
   deleteFolder,
   deleteImageVariants,
+  replaceImageCleanup,
+  listFiles,
 } from '../../utils/storage';
 
 // Mock do supabase
@@ -290,6 +292,214 @@ describe('storage.ts unit tests', () => {
       ];
 
       await expect(deleteImageVariants(urls)).rejects.toThrow('Internal storage error');
+    });
+  });
+
+  describe('replaceImageCleanup', () => {
+    it('ignora URLs vazias, nulas ou indefinidas', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'cleanup-token',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      await replaceImageCleanup([null, '', undefined, '   '], [null, undefined]);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('não remove URLs antigas cujo caminho coincide com alguma nova URL', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'cleanup-token',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true }),
+      });
+      global.fetch = mockFetch;
+
+      const oldUrls = [
+        'https://storage.veridiasaber.com.br/imagens-plantas/familias/mantida.jpg',
+        'https://storage.veridiasaber.com.br/imagens-plantas/familias/antiga.jpg',
+      ];
+      const newUrls = [
+        'https://storage.veridiasaber.com.br/imagens-plantas/familias/mantida.jpg',
+        'https://storage.veridiasaber.com.br/imagens-plantas/familias/nova.jpg',
+      ];
+
+      await replaceImageCleanup(oldUrls, newUrls);
+
+      // Deve ter apagado apenas 'familias/antiga.jpg'
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body).toEqual({
+        bucket: 'imagens-plantas',
+        path: 'familias/antiga.jpg',
+      });
+    });
+
+    it('não chama delete se todas as antigas forem mantidas', async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const oldUrls = ['https://storage.veridiasaber.com.br/arquivos-gerais/locais/1/capa.jpg'];
+      const newUrls = ['https://storage.veridiasaber.com.br/arquivos-gerais/locais/1/capa.jpg'];
+
+      await replaceImageCleanup(oldUrls, newUrls);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('propaga erro se a exclusão falhar', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'cleanup-token',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Storage delete failed' }),
+      });
+
+      await expect(
+        replaceImageCleanup(
+          ['https://storage.veridiasaber.com.br/imagens-plantas/familias/velha.jpg'],
+          ['https://storage.veridiasaber.com.br/imagens-plantas/familias/nova.jpg']
+        )
+      ).rejects.toThrow('Storage delete failed');
+    });
+  });
+
+  describe('listFiles', () => {
+    it('envia bucket, prefix e header Authorization corretos e retorna items e truncated', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+        data: {
+          session: {
+            access_token: 'list-token-123',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      const mockItems = [
+        { name: 'Raiz', path: 'Raiz', type: 'dir', file_count: 5 },
+        { name: 'foto1.jpg', path: 'Raiz/foto1.jpg', type: 'file', size: 1024, modified: '2026-10-18T10:00:00Z' },
+      ];
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          prefix: 'Raiz',
+          items: mockItems,
+          truncated: true,
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const result = await listFiles('imagens_conteudo', 'Raiz');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/list'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer list-token-123',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({ bucket: 'imagens_conteudo', prefix: 'Raiz' }),
+        })
+      );
+      expect(result.items).toEqual(mockItems);
+      expect(result.truncated).toBe(true);
+    });
+
+    it('normaliza o prefix removendo barras no início e no fim', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'list-token-123',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ prefix: 'Folha', items: [], truncated: false }),
+      });
+      global.fetch = mockFetch;
+
+      await listFiles('imagens_conteudo', '/Folha/');
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+        bucket: 'imagens_conteudo',
+        prefix: 'Folha',
+      });
+
+      await listFiles('imagens_conteudo', '///Folha/subfolder///');
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toEqual({
+        bucket: 'imagens_conteudo',
+        prefix: 'Folha/subfolder',
+      });
+    });
+
+    it('lança erro "Sessão expirada. Faça login novamente." caso receba 401', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+        data: {
+          session: {
+            access_token: 'expired-token',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'Unauthorized' }),
+      });
+
+      await expect(listFiles('imagens_conteudo', 'Raiz')).rejects.toThrow(
+        'Sessão expirada. Faça login novamente.'
+      );
+    });
+
+    it('propaga a mensagem contida no corpo de erro caso a chamada falhe', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+        data: {
+          session: {
+            access_token: 'valid-token',
+          } as unknown as import('@supabase/supabase-js').Session,
+        },
+        error: null,
+      });
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Bucket ou caminho inválido' }),
+      });
+
+      await expect(listFiles('imagens_conteudo', 'invalido')).rejects.toThrow(
+        'Bucket ou caminho inválido'
+      );
     });
   });
 });

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
-import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
+import { uploadFile, replaceImageCleanup } from '../utils/storage';
 import { projectRepo } from '../services/projectRepo';
 
 interface SupabaseErrorLike {
@@ -80,8 +80,8 @@ interface UseProjectActionsOptions {
 
 interface UseProjectActionsReturn {
     // Toast
-    toast: { message: string; type: 'success' | 'error' } | null;
-    showToast: (message: string, type?: 'success' | 'error') => void;
+    toast: { message: string; type: 'success' | 'error' | 'warning' } | null;
+    showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
 
     // New Project Modal
     isNewModalOpen: boolean;
@@ -145,7 +145,7 @@ interface UseProjectActionsReturn {
  */
 export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptions): UseProjectActionsReturn {
     // Toast
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
     // New Project Modal
     const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -204,7 +204,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         fetchUsers();
     }, [isNewModalOpen, isEditModalOpen, selectedProject]);
 
-    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     }, []);
@@ -371,24 +371,13 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
         setEditLoading(true);
         try {
-            let imageUrl = selectedProject.imagem_capa;
+            const oldImageUrl = selectedProject.imagem_capa;
+            let imageUrl = oldImageUrl;
 
             if (editImageFile) {
                 const newUrl = await uploadProjectImage(editImageFile, selectedProject.id);
                 if (!newUrl) {
                     throw new Error('Falha ao fazer upload da nova imagem');
-                }
-
-                // Delete old image if exists
-                if (selectedProject.imagem_capa) {
-                    try {
-                        const storageInfo = parseStorageUrl(selectedProject.imagem_capa);
-                        if (storageInfo) {
-                            await deleteFile(storageInfo.bucket, storageInfo.path);
-                        }
-                    } catch {
-                        // Continue even if delete fails, as we have the new image
-                    }
                 }
 
                 imageUrl = newUrl;
@@ -424,6 +413,16 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 // We log it but maybe we shouldn't crash the UI if it's intermittent?
                 // But for this user, crashing is better than lying.
                 throw new Error('A atualização não foi salva no banco de dados (bloqueio de permissão ou erro interno).');
+            }
+
+            // Cleanup old image only after successful DB update
+            if (editImageFile && oldImageUrl) {
+                try {
+                    await replaceImageCleanup([oldImageUrl], [imageUrl]);
+                } catch (cleanupError) {
+                    console.warn('Erro ao remover imagem antiga do projeto:', cleanupError);
+                    showToast('A imagem foi trocada, mas a anterior não pôde ser removida.', 'warning');
+                }
             }
 
             showToast('Projeto atualizado com sucesso!');

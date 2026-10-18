@@ -2,8 +2,8 @@ import { LayoutDashboard, Users, Leaf, TreeDeciduous, MapPin, LogOut, MapPinned,
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/authContext';
 import { hasMinLevel, ROLES_CONFIG } from '../../types/auth';
+import { FAMILIES_MANAGEMENT_ROLES } from '../../routes/roleConstants';
 import logoIcon from '../../assets/icon.png';
-import { InstallPWA } from '../InstallPWA';
 
 // TAREFA 2: Restrição de Páginas por Nível
 // Níveis: 1=Curador, 2=Coordenador, 3=TaxSênior, 4=Gestor, 5=TaxCampo, 6=Consulente
@@ -15,6 +15,7 @@ interface MenuItem {
     exactLevel?: number;
     requiresLocalId?: boolean;
     excludeRoles?: string[];
+    allowedRoles?: readonly string[];
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -28,7 +29,7 @@ const MENU_ITEMS: MenuItem[] = [
         label: 'Famílias',
         path: '/families',
         icon: TreeDeciduous,
-        minLevel: 3, // Curador(1), Coord(2), TaxSênior(3)
+        allowedRoles: FAMILIES_MANAGEMENT_ROLES,
     },
     {
         label: 'Espécies',
@@ -81,11 +82,17 @@ const MENU_ITEMS: MenuItem[] = [
 export function Sidebar() {
     const { signOut, profile } = useAuth();
 
-    // Filtrar itens por nível mínimo/exato, requisito de local_id e excludeRoles
+    // Filtrar itens por nível mínimo/exato, requisito de local_id, excludeRoles e allowedRoles
     const filteredItems = MENU_ITEMS.filter(item => {
         // Verificar excludeRoles primeiro
         if (item.excludeRoles && profile?.role && item.excludeRoles.includes(profile.role)) {
             return false;
+        }
+        // Verificar allowedRoles específicas quando definidas
+        if (item.allowedRoles) {
+            if (!profile?.role || !item.allowedRoles.includes(profile.role)) {
+                return false;
+            }
         }
         // Se tem exactLevel, verifica se é exatamente esse nível
         if (item.exactLevel) {
@@ -131,12 +138,8 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Footer - PWA Install & Sign Out */}
+            {/* Footer - Sign Out */}
             <div className="p-4 border-t border-teal-800/50 bg-teal-950 space-y-2">
-                {/* PWA Install Button */}
-                <div className="flex justify-center">
-                    <InstallPWA />
-                </div>
                 <button
                     onClick={signOut}
                     className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-teal-900/50 rounded-lg transition-colors"
