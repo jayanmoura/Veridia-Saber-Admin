@@ -1,8 +1,8 @@
-import { useState, type ComponentProps } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
-import { PendingCuratorshipModal } from '../../components/Modals/PendingCuratorshipModal';
+import { PendingCuratorshipModal, type PendingItem } from '../../components/Modals/PendingCuratorshipModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -14,15 +14,28 @@ import {
     CheckCircle,
     AlertTriangle
 } from 'lucide-react';
-import type { GlobalStats, RecentWorkItem } from '../../hooks';
+import type { GlobalStats, RecentSpecies, RecentWorkItem } from '../../hooks';
 import type { Species } from '../../types/domain';
 
 interface FieldTaxonomistViewProps {
     stats: GlobalStats;
     recentWork: RecentWorkItem[];
-    pendingSpecies: Record<string, unknown>[];
+    pendingSpecies: PendingItem[];
     loading: boolean;
     refetch: () => Promise<void>;
+}
+
+function toSpeciesFromRecent(work: RecentSpecies): Species {
+    return {
+        id: work.id,
+        nome_cientifico: work.nome_cientifico,
+        created_at: work.created_at,
+        created_by: work.created_by,
+        familia_id: work.familia_id ?? undefined,
+        local_id: work.local_id != null ? String(work.local_id) : null,
+        familia: Array.isArray(work.familia) ? work.familia[0] : work.familia,
+        creator: work.creator,
+    };
 }
 
 /**
@@ -41,7 +54,7 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
 
     const handleEditWork = (work: RecentWorkItem) => {
         if (work.type === 'especie') {
-            setEditingWork(work as unknown as Species);
+            setEditingWork(toSpeciesFromRecent(work));
             setIsSpeciesModalOpen(true);
         }
     };
@@ -150,11 +163,11 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
             <PendingCuratorshipModal
                 isOpen={isPendingModalOpen}
                 onClose={() => setIsPendingModalOpen(false)}
-                items={pendingSpecies as unknown as ComponentProps<typeof PendingCuratorshipModal>['items']}
+                items={pendingSpecies}
                 onFix={async (item) => {
                     const { data } = await supabase.from('especie').select('*, familia(familia_nome), imagens(url_imagem, local_id)').eq('id', item.id).single();
                     if (data) {
-                        setEditingWork(data as unknown as Species);
+                        setEditingWork(data as Species);
                         setIsPendingModalOpen(false);
                         setIsSpeciesModalOpen(true);
                     }

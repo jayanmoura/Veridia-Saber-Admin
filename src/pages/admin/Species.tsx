@@ -19,7 +19,6 @@ import { deleteFolder, deleteImageVariants } from '../../utils/storage';
 import { specimenRepo } from '../../services/specimenRepo';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { hasMinLevel } from '../../types/auth';
-import type { SpeciesItem } from '../../components/Tables/SpeciesTable';
 import {
     Leaf,
     ImageOff,
@@ -414,7 +413,7 @@ export default function SpeciesPage() {
 
             {/* Table Component */}
             <SpeciesTable
-                species={species as SpeciesItem[]}
+                species={species}
                 loading={loading}
                 totalCount={totalCount}
                 page={page}

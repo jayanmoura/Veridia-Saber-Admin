@@ -53,7 +53,7 @@ interface TaxonomistData {
 }
 
 interface SpeciesLocation {
-    id: string;
+    id: number;
     tombo_codigo?: string | null;
     latitude: number | null;
     longitude: number | null;
@@ -71,7 +71,7 @@ interface SpeciesLocation {
 }
 
 interface RawMapSpecimenRow {
-    id: string;
+    id: number;
     tombo_codigo?: string | null;
     latitude: number | null;
     longitude: number | null;

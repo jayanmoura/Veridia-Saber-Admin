@@ -33,8 +33,7 @@ export type Species = {
   nome_cientifico: EspecieRow['nome_cientifico'];
   autor?: EspecieRow['autor'];
   nome_popular?: EspecieRow['nome_popular'];
-  // TODO F4: alinhar ao banco (string | null)
-  familia_id?: string;
+  familia_id?: EspecieRow['familia_id'];
   familia_custom?: EspecieRow['familia_custom'];
   descricao_especie?: EspecieRow['descricao_especie'];
   cuidados_agua?: EspecieRow['cuidados_agua'];
@@ -82,8 +81,7 @@ export interface SpeciesAutocompleteItem {
  * Origens: useSpecimens, SpecimensInspection, types.ts
  */
 export type Specimen = {
-  // TODO F4: alinhar ao banco (number)
-  id: string | number;
+  id: EspecieLocalRow['id'];
   local_id: EspecieLocalRow['local_id'];
   especie_id: EspecieLocalRow['especie_id'];
   institution_id?: EspecieLocalRow['institution_id'] | null;

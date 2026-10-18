@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/authContext';
 
 // ============ TYPES ============
 import type { Species } from '../types/domain';
+import type { SpeciesItem } from '../components/Tables/SpeciesTable';
 
 interface RawSpeciesName {
     nome_cientifico?: string | null;
@@ -46,7 +47,7 @@ export interface UseSpeciesOptions {
 }
 
 export interface UseSpeciesReturn {
-    species: Species[];
+    species: SpeciesItem[];
     families: FamilyOption[];
     loading: boolean;
     totalCount: number;
@@ -82,7 +83,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
         enabled = true
     } = options;
 
-    const [species, setSpecies] = useState<Species[]>([]);
+    const [species, setSpecies] = useState<SpeciesItem[]>([]);
     const [families, setFamilies] = useState<FamilyOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalCount, setTotalCount] = useState(0);
@@ -265,7 +266,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             }
 
             // Filter images by local_id for non-global admins (View logic) and apply overrides
-            const formattedData: Species[] = ((data || []) as RawSpeciesRow[]).map((item) => {
+            const formattedData: SpeciesItem[] = ((data || []) as RawSpeciesRow[]).map((item) => {
                 let filteredImages = item.imagens || [];
 
                 if (!isGlobalAdmin && userLocalId && filteredImages.length > 0) {
@@ -283,6 +284,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
                 return {
                     ...item,
+                    id: String(item.id),
                     descricao_especie: effectiveDescricao,
                     imagens: filteredImages,
                     especie_local: filteredEspecieLocal,

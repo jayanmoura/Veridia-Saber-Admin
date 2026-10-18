@@ -33,7 +33,7 @@ const createProjectIcon = (name: string, count: number) => {
 };
 
 interface PlantLocation {
-    id: string;
+    id: number;
     latitude: number;
     longitude: number;
     species_name: string;
@@ -61,7 +61,7 @@ interface ProjectRow {
 }
 
 interface RawPlantRow {
-    id: string;
+    id: number;
     latitude: number;
     longitude: number;
     local_id: number;

@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, ImageIcon, FileText, Pencil, CheckCircle } from 'lucide-react';
 
-interface PendingItem {
+export interface PendingItem {
     id: string;
     nome_cientifico: string;
     descricao_especie?: string | null;

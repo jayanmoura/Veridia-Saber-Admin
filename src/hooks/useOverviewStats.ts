@@ -2,6 +2,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/authContext';
 import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
+import type {
+    CreatorRef,
+    EspecieLocalRow,
+    EspecieRow,
+    FamiliaRow,
+    FamilyRef
+} from '../types/db';
+import type { PendingItem } from '../components/Modals/PendingCuratorshipModal';
 
 // ============ TYPES ============
 export interface AuditLog {
@@ -15,39 +23,39 @@ export interface AuditLog {
 
 export interface RecentSpecies {
     type: 'especie';
-    id: string;
-    nome_cientifico: string;
-    created_at: string;
-    local_id: string | null;
-    familia_id: string | null;
-    familia?: { familia_nome: string }[] | { familia_nome: string } | null;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
+    id: EspecieRow['id'];
+    nome_cientifico: EspecieRow['nome_cientifico'];
+    created_at: EspecieRow['created_at'];
+    local_id: EspecieRow['local_id'] | string | null;
+    familia_id: EspecieRow['familia_id'];
+    familia?: FamilyRef | FamilyRef[] | null;
+    created_by?: EspecieRow['created_by'];
+    creator?: CreatorRef;
 }
 
 export interface RecentFamily {
     type: 'familia';
-    id: string;
-    familia_nome: string;
-    created_at: string;
-    created_by?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
+    id: FamiliaRow['id'];
+    familia_nome: FamiliaRow['familia_nome'];
+    created_at: FamiliaRow['created_at'];
+    created_by?: FamiliaRow['created_by'];
+    creator?: CreatorRef;
 }
 
 export type RecentWorkItem = RecentSpecies | RecentFamily;
 
 export interface RecentLocalSpecies {
     id: string;
-    nome_cientifico: string;
-    nome_popular: string | null;
-    created_at: string;
+    nome_cientifico: EspecieRow['nome_cientifico'];
+    nome_popular: EspecieRow['nome_popular'];
+    created_at: EspecieLocalRow['created_at'];
     imagem_url: string | null;       // url_micro (preferencial)
     imagem_thumbnail: string | null; // url_thumbnail (fallback)
     imagem_original: string | null;  // url_imagem (fallback final)
 }
 
 export interface LocalFamily {
-    familia_nome: string;
+    familia_nome: FamiliaRow['familia_nome'];
     count: number;
 }
 
@@ -87,7 +95,7 @@ export interface UseOverviewStatsReturn {
 
     // Senior stats
     recentWork: RecentWorkItem[];
-    pendingSpecies: Record<string, unknown>[];
+    pendingSpecies: PendingItem[];
 
     // Local stats
     projectData: ProjectData | null;
@@ -142,7 +150,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
 
     // Senior stats
     const [recentWork, setRecentWork] = useState<RecentWorkItem[]>([]);
-    const [pendingSpecies, setPendingSpecies] = useState<Record<string, unknown>[]>([]);
+    const [pendingSpecies, setPendingSpecies] = useState<PendingItem[]>([]);
 
     // Local stats
     const [projectData, setProjectData] = useState<ProjectData | null>(null);
@@ -207,13 +215,20 @@ export function useOverviewStats(): UseOverviewStatsReturn {
 
         let pendingCount = 0;
         if (globalSpecies) {
-            const pending = globalSpecies.filter(sp => {
+            const rawPending = globalSpecies.filter(sp => {
                 const hasNoDesc = !sp.descricao_especie || sp.descricao_especie.trim() === '';
                 const hasNoImg = !sp.imagens || sp.imagens.length === 0;
                 return hasNoDesc || hasNoImg;
             });
-            pendingCount = pending.length;
-            setPendingSpecies(pending);
+            pendingCount = rawPending.length;
+            const mappedPending: PendingItem[] = rawPending.map(sp => ({
+                id: String(sp.id),
+                nome_cientifico: String(sp.nome_cientifico),
+                descricao_especie: sp.descricao_especie,
+                imagens: sp.imagens,
+                familia: Array.isArray(sp.familia) ? sp.familia[0] : sp.familia,
+            }));
+            setPendingSpecies(mappedPending);
         }
 
         setStats(prev => ({

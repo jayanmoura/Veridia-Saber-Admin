@@ -104,7 +104,7 @@ export function SpeciesDataTab({
               )}
             </label>
             <select
-              value={formData.familia_id}
+              value={formData.familia_id ?? ''}
               onChange={(e) => !isFamiliaReadOnly && onFormDataChange('familia_id', e.target.value)}
               className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors ${isFamiliaReadOnly ? 'bg-gray-100 cursor-not-allowed text-gray-600' : 'bg-white'}`}
               required
