@@ -319,9 +319,12 @@ export default function Specimens() {
             await specimenRepo.deleteSpecimen(deleteId);
             setDeleteId(null);
             setIsDeleteOpen(false); // Using confirm modal boolean if separate, or passing to component
+            showToast('Espécime excluído com sucesso!', 'success');
             loadSpecimens();
         } catch (error) {
-            console.error(error);
+            console.error('Erro ao excluir espécime:', error);
+            const err = error as { message?: string };
+            showToast(err.message || 'Erro ao excluir espécime.', 'error');
         } finally {
             setActionLoading(false);
         }

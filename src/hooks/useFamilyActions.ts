@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateFamiliesReportWithChart, generateFamilyReportWithCharts } from '../utils/pdf';
-import { deleteFile, parseStorageUrl } from '../utils/storage';
+import { deleteImageVariants } from '../utils/storage';
 import { useToast } from './useToast';
 
 interface Profile {
@@ -194,13 +194,26 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
         closeDeleteModal();
 
         try {
-            // Delete image from storage if exists
-            if (familyToDelete.imagem_referencia) {
-                const storageInfo = parseStorageUrl(familyToDelete.imagem_referencia);
-                if (storageInfo) {
-                    await deleteFile(storageInfo.bucket, storageInfo.path);
-                }
+            // Verifica antecipadamente se há espécies vinculadas para não apagar imagens à toa
+            const { count: speciesCount, error: countError } = await supabase
+                .from('especie')
+                .select('*', { count: 'exact', head: true })
+                .eq('familia_id', familyToDelete.id);
+
+            if (countError) throw countError;
+
+            if (speciesCount && speciesCount > 0) {
+                setBlockedFamilyName(familyName);
+                setShowBlockModal(true);
+                return;
             }
+
+            // Storage SEMPRE antes do banco: apagar imagem_referencia, imagem_thumbnail e imagem_micro
+            await deleteImageVariants([
+                familyToDelete.imagem_referencia,
+                familyToDelete.imagem_thumbnail,
+                familyToDelete.imagem_micro,
+            ]);
 
             // Delete family
             const { error } = await supabase

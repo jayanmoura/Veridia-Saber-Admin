@@ -15,3 +15,8 @@ export const USER_MANAGEMENT_ROLES = [
 ] as const;
 
 export const GLOBAL_MAP_ROLES = ['Curador Mestre', 'Coordenador Científico', 'Taxonomista Sênior', 'Gestor de Acervo', 'Taxonomista de Campo'] as const;
+
+export const LOCAL_PROJECT_ROLES = [
+  'Gestor de Acervo',
+  'Taxonomista de Campo'
+] as const;

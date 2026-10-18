@@ -15,7 +15,7 @@ import { SuccessModal } from '../../components/Modals/SuccessModal';
 import { SpeciesTable } from '../../components/Tables';
 import { useSpecies, useSpeciesActions } from '../../hooks';
 import { useToast } from '../../hooks/useToast';
-import { deleteFile, parseStorageUrl } from '../../utils/storage';
+import { deleteFolder, deleteImageVariants } from '../../utils/storage';
 import { specimenRepo } from '../../services/specimenRepo';
 import type { SpecimenFormData } from '../../hooks/useSpecimens';
 import { hasMinLevel } from '../../types/auth';
@@ -220,30 +220,40 @@ export default function SpeciesPage() {
         try {
             if (!actions.isGlobalAdmin && userLocalId) {
                 // Local user: unlink from project
-                const { data: imagesToDelete } = await supabase
+                const { data: imagesToDelete, error: imgError } = await supabase
                     .from('imagens')
-                    .select('url_imagem')
+                    .select('url_imagem, url_thumbnail, url_micro')
                     .eq('especie_id', speciesToDelete.id)
                     .eq('local_id', userLocalId);
 
+                if (imgError) throw imgError;
+
                 if (imagesToDelete && imagesToDelete.length > 0) {
-                    const deletePromises = imagesToDelete.map(async (img) => {
-                        const storageInfo = parseStorageUrl(img.url_imagem);
-                        if (storageInfo) {
-                            await deleteFile(storageInfo.bucket, storageInfo.path);
-                        }
-                    });
-                    await Promise.allSettled(deletePromises);
+                    const urls = imagesToDelete.flatMap((img) => [img.url_imagem, img.url_thumbnail, img.url_micro]);
+                    await deleteImageVariants(urls);
                 }
 
-                await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id).eq('local_id', userLocalId);
-                await supabase.from('especie_local').delete().eq('especie_id', speciesToDelete.id).eq('local_id', userLocalId);
+                const { error: delImgErr } = await supabase
+                    .from('imagens')
+                    .delete()
+                    .eq('especie_id', speciesToDelete.id)
+                    .eq('local_id', userLocalId);
+                if (delImgErr) throw delImgErr;
 
-                const { data: remaining } = await supabase
+                const { error: delElErr } = await supabase
+                    .from('especie_local')
+                    .delete()
+                    .eq('especie_id', speciesToDelete.id)
+                    .eq('local_id', userLocalId);
+                if (delElErr) throw delElErr;
+
+                const { data: remaining, error: remError } = await supabase
                     .from('especie_local')
                     .select('id')
                     .eq('especie_id', speciesToDelete.id)
                     .limit(1);
+
+                if (remError) throw remError;
 
                 if (!remaining || remaining.length === 0) {
                     const { error } = await supabase.from('especie').update({ local_id: null }).eq('id', speciesToDelete.id);
@@ -251,11 +261,13 @@ export default function SpeciesPage() {
                 }
             } else {
                 // Global admin: try full delete
-                const { data: localLinks } = await supabase
+                const { data: localLinks, error: linksError } = await supabase
                     .from('especie_local')
                     .select('id')
                     .eq('especie_id', speciesToDelete.id)
                     .limit(1);
+
+                if (linksError) throw linksError;
 
                 if (localLinks && localLinks.length > 0) {
                     setBlockedSpeciesName(speciesName);
@@ -263,22 +275,22 @@ export default function SpeciesPage() {
                     return;
                 }
 
-                const { data: globalImages } = await supabase
+                const { data: globalImages, error: gImgError } = await supabase
                     .from('imagens')
-                    .select('url_imagem')
+                    .select('url_imagem, url_thumbnail, url_micro')
                     .eq('especie_id', speciesToDelete.id);
 
+                if (gImgError) throw gImgError;
+
                 if (globalImages && globalImages.length > 0) {
-                    const deletePromises = globalImages.map(async (img) => {
-                        const storageInfo = parseStorageUrl(img.url_imagem);
-                        if (storageInfo) {
-                            await deleteFile(storageInfo.bucket, storageInfo.path);
-                        }
-                    });
-                    await Promise.allSettled(deletePromises);
+                    const urls = globalImages.flatMap((img) => [img.url_imagem, img.url_thumbnail, img.url_micro]);
+                    await deleteImageVariants(urls);
                 }
 
-                await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id);
+                await deleteFolder('imagens-plantas', `especies/${speciesToDelete.id}`);
+
+                const { error: delImgErr } = await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id);
+                if (delImgErr) throw delImgErr;
 
                 const { error } = await supabase.from('especie').delete().eq('id', speciesToDelete.id);
                 if (error) throw error;

@@ -19,7 +19,7 @@ interface ImageUploadZoneProps {
     existingImages: ExistingImage[];
     editedCredits: Record<string, string>;
     onCreditsChange: (imageId: string, credits: string) => void;
-    onDeleteExisting: (imageId: string, imageUrl: string) => void;
+    onDeleteExisting: (imageId: string, urls: Array<string | null | undefined> | string) => void;
 
     // Drag & drop
     dragActive: boolean;
@@ -122,7 +122,7 @@ export function ImageUploadZone({
                             {!disabled && (
                                 <button
                                     type="button"
-                                    onClick={() => onDeleteExisting(img.id, img.url_imagem)}
+                                    onClick={() => onDeleteExisting(img.id, [img.url_imagem, img.url_thumbnail, img.url_micro])}
                                     className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
                                     title="Excluir imagem"
                                 >

@@ -4,6 +4,7 @@
  * Estilo consistente com os outros mapas do sistema (Marker com cluster + BaseTileLayer)
  */
 import { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/authContext';
 import { supabase } from '../../lib/supabase';
 import { MapContainer, Popup, useMap, Marker } from 'react-leaflet';
@@ -256,19 +257,9 @@ export default function ProjectMap() {
         doc.save(`relatorio_${taxonomist?.full_name?.replace(/\s+/g, '_') || 'taxonomista'}.pdf`);
     };
 
-    // Access denied
+    // Access check: sem local_id, redireciona para /
     if (!hasAccess) {
-        return (
-            <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8">
-                <div className="bg-red-50 p-4 rounded-full mb-4">
-                    <AlertTriangle className="text-red-500" size={48} />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h1>
-                <p className="text-gray-500 max-w-md">
-                    Esta página é exclusiva para usuários vinculados a um projeto local.
-                </p>
-            </div>
-        );
+        return <Navigate to="/" replace />;
     }
 
     // Error

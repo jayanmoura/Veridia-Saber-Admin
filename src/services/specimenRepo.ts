@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { SpecimenFilters } from './types';
 import type { Specimen } from '../types/domain';
-import { deleteFile } from '../utils/storage';
+import { deleteFolder, deleteImageVariants } from '../utils/storage';
 
 export function unwrapJoin<T>(value: T | T[] | null): T | null {
     if (Array.isArray(value)) return value[0] || null;
@@ -90,53 +90,47 @@ export const specimenRepo = {
      * Delete a specimen
      */
     async deleteSpecimen(id: number) {
-        // 1. Get all images associated with this specimen from the database
-        const { data: images } = await supabase
+        // 1. Obter o local_id do espécime
+        const { data: specimen, error: specimenError } = await supabase
+            .from('especie_local')
+            .select('id, local_id')
+            .eq('id', id)
+            .single();
+
+        if (specimenError) throw specimenError;
+
+        // 2. Buscar as 3 colunas de imagens do espécime
+        const { data: images, error: imagesError } = await supabase
             .from('imagens')
-            .select('url_imagem')
+            .select('url_imagem, url_thumbnail, url_micro')
             .eq('especime_id', id);
 
+        if (imagesError) throw imagesError;
+
+        // 3. Storage SEMPRE antes do banco; erro no storage interrompe a exclusão
         if (images && images.length > 0) {
-            try {
-                // 2. Extract paths from URLs
-                // URL format example: .../arquivos-gerais/locais/123/especimes/456/image.jpg
-                const pathsToDelete = images
-                    .map(img => {
-                        try {
-                            const url = new URL(img.url_imagem);
-                            const match = url.pathname.match(/\/arquivos-gerais\/(.+)$/);
-                            return match ? match[1] : null;
-                        } catch {
-                            // fallback para URL relativa ou malformada
-                            const match = img.url_imagem.match(/\/arquivos-gerais\/(.+?)(?:\?.*)?$/);
-                            return match ? match[1] : null;
-                        }
-                    })
-                    .filter((path): path is string => path !== null);
-
-                if (pathsToDelete.length > 0) {
-                    // 3. Delete files from storage
-                    const deletePromises = pathsToDelete.map(path => deleteFile('arquivos-gerais', path));
-                    await Promise.allSettled(deletePromises);
-                }
-            } catch {
-                // Continue to delete record even if storage cleanup fails
-            }
-
-            // 4. Delete image records from database (if not identifying as cascade)
-            // It's good practice to ensure they are gone.
-            await supabase
-                .from('imagens')
-                .delete()
-                .eq('especime_id', id);
+            const urls = images.flatMap((img) => [img.url_imagem, img.url_thumbnail, img.url_micro]);
+            await deleteImageVariants(urls);
         }
 
-        // 5. Delete the specimen record
-        const { error } = await supabase
+        if (specimen?.local_id) {
+            await deleteFolder('arquivos-gerais', `locais/${specimen.local_id}/especimes/${id}`);
+        }
+
+        // 4. Deletar registros no banco
+        const { error: imgDelError } = await supabase
+            .from('imagens')
+            .delete()
+            .eq('especime_id', id);
+
+        if (imgDelError) throw imgDelError;
+
+        const { error: elDelError } = await supabase
             .from('especie_local')
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
+        if (elDelError) throw elDelError;
     }
 };
+

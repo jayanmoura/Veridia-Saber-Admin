@@ -2,12 +2,21 @@ import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vite
 import { render, screen, waitFor, renderHook, act } from '@testing-library/react';
 import * as storageUtils from '../../utils/storage';
 
-vi.mock('../../utils/storage', () => ({
-  uploadFile: vi.fn(),
-  deleteFile: vi.fn(),
-  getStorageUrl: vi.fn((bucket, path) => `https://storage.veridiasaber.com.br/${bucket}/${path}`),
-  parseStorageUrl: vi.fn(),
-}));
+vi.mock('../../utils/storage', () => {
+  const deleteFile = vi.fn();
+  return {
+    uploadFile: vi.fn(),
+    deleteFile,
+    getStorageUrl: vi.fn((bucket: string, path: string) => `https://storage.veridiasaber.com.br/${bucket}/${path}`),
+    parseStorageUrl: vi.fn(),
+    deleteFolder: vi.fn(),
+    deleteImageVariants: vi.fn(async (urls: Array<string | null | undefined>) => {
+      for (const url of urls) {
+        if (url) await deleteFile('mock-bucket', 'mock-path');
+      }
+    }),
+  };
+});
 
 // 1. Mock global do URL.createObjectURL e revokeObjectURL (não existem no JSDOM)
 vi.stubGlobal('URL', {

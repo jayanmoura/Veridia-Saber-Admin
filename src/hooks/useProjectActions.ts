@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
 import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
+import { projectRepo } from '../services/projectRepo';
 
 interface SupabaseErrorLike {
     message?: string;
@@ -463,60 +464,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
         setDeleteLoading(true);
         try {
-            // Delete all files in project folder
-            const nukeFolder = async (path: string): Promise<void> => {
-                const { data: items } = await supabase.storage.from('arquivos-gerais').list(path);
-                if (!items) return;
-
-                for (const item of items) {
-                    const fullPath = `${path}/${item.name}`;
-                    if (item.metadata) {
-                        await deleteFile('arquivos-gerais', fullPath);
-                    } else {
-                        await nukeFolder(fullPath);
-                    }
-                }
-            };
-
-            await nukeFolder(`locais/${projectToDelete.id}`);
-
-            // Delete database records
-            await supabase.from('imagens').delete().eq('local_id', projectToDelete.id);
-
-            // Delete especimes (especie_local)
-            const { error: elError } = await supabase.from('especie_local').delete().eq('local_id', projectToDelete.id);
-            if (elError) throw new Error(`Não foi possível excluir espécimes: ${elError.message}`);
-
-            // Desvincular espécies do projeto
-            await supabase.from('especie').update({ local_id: null }).eq('local_id', projectToDelete.id);
-
-            // Desvincular usuários do projeto e rebaixar para Consulente
-            await supabase
-                .from('profiles')
-                .update({
-                    local_id: null,
-                    role: 'Consulente'
-                })
-                .eq('local_id', projectToDelete.id);
-
-            // Deletar o projeto
-            const { error } = await supabase
-                .from('locais')
-                .delete()
-                .eq('id', projectToDelete.id);
-
-            if (error) throw new Error(`Não foi possível excluir o projeto: ${error.message}`);
-
-            // Verificar se foi realmente deletado
-            const { data: stillExists } = await supabase
-                .from('locais')
-                .select('id')
-                .eq('id', projectToDelete.id)
-                .maybeSingle();
-
-            if (stillExists) {
-                throw new Error('Não foi possível excluir o projeto. Verifique suas permissões.');
-            }
+            await projectRepo.deleteProject(projectToDelete.id);
 
             showToast('Projeto excluído com sucesso!');
             closeDeleteModal();

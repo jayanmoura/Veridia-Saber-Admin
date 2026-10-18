@@ -21,7 +21,7 @@ const GlobalMap = lazy(() => import('../pages/admin/GlobalMap'));
 const ProjectMapViz = lazy(() => import('../components/Maps/ProjectMapViz').then(m => ({ default: m.ProjectMapViz })));
 const Unauthorized = lazy(() => import('../pages/Unauthorized'));
 
-import { GLOBAL_MANAGEMENT_ROLES, SCIENTIFIC_CATALOG_ROLES, GLOBAL_MAP_ROLES, USER_MANAGEMENT_ROLES } from './roleConstants';
+import { GLOBAL_MANAGEMENT_ROLES, SCIENTIFIC_CATALOG_ROLES, GLOBAL_MAP_ROLES, USER_MANAGEMENT_ROLES, LOCAL_PROJECT_ROLES } from './roleConstants';
 import { PrivateRoute } from './guards';
 
 export const adminRouter = createBrowserRouter([
@@ -68,12 +68,13 @@ export const adminRouter = createBrowserRouter([
                 element: <Unauthorized />,
             },
             {
-                path: 'projects/:id',
-                element: <ProjectDetails />,
-            },
-            {
-                path: 'project-map',
-                element: <ProjectMap />,
+                element: <RequireRole allowedRoles={LOCAL_PROJECT_ROLES} requireLocalId redirectTo="/unauthorized" />,
+                children: [
+                    {
+                        path: 'project-map',
+                        element: <ProjectMap />,
+                    },
+                ],
             },
             {
                 element: <RequireRole allowedRoles={USER_MANAGEMENT_ROLES} redirectTo="/unauthorized" />,
@@ -90,6 +91,10 @@ export const adminRouter = createBrowserRouter([
                     {
                         path: 'projects',
                         element: <Projects />,
+                    },
+                    {
+                        path: 'projects/:id',
+                        element: <ProjectDetails />,
                     },
                     {
                         path: 'conteudo-didatico',

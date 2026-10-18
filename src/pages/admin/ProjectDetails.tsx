@@ -26,6 +26,7 @@ import { downloadCSV } from '../../utils/csvGenerator';
 // Extracted components
 import { useProjectDetails } from '../../hooks';
 import { useToast } from '../../hooks/useToast';
+import { projectRepo } from '../../services/projectRepo';
 import { SpeciesByFamilyModal } from '../../components/Modals/SpeciesByFamilyModal';
 import {
     ProjectHeader,
@@ -130,15 +131,12 @@ export default function ProjectDetailsPage() {
         if (!id || !project) return;
         setDeleteLoading(true);
         try {
-            const { error } = await supabase.from('locais').delete().eq('id', id);
-            if (error) {
-                showToast('Erro ao excluir projeto: ' + error.message, 'error');
-            } else {
-                setShowDeleteModal(false);
-                setShowSuccessModal(true);
-            }
-        } catch {
-            showToast('Erro inesperado ao excluir projeto.', 'error');
+            await projectRepo.deleteProject(id);
+            setShowDeleteModal(false);
+            setShowSuccessModal(true);
+        } catch (error) {
+            const err = error as { message?: string };
+            showToast(err.message || 'Erro inesperado ao excluir projeto.', 'error');
         } finally {
             setDeleteLoading(false);
         }

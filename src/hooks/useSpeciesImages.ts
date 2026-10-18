@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage, compressForListing } from '../utils/imageCompressor';
-import { uploadFile, deleteFile, parseStorageUrl } from '../utils/storage';
+import { uploadFile, deleteImageVariants } from '../utils/storage';
 import { useToast } from './useToast';
 
 // ============ TYPES ============
@@ -34,7 +34,7 @@ export interface UseSpeciesImagesReturn {
     handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleFiles: (files: File[]) => void;
     removeNewImage: (index: number) => void;
-    handleDeleteExistingImage: (imageId: string, imageUrl: string) => Promise<void>;
+    handleDeleteExistingImage: (imageId: string, urls: Array<string | null | undefined> | string) => Promise<void>;
     uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
     loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
     setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -87,7 +87,7 @@ export interface UseSpeciesImagesReturn {
     handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleFiles: (files: File[]) => void;
     removeNewImage: (index: number) => void;
-    handleDeleteExistingImage: (imageId: string, imageUrl: string) => Promise<void>;
+    handleDeleteExistingImage: (imageId: string, urls: Array<string | null | undefined> | string) => Promise<void>;
     uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
     loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
     setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -182,12 +182,13 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         setNewImageCredits(prev => prev.filter((_, i) => i !== index));
     }, []);
 
-    const handleDeleteExistingImage = useCallback(async (imageId: string, imageUrl: string) => {
+    const handleDeleteExistingImage = useCallback(async (
+        imageId: string,
+        urls: Array<string | null | undefined> | string
+    ) => {
         try {
-            const storageInfo = parseStorageUrl(imageUrl);
-            if (storageInfo) {
-                await deleteFile(storageInfo.bucket, storageInfo.path);
-            }
+            const urlsToDelete = Array.isArray(urls) ? urls : [urls];
+            await deleteImageVariants(urlsToDelete);
 
             const { error: dbError } = await supabase
                 .from('imagens')
@@ -205,6 +206,7 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         } catch (error: unknown) {
             console.error('Erro ao excluir imagem:', error);
             showToast('Erro ao excluir imagem: ' + (error instanceof Error ? error.message : 'Erro desconhecido'), 'error');
+            throw error;
         }
     }, [showToast]);
 
