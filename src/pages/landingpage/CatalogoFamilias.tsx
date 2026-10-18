@@ -19,6 +19,7 @@ type RawFamiliaCatalogoRow = Pick<
   | 'imagem_referencia'
 > & {
   especie?: { count: number }[] | null; // derivado no front via join agregado
+  filtro_especie?: { id: string }[] | null;
 };
 
 export default function CatalogoFamilias() {
@@ -51,7 +52,8 @@ export default function CatalogoFamilias() {
 
       let query = supabase
         .from('familia')
-        .select('id, familia_nome, descricao_familia, imagem_micro, imagem_thumbnail, imagem_referencia, especie(count)', { count: 'exact' })
+        .select('id, familia_nome, descricao_familia, imagem_micro, imagem_thumbnail, imagem_referencia, especie(count), filtro_especie:especie!inner(id)', { count: 'exact' })
+        .limit(1, { foreignTable: 'filtro_especie' })
         .or('imagem_referencia.not.is.null,descricao_familia.not.is.null');
 
       if (search.trim()) {
