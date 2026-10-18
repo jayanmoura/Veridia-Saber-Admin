@@ -1,8 +1,6 @@
-export interface ImageCandidate {
-  url_imagem?: string | null;
-  url_thumbnail?: string | null;
-  url_micro?: string | null;
-}
+import type { ImageUrls } from '../types/db';
+
+export type ImageCandidate = ImageUrls;
 
 export interface PickSpeciesThumbnailParams {
   specimenImages?: ImageCandidate[] | null;

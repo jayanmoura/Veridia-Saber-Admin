@@ -414,7 +414,7 @@ export default function SpeciesPage() {
 
             {/* Table Component */}
             <SpeciesTable
-                species={species as unknown as SpeciesItem[]}
+                species={species as SpeciesItem[]}
                 loading={loading}
                 totalCount={totalCount}
                 page={page}

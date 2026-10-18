@@ -3,21 +3,9 @@ import { useState, useMemo } from 'react';
 import { SortableColumnHeader } from './SortableColumnHeader';
 import { extractCodeNumber } from '../../utils/sorting';
 import { pickSpeciesThumbnail } from '../../utils/speciesThumbnail';
+import type { Species } from '../../types/domain';
 
-export interface SpeciesItem {
-    id: string;
-    codigo_vs?: string | null;
-    nome_cientifico: string;
-    nome_popular: string | null;
-    familia?: { familia_nome: string };
-    imagens?: { id?: string; url_imagem: string; url_thumbnail?: string | null; url_micro?: string | null; local_id?: string | number | null }[] | null;
-    especie_local?: {
-        local_id?: string | number | null;
-        imagens?: { url_micro?: string | null; url_thumbnail?: string | null; url_imagem?: string | null }[] | null;
-    }[] | null;
-    created_by_name?: string | null;
-    creator?: { full_name: string; email?: string } | { full_name: string; email?: string }[] | null;
-}
+export type SpeciesItem = Species & { id: string };
 
 interface SpeciesTableProps {
     species: SpeciesItem[];

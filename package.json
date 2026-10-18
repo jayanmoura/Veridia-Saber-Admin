@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "gen:types": "npx supabase gen types typescript --project-id dyiwuocbpepvtrxqwfmm --schema public > src/types/database.types.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
