@@ -41,8 +41,7 @@ export type Species = {
   cuidados_nutrientes?: EspecieRow['cuidados_nutrientes'];
   cuidados_substrato?: EspecieRow['cuidados_substrato'];
   cuidados_temperatura?: EspecieRow['cuidados_temperatura'];
-  // TODO F4: alinhar ao banco (number | null)
-  local_id?: string | null;
+  local_id?: EspecieRow['local_id'];
   created_at?: EspecieRow['created_at'];
   created_by?: EspecieRow['created_by'];
   created_by_institution_id?: EspecieRow['created_by_institution_id'];
@@ -53,11 +52,11 @@ export type Species = {
   imagens?: (ImageUrls & {
     id?: ImagemRow['id'];
     url_imagem: ImagemRow['url_imagem'];
-    local_id?: ImagemRow['local_id'] | string | null;
+    local_id?: ImagemRow['local_id'];
   })[] | null;
   especie_local?: {
-    id?: EspecieLocalRow['id'] | string;
-    local_id?: EspecieLocalRow['local_id'] | string | null;
+    id?: EspecieLocalRow['id'];
+    local_id?: EspecieLocalRow['local_id'];
     descricao_ocorrencia?: EspecieLocalRow['descricao_ocorrencia'];
     imagens?: ImageUrls[] | null;
   }[] | null;
@@ -133,13 +132,14 @@ export type Specimen = {
 export type PeriodicReportType = 'mensal' | 'bimestral' | 'semestral' | 'anual';
 
 export interface PeriodicReportData {
-  por_tabela: Record<string, Record<string, number>>;
+  por_tabela?: Record<string, Record<string, number>>;
   total?: number;
+  [key: string]: unknown;
 }
 
 export interface PeriodicReport {
   id: string | number;
-  tipo: PeriodicReportType;
+  tipo: PeriodicReportType | string;
   ano: number;
   periodo_inicio: string;
   periodo_fim: string;

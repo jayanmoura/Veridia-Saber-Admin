@@ -4,7 +4,7 @@ import { ROLES_CONFIG, type UserRole } from '../../types/auth';
 export interface LinkedUser {
     id: string;
     full_name: string | null;
-    email: string;
+    email: string | null;
     role: string | null;
     avatar_url: string | null;
 }
@@ -47,7 +47,7 @@ export function UsersTab({ users }: UsersTabProps) {
                         {user.avatar_url ? (
                             <img src={user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
-                            user.full_name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()
+                            user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -56,7 +56,7 @@ export function UsersTab({ users }: UsersTabProps) {
                         </p>
                         <p className="text-sm text-gray-500 flex items-center gap-1 truncate">
                             <Mail size={12} />
-                            {user.email}
+                            {user.email || 'Sem email'}
                         </p>
                     </div>
                     <span

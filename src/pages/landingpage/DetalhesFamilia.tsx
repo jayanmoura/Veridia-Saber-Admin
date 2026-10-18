@@ -201,7 +201,9 @@ export default function DetalhesFamilia() {
             .not('longitude', 'is', null);
 
           if (especimesMapError) throw especimesMapError;
-          especimesMapResult = especimesMapData || [];
+          especimesMapResult = (especimesMapData || []).filter(
+            (e): e is typeof e & { latitude: number; longitude: number } => e.latitude !== null && e.longitude !== null
+          );
         }
 
         // Buscar nomes dos locais (projetos) para os balões do mapa
@@ -245,13 +247,15 @@ export default function DetalhesFamilia() {
             const imgs = [...(tipoB ?? [])];
             for (let i = imgs.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
-              [imgs[i], imgs[j]] = [imgs[j], imgs[i]];
+              [imgs[j], imgs[i]] = [imgs[i], imgs[j]];
             }
 
-            carrossel = imgs.map(img => ({
-              src: img.url_thumbnail,
-              creditos: img.creditos ?? null
-            }));
+            carrossel = imgs
+              .filter((img): img is typeof img & { url_thumbnail: string } => Boolean(img.url_thumbnail))
+              .map(img => ({
+                src: img.url_thumbnail,
+                creditos: img.creditos ?? null
+              }));
           }
         }
 

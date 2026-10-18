@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export interface ProjectDetails {
-    id: string;
+    id: string | number;
     nome: string;
     descricao: string | null;
     imagem_capa: string | null;

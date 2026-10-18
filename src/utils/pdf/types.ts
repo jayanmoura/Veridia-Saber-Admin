@@ -60,7 +60,7 @@ export interface FamiliesReportData {
 
 export interface SpeciesData {
     nome_cientifico?: string;
-    nome_popular?: string;
+    nome_popular?: string | null;
 }
 
 export interface FamilyDetailedData {

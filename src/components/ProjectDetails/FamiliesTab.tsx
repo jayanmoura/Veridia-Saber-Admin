@@ -1,14 +1,14 @@
 import { TreeDeciduous, ArrowLeft } from 'lucide-react';
 
 export interface LinkedFamily {
-    id: number;
+    id: string;
     familia_nome: string;
     speciesCount: number;
 }
 
 interface FamiliesTabProps {
     families: LinkedFamily[];
-    onFamilyClick: (familyId: number, familyName: string) => void;
+    onFamilyClick: (familyId: string, familyName: string) => void;
 }
 
 /**

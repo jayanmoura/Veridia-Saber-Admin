@@ -77,7 +77,8 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
                 if (error) throw error;
                 speciesData = data || [];
             } else {
-                if (!profile?.local_id) {
+                const numericLocalId = profile?.local_id !== null && profile?.local_id !== undefined ? Number(profile.local_id) : NaN;
+                if (isNaN(numericLocalId)) {
                     showToast('Você não possui um projeto vinculado para exportar.', 'warning');
                     return;
                 }
@@ -85,7 +86,7 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
                 const { data: projectData } = await supabase
                     .from('locais')
                     .select('nome')
-                    .eq('id', profile.local_id)
+                    .eq('id', numericLocalId)
                     .single();
 
                 projectName = projectData?.nome;
@@ -93,7 +94,7 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
                 const { data, error } = await supabase
                     .from('especie')
                     .select('nome_cientifico, nome_popular, familia(familia_nome)')
-                    .eq('local_id', profile.local_id)
+                    .eq('local_id', numericLocalId)
                     .order('nome_cientifico');
 
                 if (error) throw error;
@@ -151,19 +152,20 @@ export function useSpeciesActions({ profile }: UseSpeciesActionsOptions): UseSpe
             }
 
             let localDetails = {};
-            if (profile?.local_id) {
+            const numericLocalId = profile?.local_id !== null && profile?.local_id !== undefined ? Number(profile.local_id) : NaN;
+            if (!isNaN(numericLocalId)) {
                 const [localRes, overrideRes] = await Promise.all([
                     supabase
                         .from('especie_local')
                         .select('descricao_ocorrencia, detalhes_localizacao, latitude, longitude')
                         .eq('especie_id', speciesId)
-                        .eq('local_id', profile.local_id)
+                        .eq('local_id', numericLocalId)
                         .maybeSingle(),
                     supabase
                         .from('especie_local_overrides')
                         .select('descricao_especie')
                         .eq('especie_id', speciesId)
-                        .eq('local_id', profile.local_id)
+                        .eq('local_id', numericLocalId)
                         .maybeSingle(),
                 ]);
 

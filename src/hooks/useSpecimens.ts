@@ -1,24 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-// Interface matching the 'especime' VIEW
 import type { Specimen } from '../types/domain';
-
-interface RawSpecimenEspecieRef {
-    nome_cientifico: string | null;
-    familia: { familia_nome: string } | null;
-}
-
-interface RawSpecimenImageRef {
-    url_micro: string | null;
-    url_thumbnail: string | null;
-    url_imagem: string | null;
-}
-
-interface RawSpecimenRow extends Omit<Specimen, 'especie' | 'imagens'> {
-    especie?: RawSpecimenEspecieRef | null;
-    imagens?: RawSpecimenImageRef[] | null;
-}
+import { firstOrSelf, type EspecieLocalInsert, type TablesInsert } from '../types/db';
 
 export interface SpecimenFormData {
     local_id?: string; // Optional for global create
@@ -100,22 +84,26 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                     especie:especie_id(nome_cientifico, familia:familia_id(familia_nome)),
                     imagens:imagens!imagens_especime_id_fkey(url_micro, url_thumbnail, url_imagem)
                 `)
-                .eq('local_id', projectId)
+                .eq('local_id', Number(projectId))
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            const formatted: Specimen[] = ((data || []) as RawSpecimenRow[]).map((item) => ({
-                ...item,
-                especie: undefined,
-                imagens: undefined,
-                nome_cientifico: item.especie?.nome_cientifico ?? undefined,
-                familia_nome: item.especie?.familia?.familia_nome || 'Sem família',
-                url_imagem: item.imagens?.[0]?.url_micro
-                    || item.imagens?.[0]?.url_thumbnail
-                    || item.imagens?.[0]?.url_imagem
-                    || undefined
-            }));
+            const formatted: Specimen[] = (data || []).map((item) => {
+                const especie = firstOrSelf(item.especie);
+                const familia = firstOrSelf(especie?.familia);
+                return {
+                    ...item,
+                    especie: undefined,
+                    imagens: undefined,
+                    nome_cientifico: especie?.nome_cientifico ?? undefined,
+                    familia_nome: familia?.familia_nome || 'Sem família',
+                    url_imagem: item.imagens?.[0]?.url_micro
+                        || item.imagens?.[0]?.url_thumbnail
+                        || item.imagens?.[0]?.url_imagem
+                        || undefined
+                };
+            });
 
             setSpecimens(formatted);
         } catch (err) {
@@ -188,12 +176,13 @@ export function useSpecimens({ projectId, enabled = true }: UseSpecimensOptions)
                 savedId = Number(editingSpecimen.id);
             } else {
                 // INSERT into table especie_local
+                const insertPayload: EspecieLocalInsert = {
+                    ...basePayload,
+                    created_by: profileId,
+                };
                 const { data, error } = await supabase
                     .from('especie_local')
-                    .insert({
-                        ...basePayload,
-                        created_by: profileId,
-                    })
+                    .insert(insertPayload as TablesInsert<'especie_local'>) // codigo_vs/tombo preenchidos por trigger no banco
                     .select('id')
                     .single();
                 if (error) throw error;

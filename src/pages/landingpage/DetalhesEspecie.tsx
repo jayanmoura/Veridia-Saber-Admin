@@ -137,7 +137,7 @@ export default function DetalhesEspecie() {
       const visto = new Set<number>();
       for (const img of (tipoBCarrossel ?? [])) {
         if (visto.size >= 3) break;
-        if (img.especime_id && !visto.has(img.especime_id)) {
+        if (img.especime_id && img.url_thumbnail && !visto.has(img.especime_id)) {
           visto.add(img.especime_id);
           carrossel.push({
             src: img.url_thumbnail,
@@ -153,7 +153,7 @@ export default function DetalhesEspecie() {
         .from('imagens')
         .select('url_thumbnail, creditos')
         .eq('especie_id', especieId)
-        .is('especie_id', null)
+        .is('especime_id', null)
         .not('url_thumbnail', 'is', null)
         .order('created_at', { ascending: true })
         .limit(1)
@@ -198,14 +198,16 @@ export default function DetalhesEspecie() {
       let overrideData: OverrideDetails | null = null;
       if (localIdParam) {
         const localIdNum = Number(localIdParam);
-        const { data } = await supabase
-          .from('especie_local_overrides')
-          .select('descricao_especie, notas_projeto')
-          .eq('especie_id', id)
-          .eq('local_id', !isNaN(localIdNum) ? localIdNum : localIdParam)
-          .maybeSingle();
+        if (!isNaN(localIdNum)) {
+          const { data } = await supabase
+            .from('especie_local_overrides')
+            .select('descricao_especie, notas_projeto')
+            .eq('especie_id', id)
+            .eq('local_id', localIdNum)
+            .maybeSingle();
 
-        overrideData = data ?? null;
+          overrideData = data ?? null;
+        }
       }
 
       // Montar carrossel e galeria com a nova lógica definitiva
@@ -248,7 +250,10 @@ export default function DetalhesEspecie() {
         tempLocalNomeMap[l.id] = l.nome;
       }
 
-      setEspecimes(especimesLocalData ?? []);
+      const validSpecimens: MapSpecimenItem[] = (especimesLocalData ?? [])
+        .filter((e): e is typeof e & { latitude: number; longitude: number } => e.latitude !== null && e.longitude !== null);
+
+      setEspecimes(validSpecimens);
       setLocalNomeMap(tempLocalNomeMap);
 
     } catch (err) {

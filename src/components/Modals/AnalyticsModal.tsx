@@ -152,7 +152,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
             .limit(period);
 
         if (!error && data) {
-            setDailyActiveUsers(data);
+            setDailyActiveUsers(data.map(d => ({ date: d.date ?? '', active_users: d.active_users ?? 0 })));
         } else {
             // Fallback: calculate manually
             const periodAgo = new Date(Date.now() - period * 24 * 60 * 60 * 1000).toISOString();
@@ -165,6 +165,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
             if (events) {
                 const dailyMap: { [key: string]: Set<string> } = {};
                 events.forEach(e => {
+                    if (!e.created_at) return;
                     const day = e.created_at.split('T')[0];
                     if (!dailyMap[day]) dailyMap[day] = new Set();
                     if (e.user_id) dailyMap[day].add(e.user_id);
@@ -213,7 +214,7 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
 
         if (events && events.length > 0) {
             // Get unique user IDs
-            const userIds = [...new Set(events.filter(e => e.user_id).map(e => e.user_id))];
+            const userIds = [...new Set(events.map(e => e.user_id).filter((id): id is string => Boolean(id)))];
 
             // Fetch user names if there are any user IDs
             let userMap: Record<string, string> = {};
@@ -225,15 +226,16 @@ export function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps) {
 
                 if (profiles) {
                     userMap = profiles.reduce((acc, p) => {
-                        acc[p.id] = p.full_name;
+                        acc[p.id] = p.full_name || '';
                         return acc;
                     }, {} as Record<string, string>);
                 }
             }
 
             // Map events with user names
-            const eventsWithProfiles = events.map(e => ({
+            const eventsWithProfiles: RecentEvent[] = events.map(e => ({
                 ...e,
+                created_at: e.created_at ?? '',
                 profiles: e.user_id && userMap[e.user_id] ? { full_name: userMap[e.user_id] } : null
             }));
 

@@ -23,7 +23,7 @@ import { useAuth } from '../../contexts/authContext';
 import { useToast } from '../../hooks/useToast';
 
 interface Project {
-    id: string;
+    id: number;
     nome: string;
     tipo: string | null;
     cidade: string | null;
@@ -31,6 +31,7 @@ interface Project {
 }
 
 import type { Specimen } from '../../types/domain';
+import { firstOrSelf } from '../../types/db';
 
 interface SpecimenDetailModalProps {
     specimen: Specimen | null;
@@ -534,7 +535,7 @@ export default function SpecimensInspection() {
                         familia:familia_id (familia_nome)
                     )
                 `)
-                .eq('local_id', projectId)
+                .eq('local_id', Number(projectId))
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -548,18 +549,17 @@ export default function SpecimensInspection() {
                     .select('especime_id')
                     .in('especime_id', specimenIds);
 
-                const countMap = new Map<string, number>();
+                const countMap = new Map<number, number>();
                 (imageCounts || []).forEach(img => {
-                    const current = countMap.get(img.especime_id) || 0;
-                    countMap.set(img.especime_id, current + 1);
+                    if (img.especime_id !== null) {
+                        const current = countMap.get(img.especime_id) || 0;
+                        countMap.set(img.especime_id, current + 1);
+                    }
                 });
 
                 const specimensWithCounts = (specimenData || []).map(s => {
-                    // Handle Supabase returning arrays for single relations
-                    const especieRaw = s.especie as unknown;
-                    const especie = Array.isArray(especieRaw) ? especieRaw[0] : especieRaw;
-                    const familiaRaw = especie?.familia as unknown;
-                    const familia = Array.isArray(familiaRaw) ? familiaRaw[0] : familiaRaw;
+                    const especie = firstOrSelf(s.especie);
+                    const familia = firstOrSelf(especie?.familia);
 
                     return {
                         ...s,
@@ -874,7 +874,7 @@ export default function SpecimensInspection() {
                 <ReportModal
                     isOpen={isReportModalOpen}
                     onClose={() => setIsReportModalOpen(false)}
-                    projectName={projects.find(p => p.id === selectedProject)?.nome || ''}
+                    projectName={projects.find(p => p.id === Number(selectedProject))?.nome || ''}
                     specimens={specimens}
                     userName={profile?.full_name || 'Usuário'}
                     userRole={profile?.role || ''}

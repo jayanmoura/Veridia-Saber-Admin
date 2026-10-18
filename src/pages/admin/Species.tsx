@@ -34,6 +34,7 @@ import {
 
 // Types for component
 import type { Species } from '../../types/domain';
+import type { EspecieLocalInsert } from '../../types/db';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -120,7 +121,7 @@ export default function SpeciesPage() {
             const { data: localData } = await supabase
                 .from('locais')
                 .select('nome, institution_id')
-                .eq('id', localId)
+                .eq('id', Number(localId))
                 .single();
 
             if (localData) {
@@ -157,11 +158,11 @@ export default function SpeciesPage() {
         setSpecimenActionLoading(true);
 
         try {
-            const payload = {
+            const payload: EspecieLocalInsert = {
                 especie_id: specimenFormData.especie_id,
                 local_id: parseInt(specimenFormData.local_id),
-                institution_id: specimenFormData.institution_id || profile?.institution_id || null,
-                created_by: profile?.id,
+                institution_id: specimenFormData.institution_id || profile?.institution_id || '',
+                created_by: profile?.id ?? null,
                 latitude: specimenFormData.latitude ? parseFloat(specimenFormData.latitude) : null,
                 longitude: specimenFormData.longitude ? parseFloat(specimenFormData.longitude) : null,
                 detalhes_localizacao: specimenFormData.detalhes_localizacao || null,
@@ -208,8 +209,9 @@ export default function SpeciesPage() {
 
     // Delete confirmation handler
     const confirmDelete = async () => {
-        if (!speciesToDelete) return;
+        if (!speciesToDelete || !speciesToDelete.id) return;
 
+        const speciesId = speciesToDelete.id;
         const speciesName = speciesToDelete.nome_cientifico;
         const userLocalId = profile?.local_id;
 
@@ -222,7 +224,7 @@ export default function SpeciesPage() {
                 const { data: imagesToDelete, error: imgError } = await supabase
                     .from('imagens')
                     .select('url_imagem, url_thumbnail, url_micro')
-                    .eq('especie_id', speciesToDelete.id)
+                    .eq('especie_id', speciesId)
                     .eq('local_id', userLocalId);
 
                 if (imgError) throw imgError;
@@ -235,27 +237,27 @@ export default function SpeciesPage() {
                 const { error: delImgErr } = await supabase
                     .from('imagens')
                     .delete()
-                    .eq('especie_id', speciesToDelete.id)
+                    .eq('especie_id', speciesId)
                     .eq('local_id', userLocalId);
                 if (delImgErr) throw delImgErr;
 
                 const { error: delElErr } = await supabase
                     .from('especie_local')
                     .delete()
-                    .eq('especie_id', speciesToDelete.id)
+                    .eq('especie_id', speciesId)
                     .eq('local_id', userLocalId);
                 if (delElErr) throw delElErr;
 
                 const { data: remaining, error: remError } = await supabase
                     .from('especie_local')
                     .select('id')
-                    .eq('especie_id', speciesToDelete.id)
+                    .eq('especie_id', speciesId)
                     .limit(1);
 
                 if (remError) throw remError;
 
                 if (!remaining || remaining.length === 0) {
-                    const { error } = await supabase.from('especie').update({ local_id: null }).eq('id', speciesToDelete.id);
+                    const { error } = await supabase.from('especie').update({ local_id: null }).eq('id', speciesId);
                     if (error) throw error;
                 }
             } else {
@@ -263,7 +265,7 @@ export default function SpeciesPage() {
                 const { data: localLinks, error: linksError } = await supabase
                     .from('especie_local')
                     .select('id')
-                    .eq('especie_id', speciesToDelete.id)
+                    .eq('especie_id', speciesId)
                     .limit(1);
 
                 if (linksError) throw linksError;
@@ -277,7 +279,7 @@ export default function SpeciesPage() {
                 const { data: globalImages, error: gImgError } = await supabase
                     .from('imagens')
                     .select('url_imagem, url_thumbnail, url_micro')
-                    .eq('especie_id', speciesToDelete.id);
+                    .eq('especie_id', speciesId);
 
                 if (gImgError) throw gImgError;
 
@@ -286,12 +288,12 @@ export default function SpeciesPage() {
                     await deleteImageVariants(urls);
                 }
 
-                await deleteFolder('imagens-plantas', `especies/${speciesToDelete.id}`);
+                await deleteFolder('imagens-plantas', `especies/${speciesId}`);
 
-                const { error: delImgErr } = await supabase.from('imagens').delete().eq('especie_id', speciesToDelete.id);
+                const { error: delImgErr } = await supabase.from('imagens').delete().eq('especie_id', speciesId);
                 if (delImgErr) throw delImgErr;
 
-                const { error } = await supabase.from('especie').delete().eq('id', speciesToDelete.id);
+                const { error } = await supabase.from('especie').delete().eq('id', speciesId);
                 if (error) throw error;
             }
 

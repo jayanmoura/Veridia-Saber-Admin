@@ -23,8 +23,8 @@ import { X, Loader2, Image as ImageIcon, Info, Trash2 } from 'lucide-react';
 import { canUploadSpeciesImages } from '../../../utils/permissions';
 import { speciesRepo, type SpecimenThumbnail } from '../../../services/speciesRepo';
 
-// ============ TYPES ============
 import type { Species } from '../../../types/domain';
+import type { EspecieInsert, TablesInsert } from '../../../types/db';
 
 interface SpeciesModalProps {
   isOpen: boolean;
@@ -132,7 +132,9 @@ export function SpeciesModalRefactored({
 
     try {
       let speciesId = initialData?.id || (form.selectedEspecieId ? form.selectedEspecieId : undefined);
-      const effectiveLocalId = form.formData.local_id || initialData?.local_id || (form.isLocalUser ? String(profile?.local_id || '') : null);
+      const effectiveLocalId: number | null = form.formData.local_id
+        ?? (initialData?.local_id ? Number(initialData.local_id) : null)
+        ?? (form.isLocalUser && profile?.local_id ? Number(profile.local_id) : null);
 
       // CASO 2: VINCULANDO ESPÉCIE DO CATÁLOGO GLOBAL (selectedEspecieId preenchido)
       if (form.selectedEspecieId) {
@@ -167,7 +169,7 @@ export function SpeciesModalRefactored({
       }
       // CASO 1: CRIANDO NOVA ESPÉCIE (selectedEspecieId é null)
       else if (!form.selectedEspecieId) {
-        const dataToSaveNew = {
+        const dataToSaveNew: EspecieInsert = {
           nome_cientifico: form.formData.nome_cientifico.trim(),
           nome_popular: form.formData.nome_popular?.trim() || null,
           familia_id: form.formData.familia_id,
@@ -186,7 +188,7 @@ export function SpeciesModalRefactored({
 
         const { data, error } = await supabase
           .from('especie')
-          .insert(dataToSaveNew)
+          .insert(dataToSaveNew as TablesInsert<'especie'>) // codigo_vs/tombo preenchidos por trigger no banco
           .select('id')
           .single();
 
@@ -231,7 +233,7 @@ export function SpeciesModalRefactored({
         setUploadStage('uploading');
         const uploadResults = await images.uploadImages(speciesId, {
           isCreatingNewGlobalSpecies,
-          projectId: effectiveLocalId,
+          projectId: effectiveLocalId !== null ? String(effectiveLocalId) : null,
           speciesName: form.formData.nome_cientifico,
           onStageChange: setUploadStage,
         });
@@ -293,7 +295,7 @@ export function SpeciesModalRefactored({
 
       if (shouldOpenSpecimenModal && onRequestSpecimenCreation && effectiveLocalId && speciesId) {
         onClose();
-        onRequestSpecimenCreation(speciesId, effectiveLocalId, form.formData.nome_cientifico);
+        onRequestSpecimenCreation(speciesId, String(effectiveLocalId), form.formData.nome_cientifico);
       } else {
         onClose();
       }

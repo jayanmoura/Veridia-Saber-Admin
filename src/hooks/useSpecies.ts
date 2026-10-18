@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/authContext';
 import type { Species } from '../types/domain';
 import type { SpeciesItem } from '../components/Tables/SpeciesTable';
 
+import { firstOrSelf, type FamilyRef } from '../types/db';
+
 interface RawSpeciesName {
     nome_cientifico?: string | null;
 }
@@ -14,7 +16,8 @@ interface RawSpeciesImage {
     id?: string;
     url_imagem: string;
     url_thumbnail?: string | null;
-    local_id?: string | number | null;
+    url_micro?: string | null;
+    local_id?: number | null;
 }
 
 interface RawEspecieLocalOverride {
@@ -22,8 +25,9 @@ interface RawEspecieLocalOverride {
     descricao_especie: string | null;
 }
 
-interface RawSpeciesRow extends Omit<Species, 'imagens'> {
+interface RawSpeciesRow extends Omit<Species, 'imagens' | 'familia'> {
     id: string;
+    familia?: FamilyRef | FamilyRef[] | null;
     imagens?: RawSpeciesImage[] | null;
 }
 
@@ -144,7 +148,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
             const isGlobalAdmin = profile?.role === 'Curador Mestre' ||
                 profile?.role === 'Coordenador Científico' ||
                 profile?.role === 'Taxonomista Sênior';
-            const userLocalId = profile?.local_id;
+            const userLocalId = profile?.local_id ? Number(profile.local_id) : null;
 
             let query;
 
@@ -271,13 +275,13 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
 
                 if (!isGlobalAdmin && userLocalId && filteredImages.length > 0) {
                     filteredImages = filteredImages.filter((img) =>
-                        img.local_id === userLocalId || img.local_id === String(userLocalId) || img.local_id === null
+                        img.local_id === userLocalId || img.local_id === null
                     );
                 }
 
                 // Filtrar espécimes pelo local_id quando for usuário local
                 const filteredEspecieLocal = !isGlobalAdmin && userLocalId && item.especie_local
-                    ? item.especie_local.filter((el) => String(el.local_id) === String(userLocalId))
+                    ? item.especie_local.filter((el) => el.local_id === userLocalId)
                     : item.especie_local;
 
                 const effectiveDescricao = overrideMap.get(item.id) ?? item.descricao_especie;
@@ -285,6 +289,7 @@ export function useSpecies(options: UseSpeciesOptions = {}): UseSpeciesReturn {
                 return {
                     ...item,
                     id: String(item.id),
+                    familia: firstOrSelf(item.familia),
                     descricao_especie: effectiveDescricao,
                     imagens: filteredImages,
                     especie_local: filteredEspecieLocal,

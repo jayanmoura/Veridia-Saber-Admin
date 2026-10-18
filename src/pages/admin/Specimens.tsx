@@ -207,8 +207,8 @@ export default function Specimens() {
                 familia_nome: s.especie?.familia?.familia_nome || 'Indeterminada',
                 coletor_nome: s.coletor || 'Sem Coletor',
                 data_coleta: s.created_at ?? '',
-                coords_lat: s.latitude ? parseFloat(s.latitude as unknown as string) : undefined,
-                coords_lng: s.longitude ? parseFloat(s.longitude as unknown as string) : undefined
+                coords_lat: s.latitude ?? undefined,
+                coords_lng: s.longitude ?? undefined
             }));
 
             // Generate PDF
@@ -264,13 +264,11 @@ export default function Specimens() {
         setActionLoading(true);
 
         try {
+            const institutionId = formData.institution_id || profile?.institution_id || '';
             const basePayload = {
                 especie_id: formData.especie_id,
                 local_id: parseInt(formData.local_id), // Cast to number
-                // institution_id should ideally come from the selected Project or current user's org.
-                // For now, let's use profile's institution_id or fallback.
-                // A specimen belongs to the project's institution usually.
-                institution_id: formData.institution_id || profile?.institution_id || null,
+                ...(institutionId ? { institution_id: institutionId } : {}),
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude) : null,
                 detalhes_localizacao: formData.detalhes_localizacao || null,
@@ -289,7 +287,8 @@ export default function Specimens() {
             } else {
                 const created = await specimenRepo.createSpecimen({
                     ...basePayload,
-                    created_by: profile?.id,
+                    institution_id: institutionId,
+                    created_by: profile?.id || null,
                 });
                 savedId = created?.id || null;
             }

@@ -71,31 +71,35 @@ export const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     },
 };
 
+export const isUserRole = (role: unknown): role is UserRole => {
+  return typeof role === 'string' && role in ROLES_CONFIG;
+};
+
 // Helper: Obter o nível numérico de um cargo (1 = maior, 6 = menor)
-export const getRoleLevel = (role?: UserRole | null): number => {
-    if (!role) return 6; // Sem cargo = menor nível
-    return ROLES_CONFIG[role]?.level ?? 6;
+export const getRoleLevel = (role?: string | null): number => {
+  if (!role || !isUserRole(role)) return 6; // Sem cargo = menor nível
+  return ROLES_CONFIG[role]?.level ?? 6;
 };
 
 // TAREFA 3: Lógica de Promoção/Rebaixamento
 // Retorna true se o usuário logado pode gerenciar o usuário alvo
 // Regra: Nível do Logado deve ser MENOR que o Nível do Alvo
-export const canManage = (myRole?: UserRole | null, targetRole?: UserRole | null): boolean => {
-    const myLevel = getRoleLevel(myRole);
-    const targetLevel = getRoleLevel(targetRole);
-    return myLevel < targetLevel;
+export const canManage = (myRole?: string | null, targetRole?: string | null): boolean => {
+  const myLevel = getRoleLevel(myRole);
+  const targetLevel = getRoleLevel(targetRole);
+  return myLevel < targetLevel;
 };
 
 // Helper: Verifica se o cargo tem pelo menos o nível mínimo exigido
 // Exemplo: hasMinLevel('Gestor de Acervo', 4) = true (4 <= 4)
-export const hasMinLevel = (role?: UserRole | null, minLevel: number = 6): boolean => {
-    return getRoleLevel(role) <= minLevel;
+export const hasMinLevel = (role?: string | null, minLevel: number = 6): boolean => {
+  return getRoleLevel(role) <= minLevel;
 };
 
 // Helper: Obter configuração completa de um cargo
-export const getRoleConfig = (role?: UserRole | null): RoleConfig => {
-    if (!role) return ROLES_CONFIG['Consulente'];
-    return ROLES_CONFIG[role] ?? ROLES_CONFIG['Consulente'];
+export const getRoleConfig = (role?: string | null): RoleConfig => {
+  if (!role || !isUserRole(role)) return ROLES_CONFIG['Consulente'];
+  return ROLES_CONFIG[role] ?? ROLES_CONFIG['Consulente'];
 };
 
 // Lista ordenada de cargos para seleção

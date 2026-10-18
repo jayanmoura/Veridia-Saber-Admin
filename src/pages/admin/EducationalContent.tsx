@@ -27,7 +27,7 @@ interface ContentItem {
     id: number;
     orgao: string;
     titulo: string;
-    conteudo: string;
+    conteudo: string | null;
     ordem: number;
 }
 
@@ -108,7 +108,7 @@ export default function EducationalContent() {
     }, [fetchContent]);
 
     const handleSave = async () => {
-        if (!formData.titulo || !formData.conteudo) {
+        if (!formData.titulo || !formData.conteudo || !formData.orgao) {
             setFeedbackModal({
                 isOpen: true,
                 title: 'Atenção',
@@ -123,7 +123,7 @@ export default function EducationalContent() {
                 orgao: formData.orgao,
                 titulo: formData.titulo,
                 conteudo: formData.conteudo,
-                ordem: Number(formData.ordem),
+                ordem: Number(formData.ordem ?? 10),
             };
 
             let error;
@@ -136,7 +136,7 @@ export default function EducationalContent() {
             } else {
                 const { error: insertError } = await supabase
                     .from('conteudo_orgaos')
-                    .insert([payload]);
+                    .insert(payload);
                 error = insertError;
             }
 

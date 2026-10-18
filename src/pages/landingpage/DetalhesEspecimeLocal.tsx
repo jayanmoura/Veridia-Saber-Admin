@@ -71,6 +71,12 @@ export default function DetalhesEspecimeLocal() {
     if (!especimeId || !localId) return;
     const especimeIdNum = Number(especimeId);
     const localIdNum = Number(localId);
+    if (isNaN(especimeIdNum) || isNaN(localIdNum)) {
+      setError('Identificador inválido');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -84,7 +90,7 @@ export default function DetalhesEspecimeLocal() {
           morfologia, habitat_ecologia, numero_coletor,
           especie_id, local_id
         `)
-        .eq('id', !isNaN(especimeIdNum) ? especimeIdNum : especimeId)
+        .eq('id', especimeIdNum)
         .single();
 
       if (especimeError) throw especimeError;
@@ -101,7 +107,7 @@ export default function DetalhesEspecimeLocal() {
           .from('especie_local_overrides')
           .select('descricao_especie, notas_projeto')
           .eq('especie_id', especimeRes.especie_id)
-          .eq('local_id', !isNaN(localIdNum) ? localIdNum : localId)
+          .eq('local_id', localIdNum)
           .maybeSingle(),
       ]);
 
@@ -112,7 +118,7 @@ export default function DetalhesEspecimeLocal() {
       const { data: localData, error: localError } = await supabase
         .from('locais')
         .select('id, nome, sigla')
-        .eq('id', !isNaN(localIdNum) ? localIdNum : localId)
+        .eq('id', localIdNum)
         .single();
 
       if (localError) throw localError;
@@ -122,7 +128,7 @@ export default function DetalhesEspecimeLocal() {
       const { data: imagensData, error: imgError } = await supabase
         .from('imagens')
         .select('id, url_thumbnail, url_micro, url_imagem, creditos')
-        .eq('especime_id', !isNaN(especimeIdNum) ? especimeIdNum : parseInt(especimeId))
+        .eq('especime_id', especimeIdNum)
         .filter('especie_id', 'is', null)
         .not('url_thumbnail', 'is', null)
         .order('created_at', { ascending: true });

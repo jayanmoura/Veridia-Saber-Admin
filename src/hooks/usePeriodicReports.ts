@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { PeriodicReport } from '../types/domain';
+import type { PeriodicReport, PeriodicReportData } from '../types/domain';
 
 export interface UsePeriodicReportsOptions {
   enabled?: boolean;
@@ -38,7 +38,14 @@ export function usePeriodicReports(options: UsePeriodicReportsOptions = {}): Use
 
       if (supabaseError) throw supabaseError;
 
-      setReports((data as PeriodicReport[]) || []);
+      const formatted: PeriodicReport[] = (data || []).map((row) => ({
+        ...row,
+        dados: (row.dados && typeof row.dados === 'object' && !Array.isArray(row.dados))
+          ? (row.dados as PeriodicReportData)
+          : { por_tabela: {} },
+      }));
+
+      setReports(formatted);
     } catch (err: unknown) {
       const e = err as { message?: string };
       console.error('Erro ao consultar relatórios periódicos:', err);

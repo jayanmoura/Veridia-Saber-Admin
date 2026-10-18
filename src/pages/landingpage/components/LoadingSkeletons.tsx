@@ -1,5 +1,5 @@
 /**
- * SpeciesCardSkeleton - Esqueleto de carregamento animado para SpeciesCard
+ * SpeciesCardSkeleton - Esqueleto de carregamento animado para cards de espécies
  */
 export function SpeciesCardSkeleton() {
   return (

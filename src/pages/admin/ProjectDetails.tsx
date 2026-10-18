@@ -153,7 +153,7 @@ export default function ProjectDetailsPage() {
             const { data: allSpecies } = await supabase
                 .from('especie')
                 .select('nome_cientifico, nome_popular, familia:familia_id(familia_nome)')
-                .eq('local_id', id)
+                .eq('local_id', Number(id))
                 .order('nome_cientifico');
 
             const doc = new jsPDF();
@@ -252,7 +252,7 @@ export default function ProjectDetailsPage() {
                 .from('especie_local')
                 .select(`id, latitude, longitude, detalhes_localizacao, created_at,
                     especie:especie_id(nome_cientifico, nome_popular, familia:familia_id(familia_nome))`)
-                .eq('local_id', id);
+                .eq('local_id', Number(id));
 
             if (error) throw error;
             if (!speciesData || speciesData.length === 0) {

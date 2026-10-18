@@ -1,9 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Species } from './types';
-
-interface SpeciesRawRow extends Omit<Species, 'familia'> {
-  familia?: { id?: string | number; familia_nome: string } | { id?: string | number; familia_nome: string }[] | null;
-}
+import { firstOrSelf } from '../types/db';
 
 export interface SpecimenThumbnail {
   id: string;
@@ -46,24 +43,24 @@ export const speciesRepo = {
         // Contexto de local: quando filters.localId estiver preenchido, filtramos no front-end
         // para considerar apenas espécimes daquele local (o filtro no join aninhado do PostgREST
         // excluiria a espécie caso ela não tivesse espécimes no local em questão).
-        const targetLocalId = filters.localId !== undefined && filters.localId !== null && String(filters.localId).trim() !== ''
-            ? String(filters.localId)
+        const numericLocalId = filters.localId !== undefined && filters.localId !== null && String(filters.localId).trim() !== ''
+            ? Number(filters.localId)
             : null;
 
-        // Map response to match Species type (Supabase might return arrays for joins)
-        const mappedData = (data as unknown as SpeciesRawRow[]).map(item => {
-            const especieLocalFiltered = targetLocalId && item.especie_local
-                ? item.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && String(el.local_id) === targetLocalId)
+        // Map response to match Species type (inferência Supabase)
+        const mappedData: Species[] = (data ?? []).map(item => {
+            const especieLocalFiltered = numericLocalId !== null && item.especie_local
+                ? item.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && el.local_id === numericLocalId)
                 : item.especie_local;
 
             return {
                 ...item,
-                familia: Array.isArray(item.familia) ? item.familia[0] : item.familia,
+                familia: firstOrSelf(item.familia),
                 especie_local: especieLocalFiltered
             };
         });
 
-        return mappedData as Species[];
+        return mappedData;
     },
 
     /**
@@ -87,22 +84,21 @@ export const speciesRepo = {
         if (error) throw error;
 
         // Contexto de local: filtrar espécimes do local se especificado
-        const targetLocalId = localId !== undefined && localId !== null && String(localId).trim() !== ''
-            ? String(localId)
+        const numericLocalId = localId !== undefined && localId !== null && String(localId).trim() !== ''
+            ? Number(localId)
             : null;
 
-        const rawItem = data as unknown as SpeciesRawRow;
-        const especieLocalFiltered = targetLocalId && rawItem.especie_local
-            ? rawItem.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && String(el.local_id) === targetLocalId)
-            : rawItem.especie_local;
+        const especieLocalFiltered = numericLocalId !== null && data.especie_local
+            ? data.especie_local.filter(el => el.local_id !== null && el.local_id !== undefined && el.local_id === numericLocalId)
+            : data.especie_local;
 
-        const mappedData = {
+        const mappedData: Species = {
             ...data,
-            familia: Array.isArray(data.familia) ? data.familia[0] : data.familia,
+            familia: firstOrSelf(data.familia),
             especie_local: especieLocalFiltered
         };
 
-        return mappedData as Species;
+        return mappedData;
     },
 
     /**
@@ -149,7 +145,10 @@ export const speciesRepo = {
             .single();
 
         if (error) throw error;
-        return data as Species;
+        return {
+            ...data,
+            familia: firstOrSelf(data.familia)
+        };
     }
 };
 

@@ -49,7 +49,7 @@ interface ProjectData {
 
 interface TaxonomistData {
     id: string;
-    full_name: string;
+    full_name: string | null;
 }
 
 interface SpeciesLocation {
@@ -141,7 +141,7 @@ export default function ProjectMap() {
                 const { data: projectData, error: projectError } = await supabase
                     .from('locais')
                     .select('id, nome, latitude, longitude')
-                    .eq('id', profile.local_id)
+                    .eq('id', Number(profile.local_id))
                     .single();
 
                 if (projectError) throw projectError;
@@ -178,7 +178,7 @@ export default function ProjectMap() {
                     const { data: taxonomistData } = await supabase
                         .from('profiles')
                         .select('id, full_name')
-                        .eq('local_id', profile.local_id)
+                        .eq('local_id', Number(profile.local_id))
                         .eq('role', 'Taxonomista de Campo');
 
                     setTaxonomists(taxonomistData || []);

@@ -105,7 +105,7 @@ export function SpecimenModal({
                         const { data: localData } = await supabase
                             .from('locais')
                             .select('id, nome, institution_id')
-                            .eq('id', targetLocalId)
+                            .eq('id', Number(targetLocalId))
                             .single();
 
                         if (localData) {
@@ -203,7 +203,7 @@ export function SpecimenModal({
                         .select('*', { count: 'exact', head: true })
                         .eq('coletor', formData.coletor)
                         .eq('numero_coletor', formData.numero_coletor)
-                        .eq('local_id', formData.local_id)
+                        .eq('local_id', Number(formData.local_id))
                         .neq('id', specimenId || -1);
 
                     if (count && count > 0) {

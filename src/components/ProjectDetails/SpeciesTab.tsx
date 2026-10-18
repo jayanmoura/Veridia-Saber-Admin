@@ -7,7 +7,7 @@ export interface LinkedSpecies {
     nome_cientifico: string | null;
     autor?: string | null;
     nome_popular: string | null;
-    familia_id: number | null;
+    familia_id: string | null;
     familia?: { familia_nome: string } | null;
     imagem?: string | null;        // url_micro (preferencial para listagem)
     imagem_thumbnail?: string | null;

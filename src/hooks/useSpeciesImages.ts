@@ -89,7 +89,7 @@ export interface UseSpeciesImagesReturn {
     removeNewImage: (index: number) => void;
     handleDeleteExistingImage: (imageId: string, urls: Array<string | null | undefined> | string) => Promise<void>;
     uploadImages: (speciesId: string, options: UploadOptions) => Promise<{ url: string; credits: string | null; thumbnailUrl: string | null; microUrl: string | null; tamanhoOriginal: number; tamanhoThumbnail: number | null; tamanhoMicro: number | null }[]>;
-    loadExistingImages: (speciesId: string, localId: string | null) => Promise<void>;
+    loadExistingImages: (speciesId: string, localId: number | string | null) => Promise<void>;
     setEditedCredits: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     setNewImageCredits: React.Dispatch<React.SetStateAction<string[]>>;
     reset: () => void;
@@ -140,7 +140,7 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
         setEditedCredits({});
     }, [imagePreviews]);
 
-    const loadExistingImages = useCallback(async (speciesId: string, localId: string | null) => {
+    const loadExistingImages = useCallback(async (speciesId: string, localId: number | string | null) => {
         // Clear stale images immediately so previous species' images don't flash
         setExistingImages([]);
         setEditedCredits({});
@@ -151,7 +151,7 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
             .eq('especie_id', speciesId);
 
         if (localId) {
-            query = query.eq('local_id', localId);
+            query = query.eq('local_id', Number(localId));
         } else {
             query = query.is('local_id', null);
         }

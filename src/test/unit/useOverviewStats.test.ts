@@ -296,3 +296,126 @@ describe('useOverviewStats — fetchPersonalStats (Consulente)', () => {
     expect(result.current.stats.species).toBe(3);
   });
 });
+
+// ============================================================
+// GRUPO 5 — fetchSeniorStats (Taxonomista Sênior)
+// ============================================================
+
+describe('useOverviewStats — fetchSeniorStats (Taxonomista Sênior)', () => {
+
+  beforeEach(() => {
+    currentProfile = { id: 'senior1', role: 'Taxonomista Sênior', local_id: null };
+  });
+
+  it('select de recentWork não usa profiles e o nome vem de created_by_name', async () => {
+    mockSupabaseResponse('especie', 'select', {
+      data: [
+        {
+          id: 'sp-1',
+          nome_especie: 'Handroanthus albus',
+          status: 'ativo',
+          created_at: '2026-04-01T10:00:00Z',
+          created_by: 'user-tax-1',
+          created_by_name: 'Dra. Maria Botânica',
+          familia: { familia_nome: 'Bignoniaceae' },
+          imagens: [],
+          especie_local: [],
+        },
+      ],
+      error: null,
+      count: 0,
+    });
+
+    mockSupabaseResponse('familia', 'select', {
+      data: [
+        {
+          id: 'fam-1',
+          familia_nome: 'Fabaceae',
+          status: 'ativo',
+          created_at: '2026-04-01T09:00:00Z',
+          created_by: 'user-tax-2',
+          created_by_name: 'Dr. João Silvicultura',
+        },
+      ],
+      error: null,
+      count: 0,
+    });
+
+    const { result } = renderHook(() => useOverviewStats());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Garante que o select para especie e familia não utiliza o join inválido com profiles
+    const fromMock = supabase.from as ReturnType<typeof vi.fn>;
+    fromMock.mock.calls.forEach((args, idx) => {
+      const table = args[0];
+      if (table === 'especie' || table === 'familia') {
+        const builder = fromMock.mock.results[idx].value as {
+          select: { mock: { calls: unknown[][] } };
+        };
+        builder.select.mock.calls.forEach((selectArgs: unknown[]) => {
+          const selectStr = selectArgs[0];
+          if (typeof selectStr === 'string') {
+            expect(selectStr).not.toContain('profiles');
+          }
+        });
+      }
+    });
+
+    // Garante que recentWork veio preenchido com created_by_name e creator.full_name
+    expect(result.current.recentWork).toHaveLength(2);
+    const especieWork = result.current.recentWork.find((w) => w.type === 'especie');
+    const familiaWork = result.current.recentWork.find((w) => w.type === 'familia');
+
+    expect(especieWork?.created_by_name).toBe('Dra. Maria Botânica');
+    if (especieWork?.creator && !Array.isArray(especieWork.creator)) {
+      expect(especieWork.creator.full_name).toBe('Dra. Maria Botânica');
+    }
+
+    expect(familiaWork?.created_by_name).toBe('Dr. João Silvicultura');
+    if (familiaWork?.creator && !Array.isArray(familiaWork.creator)) {
+      expect(familiaWork.creator.full_name).toBe('Dr. João Silvicultura');
+    }
+  });
+
+  it('completa com fetchProfileNames via RPC quando created_by_name vier vazio e houver created_by', async () => {
+    mockSupabaseResponse('especie', 'select', {
+      data: [
+        {
+          id: 'sp-2',
+          nome_especie: 'Paubrasilia echinata',
+          status: 'ativo',
+          created_at: '2026-04-01T12:00:00Z',
+          created_by: 'user-resolved-rpc',
+          created_by_name: null,
+          familia: { familia_nome: 'Fabaceae' },
+          imagens: [],
+          especie_local: [],
+        },
+      ],
+      error: null,
+      count: 0,
+    });
+
+    // Mock do retorno da RPC get_profile_names
+    const rpcMock = supabase.rpc as ReturnType<typeof vi.fn>;
+    rpcMock.mockImplementationOnce(() =>
+      Promise.resolve({
+        data: [{ id: 'user-resolved-rpc', full_name: 'Dra. Resolved via RPC' }],
+        error: null,
+      }),
+    );
+
+    const { result } = renderHook(() => useOverviewStats());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const especieWork = result.current.recentWork.find((w) => w.id === 'sp-2');
+    expect(especieWork?.created_by_name).toBe('Dra. Resolved via RPC');
+    if (especieWork?.creator && !Array.isArray(especieWork.creator)) {
+      expect(especieWork.creator.full_name).toBe('Dra. Resolved via RPC');
+    }
+  });
+});
+
+

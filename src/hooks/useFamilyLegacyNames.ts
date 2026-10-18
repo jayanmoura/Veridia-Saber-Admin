@@ -5,7 +5,7 @@ export interface FamilyLegacyName {
     id: string;
     familia_id: string;
     nome_legado: string;
-    tipo: 'sinonimo' | 'nome_historico' | 'nome_alternativo';
+    tipo: 'sinonimo' | 'nome_historico' | 'nome_alternativo' | string | null;
     fonte: string | null;
     observacao: string | null;
     created_at: string;

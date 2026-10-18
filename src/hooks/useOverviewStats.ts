@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/authContext';
 import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
+import { fetchProfileNames } from '../services/profileNames';
 import type {
     CreatorRef,
     EspecieLocalRow,
@@ -17,8 +18,8 @@ export interface AuditLog {
     created_at: string;
     action_type: string;
     table_name: string;
-    user_id: string;
-    profiles?: { full_name: string } | { full_name: string }[];
+    user_id: string | null;
+    profiles?: { full_name: string | null } | { full_name: string | null }[] | null;
 }
 
 export interface RecentSpecies {
@@ -30,6 +31,7 @@ export interface RecentSpecies {
     familia_id: EspecieRow['familia_id'];
     familia?: FamilyRef | FamilyRef[] | null;
     created_by?: EspecieRow['created_by'];
+    created_by_name?: EspecieRow['created_by_name'];
     creator?: CreatorRef;
 }
 
@@ -39,6 +41,7 @@ export interface RecentFamily {
     familia_nome: FamiliaRow['familia_nome'];
     created_at: FamiliaRow['created_at'];
     created_by?: FamiliaRow['created_by'];
+    created_by_name?: FamiliaRow['created_by_name'];
     creator?: CreatorRef;
 }
 
@@ -61,7 +64,7 @@ export interface LocalFamily {
 
 export interface ProjectData {
     nome: string;
-    tipo: string;
+    tipo: string | null;
     descricao: string | null;
     imagem_capa: string | null;
 }
@@ -242,19 +245,48 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         const [recentSpecies, recentFamilies] = await Promise.all([
             supabase
                 .from('especie')
-                .select('id, nome_cientifico, created_at, local_id, familia_id, familia:familia_id(familia_nome), created_by, creator:profiles(full_name, email)')
+                .select('id, nome_cientifico, created_at, local_id, familia_id, familia:familia_id(familia_nome), created_by, created_by_name')
                 .is('local_id', null)
                 .order('created_at', { ascending: false })
                 .limit(10),
             supabase
                 .from('familia')
-                .select('id, familia_nome, created_at, created_by, creator:profiles(full_name, email)')
+                .select('id, familia_nome, created_at, created_by, created_by_name')
                 .order('created_at', { ascending: false })
                 .limit(10)
         ]);
 
-        const speciesItems: RecentSpecies[] = (recentSpecies.data || []).map(item => ({ ...item, type: 'especie' as const }));
-        const familyItems: RecentFamily[] = (recentFamilies.data || []).map(item => ({ ...item, type: 'familia' as const }));
+        const rawSpecies = (recentSpecies.data || []).map(item => ({ ...item, type: 'especie' as const }));
+        const rawFamilies = (recentFamilies.data || []).map(item => ({ ...item, type: 'familia' as const }));
+
+        // Coleta IDs de criadores cujos registros não possuem created_by_name preenchido
+        const missingUserIds = Array.from(new Set(
+            [...rawSpecies, ...rawFamilies]
+                .filter(item => !item.created_by_name && Boolean(item.created_by))
+                .map(item => item.created_by as string)
+        ));
+
+        const nameMap = missingUserIds.length > 0
+            ? await fetchProfileNames(missingUserIds)
+            : new Map<string, string>();
+
+        const speciesItems: RecentSpecies[] = rawSpecies.map(item => {
+            const resolvedName = item.created_by_name || (item.created_by ? nameMap.get(item.created_by) : null) || null;
+            return {
+                ...item,
+                created_by_name: resolvedName,
+                creator: resolvedName ? { full_name: resolvedName } : null
+            };
+        });
+
+        const familyItems: RecentFamily[] = rawFamilies.map(item => {
+            const resolvedName = item.created_by_name || (item.created_by ? nameMap.get(item.created_by) : null) || null;
+            return {
+                ...item,
+                created_by_name: resolvedName,
+                creator: resolvedName ? { full_name: resolvedName } : null
+            };
+        });
 
         const combined: RecentWorkItem[] = [...speciesItems, ...familyItems]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -266,19 +298,20 @@ export function useOverviewStats(): UseOverviewStatsReturn {
     // Fetch local admin stats
     const fetchLocalStats = useCallback(async () => {
         if (!profile?.local_id) return;
+        const numericLocalId = Number(profile.local_id);
 
         const { data: project } = await supabase
             .from('locais')
             .select('nome, tipo, descricao, imagem_capa')
-            .eq('id', profile.local_id)
+            .eq('id', numericLocalId)
             .single();
 
         if (project) setProjectData(project);
 
         const [speciesCount, teamCount, imagesCount] = await Promise.all([
-            supabase.from('especie_local').select('*', { count: 'exact', head: true }).eq('local_id', profile.local_id),
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('local_id', profile.local_id),
-            supabase.from('imagens').select('*', { count: 'exact', head: true }).eq('local_id', profile.local_id)
+            supabase.from('especie_local').select('*', { count: 'exact', head: true }).eq('local_id', numericLocalId),
+            supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('local_id', numericLocalId),
+            supabase.from('imagens').select('*', { count: 'exact', head: true }).eq('local_id', numericLocalId)
         ]);
 
         setLocalStats({
@@ -295,7 +328,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
             const { data: recentData } = await supabase
                 .from('especie_local')
                 .select(`id, created_at, especie:especie_id(id, nome_cientifico, nome_popular, imagens(url_imagem, url_thumbnail, url_micro)), imagens!especime_id(url_imagem, url_thumbnail, url_micro)`)
-                .eq('local_id', profile.local_id)
+                .eq('local_id', numericLocalId)
                 .order('created_at', { ascending: false })
                 .limit(5);
 
@@ -370,7 +403,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
             const { data } = await supabase
                 .from('especie_local')
                 .select('especie:especie_id(familia:familia_id(familia_nome))')
-                .eq('local_id', profile.local_id);
+                .eq('local_id', Number(profile.local_id));
 
             if (data) {
                 const familyCount: { [key: string]: number } = {};

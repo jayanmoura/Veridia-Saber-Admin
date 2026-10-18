@@ -29,11 +29,11 @@ import { useToast } from '../../hooks/useToast';
 interface LocalAuditLog {
     id: number;
     created_at: string;
-    action_type: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
+    action_type: string;
     table_name: string;
-    record_id: string;
+    record_id: string | null;
     details: string | null;
-    user_id?: { full_name: string; email: string } | { full_name: string; email: string }[] | null;
+    user_id?: { full_name: string | null; email: string | null } | { full_name: string | null; email: string | null }[] | null;
 }
 
 interface LocalAdminViewProps {
@@ -95,7 +95,7 @@ export function LocalAdminView({
                 .limit(15);
 
             if (error) throw error;
-            setRecentActivity((data as unknown as LocalAuditLog[]) || []);
+            setRecentActivity(data || []);
         } catch (err) {
             console.error('Erro ao buscar atividades recentes do projeto:', err);
         } finally {

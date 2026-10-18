@@ -235,7 +235,9 @@ export function useFamilyActions({ profile, onSuccess, onPendingRefetch }: UseFa
             onSuccess();
                 } catch (error: unknown) {
             console.error('Delete error:', error);
-            const errorCode = error instanceof Error ? (error as unknown as { code?: string }).code : undefined;
+            const errorCode = (typeof error === 'object' && error !== null && 'code' in error)
+                ? String((error as { code: unknown }).code)
+                : undefined;
             if (errorCode === '23503') {
                 setBlockedFamilyName(familyName);
                 setShowBlockModal(true);

@@ -9,7 +9,7 @@ export interface FamilyOption {
 }
 
 export interface LocalOption {
-  id: string;
+  id: number;
   nome: string;
 }
 
@@ -65,7 +65,7 @@ export interface UseSpeciesFormReturn {
 
   // Actions
   loadAuxiliaryData: () => Promise<void>;
-  loadLocalData: (speciesId: string, localId: string | null) => Promise<void>;
+  loadLocalData: (speciesId: string, localId: number | string | null) => Promise<void>;
   resetForm: () => void;
 }
 
@@ -85,7 +85,7 @@ const INITIAL_FORM_DATA: Species = {
     cuidados_temperatura: '',
     cuidados_substrato: '',
     cuidados_nutrientes: '',
-    local_id: '',
+    local_id: null,
 };
 
 /**
@@ -167,7 +167,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
   }, []);
 
   // Load local overrides for a species
-  const loadLocalData = useCallback(async (speciesId: string, localId: string | null) => {
+  const loadLocalData = useCallback(async (speciesId: string, localId: number | string | null) => {
     if (!localId) {
       setLocalData(INITIAL_LOCAL_DATA);
       setHasExistingOverride(false);
@@ -179,7 +179,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
         .from('especie_local_overrides')
         .select('descricao_especie, notas_projeto')
         .eq('especie_id', speciesId)
-        .eq('local_id', localId)
+        .eq('local_id', Number(localId))
         .maybeSingle();
 
       if (overrideError && overrideError.code !== 'PGRST116') {
@@ -291,7 +291,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
     setShowSuggestions(false);
     setFormData({
       ...INITIAL_FORM_DATA,
-      local_id: isLocalUser ? String(profile?.local_id || '') : '',
+      local_id: isLocalUser && profile?.local_id ? Number(profile.local_id) : null,
     });
   }, [isLocalUser, profile?.local_id]);
 
@@ -299,7 +299,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
   const resetForm = useCallback(() => {
     setFormData({
       ...INITIAL_FORM_DATA,
-      local_id: isLocalUser ? String(profile?.local_id || '') : '',
+      local_id: isLocalUser && profile?.local_id ? Number(profile.local_id) : null,
     });
     setLocalData(INITIAL_LOCAL_DATA);
     setSelectedEspecieId(null);
@@ -326,7 +326,7 @@ export function useSpeciesForm({ initialData, isOpen }: UseSpeciesFormOptions): 
           cuidados_temperatura: initialData.cuidados_temperatura || '',
           cuidados_substrato: initialData.cuidados_substrato || '',
           cuidados_nutrientes: initialData.cuidados_nutrientes || '',
-          local_id: initialData.local_id || '',
+          local_id: initialData.local_id ? Number(initialData.local_id) : null,
         });
       } else {
         resetForm();

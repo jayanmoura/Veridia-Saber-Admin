@@ -10,7 +10,7 @@ export interface FamilyOption {
 }
 
 export interface LocalOption {
-  id: string;
+  id: number;
   nome: string;
 }
 
@@ -126,8 +126,8 @@ export function SpeciesDataTab({
                             </label>
                             {isGlobalAdmin ? (
                                 <select
-                                    value={formData.local_id || ''}
-                                    onChange={(e) => onFormDataChange('local_id', e.target.value)}
+                                    value={formData.local_id ?? ''}
+                                    onChange={(e) => onFormDataChange('local_id', e.target.value ? Number(e.target.value) : null)}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors bg-white"
                                 >
                                     <option value="">Veridia Saber BD (Global)</option>

@@ -8,6 +8,7 @@ import {
     getRoleLevel,
     hasMinLevel,
     isGlobalRole,
+    isUserRole,
     ROLES_CONFIG,
     ROLES_LIST,
     type UserRole,
@@ -31,16 +32,16 @@ import {
 
 interface Profile {
     id: string;
-    full_name: string;
-    email: string;
-    role: UserRole | null;
+    full_name: string | null;
+    email: string | null;
+    role: UserRole | string | null;
     avatar_url: string | null;
-    local_id: string | null;
-    locais?: { nome: string };
+    local_id: number | null;
+    locais?: { nome: string } | null;
 }
 
 interface Project {
-    id: string;
+    id: number;
     nome: string;
 }
 
@@ -117,8 +118,8 @@ export default function Users() {
     };
 
     // TAREFA 4: Cores de badge baseadas em ROLES_CONFIG
-    const getRoleBadgeStyle = (role: UserRole | null) => {
-        if (!role) return { backgroundColor: '#F5F5F5', color: '#616161' };
+    const getRoleBadgeStyle = (role?: string | null) => {
+        if (!role || !isUserRole(role)) return { backgroundColor: '#F5F5F5', color: '#616161' };
         const config = ROLES_CONFIG[role];
         return {
             backgroundColor: config?.bgColor ?? '#F5F5F5',
@@ -135,7 +136,7 @@ export default function Users() {
                 .order('full_name');
 
             if (myLevel === 4 && myLocalId) {
-                query = query.eq('local_id', myLocalId);
+                query = query.eq('local_id', Number(myLocalId));
             }
 
             const { data, error } = await query;
@@ -198,8 +199,8 @@ export default function Users() {
     // --- Edit Modal Functions ---
     const openEditModal = (user: Profile) => {
         setEditingUser(user);
-        setEditRole(user.role || '');
-        setEditProjectId(user.local_id);
+        setEditRole(isUserRole(user.role) ? user.role : '');
+        setEditProjectId(user.local_id !== null ? String(user.local_id) : null);
         setIsEditModalOpen(true);
     };
 
@@ -224,10 +225,10 @@ export default function Users() {
 
         setEditLoading(true);
         try {
-            const updateData: { role: UserRole; local_id: string | null } = {
+            const updateData: { role: UserRole; local_id: number | null } = {
                 role: editRole,
                 // TAREFA 3: Cargos globais SEMPRE têm local_id = null
-                local_id: isGlobalRole(editRole) ? null : (editProjectId || null)
+                local_id: isGlobalRole(editRole) ? null : (editProjectId ? Number(editProjectId) : null)
             };
 
             const { error } = await supabase
@@ -423,7 +424,7 @@ export default function Users() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     {user.avatar_url ? (
-                                                        <img src={user.avatar_url} alt={user.full_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                                                        <img src={user.avatar_url} alt={user.full_name || ''} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                                                     ) : (
                                                         <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200">
                                                             <User size={18} />
@@ -530,7 +531,7 @@ export default function Users() {
                             {editingUser.avatar_url ? (
                                 <img
                                     src={editingUser.avatar_url}
-                                    alt={editingUser.full_name}
+                                    alt={editingUser.full_name || ''}
                                     className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                                 />
                             ) : (

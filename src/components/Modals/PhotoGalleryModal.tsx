@@ -99,7 +99,7 @@ export function PhotoGalleryModal({ isOpen, onClose, localId }: PhotoGalleryModa
                         especie:especie_id(nome_cientifico)
                     )
                 `)
-                .eq('local_id', localId)
+                .eq('local_id', Number(localId))
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

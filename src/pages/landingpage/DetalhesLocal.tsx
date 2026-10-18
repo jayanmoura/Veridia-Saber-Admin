@@ -102,6 +102,12 @@ export default function DetalhesLocal() {
   const fetchTudo = useCallback(async () => {
     if (!id) return;
     const localId = Number(id);
+    if (isNaN(localId)) {
+      setError('Identificador inválido');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -109,7 +115,7 @@ export default function DetalhesLocal() {
       const { data: localData, error: localError } = await supabase
         .from('locais')
         .select('id, nome, descricao, cidade, estado, tipo, sigla, imagem_capa, latitude, longitude, historia, endereco, contato')
-        .eq('id', !isNaN(localId) ? localId : id)
+        .eq('id', localId)
         .single();
 
       if (localError) throw localError;
@@ -118,7 +124,7 @@ export default function DetalhesLocal() {
       const { data: especimesData, error: especimesError } = await supabase
         .from('especie_local')
         .select('id, tombo_codigo, tombo_num, latitude, longitude, detalhes_localizacao, descricao_ocorrencia, coletor, data_determinacao, especie_id')
-        .eq('local_id', !isNaN(localId) ? localId : id)
+        .eq('local_id', localId)
         .order('tombo_num', { ascending: true });
 
       if (especimesError) throw especimesError;

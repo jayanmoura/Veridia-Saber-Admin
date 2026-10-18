@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/authContext';
 import { pickSpeciesThumbnail } from '../utils/speciesThumbnail';
+import { firstOrSelf } from '../types/db';
 
 // ============ TYPES ============
 export interface ProjectDetails {
-    id: string;
+    id: number;
     nome: string;
     descricao: string | null;
     imagem_capa: string | null;
@@ -19,7 +20,7 @@ export interface ProjectDetails {
 export interface LinkedUser {
     id: string;
     full_name: string | null;
-    email: string;
+    email: string | null;
     role: string | null;
     avatar_url: string | null;
 }
@@ -29,13 +30,13 @@ export interface LinkedSpecies {
     nome_cientifico: string | null;
     autor?: string | null;
     nome_popular: string | null;
-    familia_id: number | null;
+    familia_id: string | null;
     familia?: { familia_nome: string } | null;
     imagem?: string | null;        // url_micro (preferencial para listagem)
     imagem_thumbnail?: string | null;
     imagem_original?: string | null;
     specimens?: {
-        id: string | number;
+        id: number;
         tombo_codigo: string | null;
         created_at: string | null;
         url_imagem: string | null;
@@ -43,7 +44,7 @@ export interface LinkedSpecies {
 }
 
 export interface LinkedFamily {
-    id: number;
+    id: string;
     familia_nome: string;
     speciesCount: number;
 }
@@ -52,54 +53,6 @@ export interface ModalSpecies {
     id: string;
     nome_cientifico: string | null;
     nome_popular: string | null;
-}
-
-interface FamiliaRef {
-    id: number;
-    familia_nome: string;
-}
-
-interface ImageRow {
-    url_micro: string | null;
-    url_thumbnail: string | null;
-    url_imagem: string | null;
-}
-
-interface EspecieFamiliaOnlyRef {
-    familia_id: number | string | null;
-}
-
-interface FamilyCountRow {
-    especie: EspecieFamiliaOnlyRef | EspecieFamiliaOnlyRef[] | null;
-}
-
-interface SpeciesJoinRow {
-    id: string;
-    nome_cientifico: string | null;
-    nome_popular: string | null;
-    familia_id: number | null;
-    familia: FamiliaRef | FamiliaRef[] | null;
-    imagens: ImageRow[] | null;
-}
-
-interface SpecimenSpeciesRow {
-    id: string | number;
-    created_at: string | null;
-    tombo_codigo: string | null;
-    imagens: ImageRow[] | null;
-    especie: SpeciesJoinRow | SpeciesJoinRow[] | null;
-}
-
-interface FamilyOnlyEspecieRef {
-    familia: FamiliaRef | FamiliaRef[] | null;
-}
-
-interface FamilyOnlyRow {
-    especie: FamilyOnlyEspecieRef | FamilyOnlyEspecieRef[] | null;
-}
-
-interface FamilyModalRow {
-    especie: ModalSpecies | ModalSpecies[] | null;
 }
 
 export type TabType = 'users' | 'species' | 'families' | 'specimens' | 'storage';
@@ -120,7 +73,7 @@ export interface StorageAnalysis {
 }
 
 export interface UseProjectDetailsOptions {
-    projectId: string | undefined;
+    projectId: string | number | undefined;
     itemsPerPage?: number;
 }
 
@@ -151,10 +104,10 @@ export interface UseProjectDetailsReturn {
 
     // Modal
     isModalOpen: boolean;
-    selectedFamily: { id: number; name: string } | null;
+    selectedFamily: { id: string; name: string } | null;
     modalSpecies: ModalSpecies[];
     modalLoading: boolean;
-    openFamilyModal: (familyId: number, familyName: string) => void;
+    openFamilyModal: (familyId: string, familyName: string) => void;
     closeModal: () => void;
 
     // Actions
@@ -173,7 +126,7 @@ export interface UseProjectDetailsReturn {
  * @description Hook isolado na página única de Projeto detalhado. Controla a visualização via abas e carrossel de estatísticas, dividindo responsabilidade com paginação custom.
  *
  * @param {UseProjectDetailsOptions} options - Options
- * @param {string | undefined} options.projectId - ID do local_id a detalhar
+ * @param {string | number | undefined} options.projectId - ID do local_id a detalhar
  * @param {number} [options.itemsPerPage] - Controla o chunk das consultas por aba (padrão 15)
  *
  * @returns {UseProjectDetailsReturn} Conjunto denso de view options:
@@ -188,6 +141,9 @@ export interface UseProjectDetailsReturn {
  */
 export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDetailsOptions): UseProjectDetailsReturn {
     const { profile } = useAuth();
+    const numericProjectId = projectId !== undefined && projectId !== '' && !isNaN(Number(projectId))
+        ? Number(projectId)
+        : null;
 
     // Core States
     const [project, setProject] = useState<ProjectDetails | null>(null);
@@ -217,7 +173,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
     // Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedFamily, setSelectedFamily] = useState<{ id: number; name: string } | null>(null);
+    const [selectedFamily, setSelectedFamily] = useState<{ id: string; name: string } | null>(null);
     const [modalSpecies, setModalSpecies] = useState<ModalSpecies[]>([]);
     const [modalLoading, setModalLoading] = useState(false);
 
@@ -226,14 +182,14 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
     // Fetch project details
     const fetchProjectDetails = useCallback(async () => {
-        if (!projectId) return;
+        if (!numericProjectId) return;
         setLoading(true);
         setError(null);
         try {
             const { data, error: fetchError } = await supabase
                 .from('locais')
                 .select('*, especie:especie_local(count)')
-                .eq('id', projectId)
+                .eq('id', numericProjectId)
                 .single();
 
             if (fetchError) throw fetchError;
@@ -244,18 +200,18 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         } finally {
             setLoading(false);
         }
-    }, [projectId]);
+    }, [numericProjectId]);
 
     // Fetch counts for tab badges
     const fetchCounts = useCallback(async () => {
-        if (!projectId) return;
+        if (!numericProjectId) return;
 
         try {
             // Count Users
             const { count: userCount } = await supabase
                 .from('profiles')
                 .select('*', { count: 'exact', head: true })
-                .eq('local_id', projectId);
+                .eq('local_id', numericProjectId);
 
             if (userCount !== null) setUsersCount(userCount);
 
@@ -263,7 +219,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             const { data: specData } = await supabase
                 .from('especie_local')
                 .select('especie_id')
-                .eq('local_id', projectId);
+                .eq('local_id', numericProjectId);
 
             if (specData) {
                 const uniqueSpeciesIds = new Set(specData.map(d => d.especie_id).filter(Boolean));
@@ -274,7 +230,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             const { count: specimensCount } = await supabase
                 .from('especie_local')
                 .select('*', { count: 'exact', head: true })
-                .eq('local_id', projectId);
+                .eq('local_id', numericProjectId);
 
             if (specimensCount !== null) setSpecimensCount(specimensCount);
 
@@ -282,27 +238,27 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
             const { data: familyData } = await supabase
                 .from('especie_local')
                 .select('especie:especie_id(familia_id)')
-                .eq('local_id', projectId);
+                .eq('local_id', numericProjectId);
 
             if (familyData) {
                 const uniqueFamilyIds = new Set(
-                    (familyData as FamilyCountRow[])
+                    familyData
                         .map((item) => {
-                            const esp = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                            const esp = firstOrSelf(item.especie);
                             return esp?.familia_id;
                         })
-                        .filter((fid): fid is number | string => Boolean(fid))
+                        .filter((fid): fid is string => Boolean(fid))
                 );
                 setFamiliesCount(uniqueFamilyIds.size);
             }
         } catch (err) {
             console.error('Error fetching counts:', err);
         }
-    }, [projectId]);
+    }, [numericProjectId]);
 
     // Fetch tab data
     const fetchTabData = useCallback(async (tab: TabType, page: number = 1) => {
-        if (!projectId) return;
+        if (!numericProjectId) return;
         setTabLoading(true);
 
         const start = (page - 1) * itemsPerPage;
@@ -314,7 +270,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                     const { data: usersData } = await supabase
                         .from('profiles')
                         .select('id, full_name, email, role, avatar_url')
-                        .eq('local_id', projectId)
+                        .eq('local_id', numericProjectId)
                         .order('full_name')
                         .range(start, end);
 
@@ -330,7 +286,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                             id,
                             created_at,
                             tombo_codigo,
-                            imagens(url_micro, url_thumbnail, url_imagem),
+                            imagens:imagens!imagens_especime_id_fkey(url_micro, url_thumbnail, url_imagem),
                             especie:especie_id(
                                 id,
                                 nome_cientifico,
@@ -340,12 +296,12 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                                 imagens(url_micro, url_thumbnail, url_imagem)
                             )
                         `)
-                        .eq('local_id', projectId);
+                        .eq('local_id', numericProjectId);
 
                     const speciesMap = new Map<string, LinkedSpecies>();
 
-                    ((speciesData || []) as SpecimenSpeciesRow[]).forEach((item) => {
-                        const s = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                    (speciesData || []).forEach((item) => {
+                        const s = firstOrSelf(item.especie);
                         if (!s || !s.id) return;
 
                         const imgEspecie = s.imagens?.[0];
@@ -359,9 +315,11 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                             url_imagem: imgSource?.url_micro || imgSource?.url_thumbnail || imgSource?.url_imagem || null
                         };
 
-                        if (speciesMap.has(s.id)) {
-                            const existing = speciesMap.get(s.id)!;
-                            existing.specimens!.push(specimenInfo);
+                        const existing = speciesMap.get(s.id);
+                        if (existing) {
+                            if (existing.specimens) {
+                                existing.specimens.push(specimenInfo);
+                            }
                             // Se a espécie ainda não tem foto ou se este espécime trouxer foto Tipo B válida, atualiza
                             if (item.imagens && item.imagens.length > 0) {
                                 const bestThumb = pickSpeciesThumbnail({
@@ -375,7 +333,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                                 }
                             }
                         } else {
-                            const familia = Array.isArray(s.familia) ? s.familia[0] : s.familia;
+                            const familia = firstOrSelf(s.familia);
                             const thumbResult = pickSpeciesThumbnail({
                                 specimenImages: item.imagens || [],
                                 speciesImages: s.imagens || []
@@ -411,15 +369,15 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
                                 familia:familia_id(id, familia_nome)
                             )
                         `)
-                        .eq('local_id', projectId);
+                        .eq('local_id', numericProjectId);
 
                     if (speciesForFamilies) {
-                        const familyMap = new Map<number, { id: number; familia_nome: string; speciesCount: number }>();
-                        (speciesForFamilies as FamilyOnlyRow[]).forEach((item) => {
-                            const s = Array.isArray(item.especie) ? item.especie[0] : item.especie;
+                        const familyMap = new Map<string, { id: string; familia_nome: string; speciesCount: number }>();
+                        speciesForFamilies.forEach((item) => {
+                            const s = firstOrSelf(item.especie);
                             if (!s) return;
 
-                            const fam = Array.isArray(s.familia) ? s.familia[0] : s.familia;
+                            const fam = firstOrSelf(s.familia);
                             if (fam && fam.id) {
                                 const existing = familyMap.get(fam.id);
                                 if (existing) {
@@ -453,17 +411,17 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         } finally {
             setTabLoading(false);
         }
-    }, [projectId, itemsPerPage, usersCount]);
+    }, [numericProjectId, itemsPerPage, usersCount]);
 
     // Fetch storage analysis
     const fetchStorageAnalysis = useCallback(async () => {
-        if (!projectId) return;
+        if (!numericProjectId) return;
         setLoadingStorage(true);
         try {
             const { data } = await supabase
                 .from('imagens')
                 .select('tamanho_original, tamanho_thumbnail, tamanho_micro, tamanho_estimado, created_at')
-                .eq('local_id', projectId);
+                .eq('local_id', numericProjectId);
 
             if (!data) return;
 
@@ -510,27 +468,37 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         } finally {
             setLoadingStorage(false);
         }
-    }, [projectId]);
+    }, [numericProjectId]);
 
     // Open family modal
-    const openFamilyModal = useCallback(async (familyId: number, familyName: string) => {
+    const openFamilyModal = useCallback(async (familyId: string, familyName: string) => {
         setSelectedFamily({ id: familyId, name: familyName });
         setIsModalOpen(true);
         setModalLoading(true);
         setModalSpecies([]);
 
+        if (!numericProjectId) return;
+
         try {
             const { data } = await supabase
                 .from('especie_local')
                 .select('especie!inner(id, nome_cientifico, nome_popular, familia_id)')
-                .eq('local_id', projectId)
+                .eq('local_id', numericProjectId)
                 .eq('especie.familia_id', familyId)
                 .order('nome_cientifico', { foreignTable: 'especie' });
 
             if (data) {
-                const mapped = (data as FamilyModalRow[])
-                    .map((item) => (Array.isArray(item.especie) ? item.especie[0] : item.especie))
-                    .filter((esp): esp is ModalSpecies => esp !== null && esp !== undefined);
+                const mapped: ModalSpecies[] = [];
+                for (const item of data) {
+                    const esp = firstOrSelf(item.especie);
+                    if (esp) {
+                        mapped.push({
+                            id: esp.id,
+                            nome_cientifico: esp.nome_cientifico,
+                            nome_popular: esp.nome_popular,
+                        });
+                    }
+                }
                 setModalSpecies(mapped);
             }
         } catch (err) {
@@ -538,7 +506,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
         } finally {
             setModalLoading(false);
         }
-    }, [projectId]);
+    }, [numericProjectId]);
 
     const closeModal = useCallback(() => {
         setIsModalOpen(false);
@@ -553,15 +521,15 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
     // Initial load
     useEffect(() => {
-        if (projectId && isGlobalAdmin) {
+        if (numericProjectId && isGlobalAdmin) {
             fetchProjectDetails();
             fetchCounts();
         }
-    }, [projectId, isGlobalAdmin, fetchProjectDetails, fetchCounts]);
+    }, [numericProjectId, isGlobalAdmin, fetchProjectDetails, fetchCounts]);
 
     // Tab change
     useEffect(() => {
-        if (projectId && project) {
+        if (numericProjectId && project) {
             setCurrentPage(1);
             fetchTabData(activeTab, 1);
         }
@@ -574,7 +542,7 @@ export function useProjectDetails({ projectId, itemsPerPage = 15 }: UseProjectDe
 
     // Page change
     useEffect(() => {
-        if (projectId && project && currentPage > 0) {
+        if (numericProjectId && project && currentPage > 0) {
             fetchTabData(activeTab, currentPage);
         }
         // activeTab/fetchTabData/project/projectId excluídos intencionalmente:

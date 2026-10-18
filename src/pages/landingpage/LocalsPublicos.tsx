@@ -7,7 +7,7 @@ import { Footer } from './components/Footer';
 import { formatarTipoLocal } from './utils/tipoLocal';
 
 interface LocalItem {
-  id: string;
+  id: number;
   nome: string;
   descricao: string | null;
   cidade: string | null;
@@ -35,30 +35,7 @@ export default function LocalsPublicos() {
 
       if (error) throw error;
 
-      const formatted = ((data ?? []) as Array<{
-        id: string;
-        nome: string;
-        descricao: string | null;
-        cidade: string | null;
-        estado: string | null;
-        tipo: string | null;
-        sigla: string | null;
-        imagem_capa: string | null;
-        latitude: number | null;
-        longitude: number | null;
-      }>).map((item) => ({
-        id: item.id,
-        nome: item.nome,
-        descricao: item.descricao,
-        cidade: item.cidade,
-        estado: item.estado,
-        tipo: item.tipo,
-        sigla: item.sigla,
-        imagem_capa: item.imagem_capa,
-        latitude: item.latitude,
-        longitude: item.longitude
-      }));
-
+      const formatted = data ?? [];
       setLocais(formatted);
 
       // Extrai os tipos únicos de locais para o filtro

@@ -14,17 +14,18 @@ import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../contexts/authContext';
 import { useProjects } from '../../hooks';
 import { PeriodicReportsModal } from '../../components/Modals/PeriodicReportsModal';
+import { isAuditedTable } from '../../types/db';
 
 interface AuditLog {
     id: number;
     created_at: string;
     action_type: 'INSERT' | 'UPDATE' | 'DELETE' | 'TRUNCATE';
     table_name: string;
-    record_id: string;
+    record_id: string | null;
     old_data: Record<string, unknown> | null; // JSON with previous data
     details: string | null;
     // user_id is now the expanded relation
-    user_id: { full_name: string; email: string } | { full_name: string; email: string }[];
+    user_id: { full_name: string | null; email: string | null } | { full_name: string | null; email: string | null }[] | null;
 }
 
 export default function AuditLogs() {
@@ -56,13 +57,25 @@ export default function AuditLogs() {
                 .limit(100);
 
             if (selectedProjectId && selectedProjectId !== 'all') {
-                query = query.eq('local_id', selectedProjectId);
+                query = query.eq('local_id', Number(selectedProjectId));
             }
 
             const { data, error } = await query;
 
             if (error) throw error;
-            setLogs(data || []);
+            const formatted: AuditLog[] = (data || []).map((row) => ({
+                id: row.id,
+                created_at: row.created_at,
+                action_type: row.action_type as AuditLog['action_type'],
+                table_name: row.table_name,
+                record_id: row.record_id,
+                old_data: (row.old_data && typeof row.old_data === 'object' && !Array.isArray(row.old_data))
+                    ? (row.old_data as Record<string, unknown>)
+                    : null,
+                details: row.details,
+                user_id: row.user_id,
+            }));
+            setLogs(formatted);
         } catch (error: unknown) {
             console.error('Error fetching audit logs:', error);
             showToast('Erro ao buscar registros de auditoria.', 'error');
@@ -81,6 +94,11 @@ export default function AuditLogs() {
             return;
         }
 
+        if (!isAuditedTable(log.table_name)) {
+            showToast('Tabela não suportada para restauração.', 'warning');
+            return;
+        }
+
         if (!confirm(`Deseja restaurar este registro em '${log.table_name}'?`)) return;
 
         setRestoring(log.id);
@@ -88,7 +106,7 @@ export default function AuditLogs() {
             // Attempt to insert old_data back into table_name
             const { error } = await supabase
                 .from(log.table_name)
-                .insert(log.old_data);
+                .insert(log.old_data as never);
 
             if (error) throw error;
 

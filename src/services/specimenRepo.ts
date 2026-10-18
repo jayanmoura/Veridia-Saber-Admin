@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import type { SpecimenFilters } from './types';
 import type { Specimen } from '../types/domain';
+import type { EspecieLocalInsert } from '../types/db';
+import type { TablesInsert, TablesUpdate } from '../types/database.types';
 import { deleteFolder, deleteImageVariants } from '../utils/storage';
 
 export function unwrapJoin<T>(value: T | T[] | null): T | null {
@@ -37,7 +39,7 @@ export const specimenRepo = {
             .limit(1, { foreignTable: 'imagens' });
 
         if (filters.localId) {
-            query = query.eq('local_id', filters.localId);
+            query = query.eq('local_id', Number(filters.localId));
         }
 
         if (filters.especieId) {
@@ -60,10 +62,10 @@ export const specimenRepo = {
     /**
      * Create a specimen (Writes to 'especie_local' TABLE)
      */
-    async createSpecimen(payload: Partial<Specimen>) {
+    async createSpecimen(payload: EspecieLocalInsert) {
         const { data, error } = await supabase
             .from('especie_local')
-            .insert(payload)
+            .insert(payload as TablesInsert<'especie_local'>) // codigo_vs/tombo preenchidos por trigger no banco
             .select()
             .single();
 
@@ -74,7 +76,7 @@ export const specimenRepo = {
     /**
      * Update a specimen (Writes to 'especie_local' TABLE)
      */
-    async updateSpecimen(id: number, payload: Partial<Specimen>) {
+    async updateSpecimen(id: number, payload: TablesUpdate<'especie_local'>) {
         const { data, error } = await supabase
             .from('especie_local')
             .update(payload)

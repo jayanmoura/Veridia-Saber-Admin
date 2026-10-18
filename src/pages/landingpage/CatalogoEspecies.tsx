@@ -4,9 +4,16 @@ import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-rea
 import { supabase } from '../../lib/supabase';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import type { SpeciesItem } from './components/SpeciesCard';
 import { SkeletonCard } from './components/SkeletonCard';
 import type { EspecieLocalRow, EspecieRow, FamiliaRow, ImagemRow } from '../../types/db';
+
+export interface SpeciesItem {
+  id: EspecieRow['id'];
+  name_scientific: EspecieRow['nome_cientifico'];
+  name_popular: EspecieRow['nome_popular'];
+  family_name: string;
+  url_micro: ImagemRow['url_micro'];
+}
 
 interface FamilyOption {
   id: FamiliaRow['id'];

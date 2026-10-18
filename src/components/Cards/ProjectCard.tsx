@@ -1,7 +1,7 @@
 import { MapPin, Leaf, Building2, Trees, Pencil, Trash2, FileText } from 'lucide-react';
 
 export interface ProjectItem {
-    id: string;
+    id: string | number;
     nome: string;
     descricao: string | null;
     imagem_capa: string | null;

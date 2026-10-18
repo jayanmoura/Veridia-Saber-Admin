@@ -173,6 +173,7 @@ export function SeniorView({ stats, recentWork, pendingSpecies, loading, refetch
                                         </td>
                                         <td className="px-4 py-4 text-sm text-gray-500">
                                             {(() => {
+                                                if (work.created_by_name) return work.created_by_name;
                                                 const creator = Array.isArray(work.creator) ? work.creator[0] : work.creator;
                                                 if (creator?.full_name) return creator.full_name;
                                                 if (creator?.email) return creator.email.split('@')[0];

@@ -4,6 +4,7 @@ import { generateHerbariumLabels } from '../utils/pdf';
 import { getDefaultInstitutionId } from '../config/institution';
 import { uploadFile, replaceImageCleanup } from '../utils/storage';
 import { projectRepo } from '../services/projectRepo';
+import { firstOrSelf } from '../types/db';
 
 interface SupabaseErrorLike {
     message?: string;
@@ -27,7 +28,7 @@ interface Profile {
 }
 
 interface Project {
-    id: string;
+    id: number | string;
     nome: string;
     descricao: string | null;
     imagem_capa: string | null;
@@ -38,13 +39,6 @@ interface Project {
     latitude?: number | null;
     longitude?: number | null;
     gestor_id?: string | null;
-}
-
-interface HerbariumReportRow {
-    nome_cientifico: string;
-    autor: string | null;
-    familia: { familia_nome: string } | { familia_nome: string }[] | null;
-    especie_local: { detalhes_localizacao: string | null; determinador: string | null }[] | null;
 }
 
 
@@ -209,7 +203,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
         setTimeout(() => setToast(null), 3000);
     }, []);
 
-    const uploadProjectImage = async (file: File, projectId: string): Promise<string | null> => {
+    const uploadProjectImage = async (file: File, projectId: string | number): Promise<string | null> => {
         const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const filePath = `locais/${projectId}/capa/${Date.now()}_${sanitizedName}`;
 
@@ -397,7 +391,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                     imagem_capa: imageUrl,
                     gestor_id: editFormData.gestor_id || null
                 })
-                .eq('id', selectedProject.id);
+                .eq('id', Number(selectedProject.id));
 
             if (error) throw error;
 
@@ -405,7 +399,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
             const { data: verifyData } = await supabase
                 .from('locais')
                 .select('imagem_capa')
-                .eq('id', selectedProject.id)
+                .eq('id', Number(selectedProject.id))
                 .single();
 
             if (verifyData?.imagem_capa !== imageUrl) {
@@ -477,20 +471,21 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
     // Generate report
     const handleGenerateReport = useCallback(async (project: Project) => {
-        setReportLoading(project.id);
+        setReportLoading(String(project.id));
         try {
             const { data } = await supabase
                 .from('especie')
                 .select('nome_cientifico, autor, familia(familia_nome), especie_local!inner(detalhes_localizacao, determinador)')
-                .eq('especie_local.local_id', project.id);
+                .eq('especie_local.local_id', Number(project.id));
 
             if (!data || data.length === 0) {
                 showToast('Nenhuma espécie encontrada neste projeto.', 'error');
                 return;
             }
 
-            const labels = (data as unknown as HerbariumReportRow[]).map((sp) => {
-                const familyName = (Array.isArray(sp.familia) ? sp.familia[0]?.familia_nome : sp.familia?.familia_nome) || 'INDETERMINADA';
+            const labels = data.map((sp) => {
+                const fam = firstOrSelf(sp.familia);
+                const familyName = fam?.familia_nome || 'INDETERMINADA';
                 return {
                     scientificName: sp.nome_cientifico,
                     author: sp.autor ?? undefined,

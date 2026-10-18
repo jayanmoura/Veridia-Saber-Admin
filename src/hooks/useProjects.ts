@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 
 // ============ TYPES ============
 export interface Project {
-    id: string;
+    id: number | string;
     nome: string;
     descricao: string | null;
     imagem_capa: string | null;
@@ -14,10 +14,6 @@ export interface Project {
     longitude?: number | null;
     especie?: { count: number }[];
     quantidade_especies: number;
-}
-
-interface RawProjectRow extends Omit<Project, 'especie'> {
-    especie?: { count: number }[];
 }
 
 export interface ProjectStats {
@@ -89,7 +85,7 @@ export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn
 
             if (error) throw error;
 
-            const formattedData: Project[] = ((data || []) as RawProjectRow[]).map((item) => ({
+            const formattedData: Project[] = (data || []).map((item) => ({
                 ...item,
                 quantidade_especies: item.especie?.[0]?.count || 0
             }));

@@ -15,11 +15,11 @@ import { createDotIcon, createClusterIcon } from './mapMarkerIcons';
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
 interface SpecimenPin {
-  id: string;
+  id: number;
   latitude: number;
   longitude: number;
   tombo_codigo: string | null;
-  tombo_num: string | null;
+  tombo_num: number | string | null;
   nome_cientifico: string;
   nome_popular: string;
   especie_id: string;
@@ -30,60 +30,12 @@ interface SpecimenPin {
 }
 
 interface LocalPin {
-  id: string;
+  id: number;
   nome: string;
   latitude: number;
   longitude: number;
   cidade: string;
   estado: string;
-}
-
-// ─── Supabase row types (planas, sem joins) ───────────────────────────────────
-
-interface FamiliaRow {
-  id: string;
-  familia_nome: string;
-  descricao_familia: string | null;
-  imagem_micro: string | null;
-  imagem_thumbnail: string | null;
-}
-
-interface EspecieRow {
-  id: string;
-  nome_cientifico: string;
-  nome_popular: string | null;
-  familia_id: string | null;
-}
-
-interface ImagemRow {
-  especie_id: string | null;
-  url_micro: string | null;
-  url_thumbnail: string | null;
-}
-
-interface ImagemEspecimeRow {
-  especime_id: string | null;
-  url_micro: string | null;
-  url_thumbnail: string | null;
-}
-
-interface EspecieLocalRow {
-  id: string;
-  latitude: number | null;
-  longitude: number | null;
-  tombo_codigo: string | null;
-  tombo_num: string | null;
-  especie_id: string | null;
-  local_id: string | null;
-}
-
-interface LocalRow {
-  id: string;
-  nome: string;
-  cidade: string | null;
-  estado: string | null;
-  latitude: number | null;
-  longitude: number | null;
 }
 
 // ─── MapController ────────────────────────────────────────────────────────────
@@ -149,8 +101,8 @@ export function FamiliesSection() {
 
         if (locError) throw locError;
 
-        const locRows = (locData as LocalRow[]) || [];
-        const localNomeMap = new Map<string, string>(locRows.map(l => [l.id, l.nome]));
+        const locRows = locData || [];
+        const localNomeMap = new Map<number, string>(locRows.map(l => [l.id, l.nome]));
 
         const projPins: LocalPin[] = locRows
           .filter(l => l.latitude !== null && l.longitude !== null)
@@ -174,11 +126,11 @@ export function FamiliesSection() {
 
         if (elError) throw elError;
 
-        const elRows = (elData as EspecieLocalRow[]) || [];
+        const elRows = elData || [];
 
         if (elRows.length > 0) {
           // ── 4a. Buscar espécies pelos especie_id retornados ───────────────
-          const especieIds = [...new Set(elRows.map(r => r.especie_id).filter(Boolean))] as string[];
+          const especieIds = [...new Set(elRows.map(r => r.especie_id).filter(Boolean))];
 
           const { data: especieDetalheData, error: especieDetalheError } = await supabase
             .from('especie')
@@ -187,13 +139,13 @@ export function FamiliesSection() {
 
           if (especieDetalheError) throw especieDetalheError;
 
-          const especieMap = new Map<string, EspecieRow>();
-          ((especieDetalheData as EspecieRow[]) || []).forEach(e => especieMap.set(e.id, e));
+          const especieMap = new Map<string, { id: string; nome_cientifico: string; nome_popular: string | null; familia_id: string | null }>();
+          (especieDetalheData || []).forEach(e => especieMap.set(e.id, e));
 
           // ── 4b. Buscar famílias pelos familia_id retornados ───────────────
           const familiaIds = [...new Set(
-            Array.from(especieMap.values()).map(e => e.familia_id).filter(Boolean)
-          )] as string[];
+            Array.from(especieMap.values()).map(e => e.familia_id).filter((id): id is string => Boolean(id))
+          )];
 
           const familiaMap = new Map<string, string>(); // id -> familia_nome
 
@@ -205,14 +157,14 @@ export function FamiliesSection() {
 
             if (familiaDetalheError) throw familiaDetalheError;
 
-            ((familiaDetalheData as FamiliaRow[]) || []).forEach(f => familiaMap.set(f.id, f.familia_nome));
+            (familiaDetalheData || []).forEach(f => familiaMap.set(f.id, f.familia_nome));
           }
 
           // ── 4b2. Buscar imagem do espécime específico (prioridade) e da espécie (reserva) ──
           const especimeIds = elRows.map(r => r.id);
 
           const imagemPorEspecieId = new Map<string, string | null>();
-          const imagemPorEspecimeId = new Map<string, string | null>();
+          const imagemPorEspecimeId = new Map<number, string | null>();
 
           const [
             { data: imagensEspecieData, error: imagensEspecieError },
@@ -231,12 +183,12 @@ export function FamiliesSection() {
           if (imagensEspecieError) throw imagensEspecieError;
           if (imagensEspecimeError) throw imagensEspecimeError;
 
-          ((imagensEspecieData as ImagemRow[]) || []).forEach(img => {
+          (imagensEspecieData || []).forEach(img => {
             if (!img.especie_id || imagemPorEspecieId.has(img.especie_id)) return;
             imagemPorEspecieId.set(img.especie_id, img.url_micro || img.url_thumbnail || null);
           });
 
-          ((imagensEspecimeData as ImagemEspecimeRow[]) || []).forEach(img => {
+          (imagensEspecimeData || []).forEach(img => {
             if (!img.especime_id || imagemPorEspecimeId.has(img.especime_id)) return;
             imagemPorEspecimeId.set(img.especime_id, img.url_micro || img.url_thumbnail || null);
           });
@@ -245,7 +197,7 @@ export function FamiliesSection() {
           const pins: SpecimenPin[] = elRows
             .filter(r => r.especie_id !== null)
             .map(r => {
-              const esp = especieMap.get(r.especie_id as string);
+              const esp = especieMap.get(r.especie_id);
               const familiaId = esp?.familia_id || '';
               const familiaNome = familiaId ? (familiaMap.get(familiaId) || 'Desconhecida') : 'Desconhecida';
               return {
@@ -256,10 +208,10 @@ export function FamiliesSection() {
                 tombo_num: r.tombo_num,
                 nome_cientifico: esp?.nome_cientifico || 'Desconhecida',
                 nome_popular: esp?.nome_popular || '',
-                especie_id: r.especie_id as string,
+                especie_id: r.especie_id,
                 familia_nome: familiaNome,
                 familia_id: familiaId,
-                imagem_url: imagemPorEspecimeId.get(r.id) || imagemPorEspecieId.get(r.especie_id as string) || null,
+                imagem_url: imagemPorEspecimeId.get(r.id) || imagemPorEspecieId.get(r.especie_id) || null,
                 local_nome: r.local_id ? (localNomeMap.get(r.local_id) || null) : null
               };
             });
@@ -307,7 +259,7 @@ export function FamiliesSection() {
     }
     if (activeTab === 'projetos') {
       return projetosPins
-        .map(p => ({ id: p.id, label: p.nome }))
+        .map(p => ({ id: String(p.id), label: p.nome }))
         .sort((a, b) => a.label.localeCompare(b.label));
     }
     return [];
@@ -448,7 +400,7 @@ export function FamiliesSection() {
                           nomeCientifico={pin.nome_cientifico}
                           nomePopular={pin.nome_popular}
                           familiaNome={pin.familia_nome}
-                          tombo={pin.tombo_codigo ?? pin.tombo_num}
+                          tombo={pin.tombo_codigo ?? (pin.tombo_num !== null && pin.tombo_num !== undefined ? String(pin.tombo_num) : null)}
                           localNome={pin.local_nome}
                         />
                       </Popup>
