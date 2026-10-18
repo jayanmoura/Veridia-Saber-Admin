@@ -152,9 +152,15 @@ export function useSpeciesImages(): UseSpeciesImagesReturn {
 
         if (localId) {
             query = query.eq('local_id', localId);
+        } else {
+            query = query.is('local_id', null);
         }
 
-        const { data } = await query;
+        const { data, error } = await query;
+        if (error) {
+            console.warn('Erro ao carregar imagens existentes da espécie:', error);
+            return;
+        }
 
         if (data) {
             setExistingImages(data.map(img => ({

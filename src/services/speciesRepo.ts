@@ -5,6 +5,13 @@ interface SpeciesRawRow extends Omit<Species, 'familia'> {
   familia?: { id?: string | number; familia_nome: string } | { id?: string | number; familia_nome: string }[] | null;
 }
 
+export interface SpecimenThumbnail {
+  id: string;
+  url_imagem: string;
+  url_thumbnail: string | null;
+  url_micro: string | null;
+}
+
 export const speciesRepo = {
     /**
      * List species with optional filtering
@@ -63,5 +70,39 @@ export const speciesRepo = {
         };
 
         return mappedData as Species;
+    },
+
+    /**
+     * Get specimen images (Tipo B) for a specific species within a local/project.
+     */
+    async getSpecimenThumbnailsBySpeciesAndLocal(
+        speciesId: string,
+        localId: string | number
+    ): Promise<SpecimenThumbnail[]> {
+        try {
+            const numericLocalId = typeof localId === 'string' ? parseInt(localId, 10) : localId;
+            const { data: specimens, error: specError } = await supabase
+                .from('especie_local')
+                .select('id')
+                .eq('especie_id', speciesId)
+                .eq('local_id', numericLocalId);
+
+            if (specError) throw specError;
+            if (!specimens || specimens.length === 0) return [];
+
+            const specimenIds = specimens.map((s) => s.id);
+            const { data: images, error: imgError } = await supabase
+                .from('imagens')
+                .select('id, url_imagem, url_thumbnail, url_micro')
+                .in('especime_id', specimenIds)
+                .not('especime_id', 'is', null);
+
+            if (imgError) throw imgError;
+            return (images || []) as SpecimenThumbnail[];
+        } catch (err) {
+            console.warn('Erro ao carregar miniaturas dos espécimes no local:', err);
+            return [];
+        }
     }
 };
+

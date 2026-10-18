@@ -19,7 +19,9 @@ import { useSpeciesForm, useSpeciesImages } from '../../../hooks';
 import { useToast } from '../../../hooks/useToast';
 import { SpeciesDataTab } from './SpeciesDataTab';
 import { ImageUploadZone } from '../../Forms/ImageUploadZone';
-import { X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon, Info, Trash2 } from 'lucide-react';
+import { canUploadSpeciesImages } from '../../../utils/permissions';
+import { speciesRepo, type SpecimenThumbnail } from '../../../services/speciesRepo';
 
 // ============ TYPES ============
 import type { Species } from '../../../types/domain';
@@ -56,6 +58,34 @@ export function SpeciesModalRefactored({
   // Use extracted hooks
   const form = useSpeciesForm({ initialData, isOpen });
   const images = useSpeciesImages();
+  const [specimenThumbnails, setSpecimenThumbnails] = useState<SpecimenThumbnail[]>([]);
+
+  // Contexto de local e permissão de upload de fotos Tipo A
+  const effectiveLocalId = form.formData.local_id || initialData?.local_id || (form.isLocalUser && profile?.local_id ? String(profile.local_id) : null);
+  const canUpload = canUploadSpeciesImages({ localId: effectiveLocalId, role: profile?.role });
+
+  // Carrega fotos Tipo B dos espécimes vinculados a esta espécie neste local
+  useEffect(() => {
+    if (!isOpen || !initialData?.id || !effectiveLocalId) {
+      setSpecimenThumbnails([]);
+      return;
+    }
+
+    let isMounted = true;
+    speciesRepo
+      .getSpecimenThumbnailsBySpeciesAndLocal(initialData.id, effectiveLocalId)
+      .then((data) => {
+        if (isMounted) setSpecimenThumbnails(data);
+      })
+      .catch((err) => {
+        console.warn('Erro ao carregar miniaturas dos espécimes no local:', err);
+        if (isMounted) setSpecimenThumbnails([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, initialData?.id, effectiveLocalId]);
 
   // Load images when editing; reset when modal closes or species changes
   useEffect(() => {
@@ -95,7 +125,7 @@ export function SpeciesModalRefactored({
       return;
     }
 
-    const hasNewImages = images.imageFiles.length > 0;
+    const hasNewImages = canUpload && images.imageFiles.length > 0;
 
     setLoading(true);
     if (hasNewImages) setUploadStage('saving');
@@ -194,8 +224,8 @@ export function SpeciesModalRefactored({
       }
 
 
-      // Upload new images
-      if (hasNewImages && speciesId) {
+      // Upload new images (apenas se permitido pela regra de Tipo A)
+      if (hasNewImages && speciesId && canUpload) {
         const isCreatingNewGlobalSpecies = !form.selectedEspecieId && !form.isEditingExisting && !effectiveLocalId;
 
         setUploadStage('uploading');
@@ -341,32 +371,110 @@ export function SpeciesModalRefactored({
               />
 
               {/* Images Section */}
-              <section>
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
                   <ImageIcon size={16} className="text-emerald-600" />
                   Galeria de Imagens
                 </h3>
-                <ImageUploadZone
-                  imagePreviews={images.imagePreviews}
-                  newImageCredits={images.newImageCredits}
-                  onRemoveNewImage={images.removeNewImage}
-                  onNewImageCreditsChange={(index, credits) => {
-                    images.setNewImageCredits(prev => {
-                      const updated = [...prev];
-                      updated[index] = credits;
-                      return updated;
-                    });
-                  }}
-                  existingImages={images.existingImages}
-                  editedCredits={images.editedCredits}
-                  onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
-                  onDeleteExisting={images.handleDeleteExistingImage}
-                  dragActive={images.dragActive}
-                  onDrag={images.handleDrag}
-                  onDrop={images.handleDrop}
-                  onFileInput={images.handleFileInput}
-                  fileInputRef={images.fileInputRef}
-                />
+
+                {canUpload ? (
+                  <ImageUploadZone
+                    imagePreviews={images.imagePreviews}
+                    newImageCredits={images.newImageCredits}
+                    onRemoveNewImage={images.removeNewImage}
+                    onNewImageCreditsChange={(index, credits) => {
+                      images.setNewImageCredits(prev => {
+                        const updated = [...prev];
+                        updated[index] = credits;
+                        return updated;
+                      });
+                    }}
+                    existingImages={images.existingImages}
+                    editedCredits={images.editedCredits}
+                    onCreditsChange={(id, credits) => images.setEditedCredits(prev => ({ ...prev, [id]: credits }))}
+                    onDeleteExisting={images.handleDeleteExistingImage}
+                    dragActive={images.dragActive}
+                    onDrag={images.handleDrag}
+                    onDrop={images.handleDrop}
+                    onFileInput={images.handleFileInput}
+                    fileInputRef={images.fileInputRef}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {/* Aviso no contexto de local */}
+                    {effectiveLocalId && (
+                      <div className="p-3.5 bg-forest-50 border border-forest-200 text-neutral-700 rounded-xl text-sm flex items-center gap-2.5">
+                        <Info size={18} className="text-forest-600 shrink-0" />
+                        <span>As fotos de campo são adicionadas no cadastro do espécime.</span>
+                      </div>
+                    )}
+
+                    {/* Fotos Tipo A já existentes dessa espécie (legado) com botão de excluir existente */}
+                    {images.existingImages.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                          Fotos da espécie cadastradas anteriormente
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {images.existingImages.map((img) => (
+                            <div key={img.id} className="relative group">
+                              <div className="aspect-square rounded-lg overflow-hidden border border-neutral-200">
+                                <img
+                                  src={img.url_micro || img.url_thumbnail || img.url_imagem}
+                                  alt="Imagem existente"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Créditos (opcional)"
+                                value={images.editedCredits[img.id] || ''}
+                                onChange={(e) => images.setEditedCredits(prev => ({ ...prev, [img.id]: e.target.value }))}
+                                className="mt-1 w-full text-xs px-2 py-1 border border-neutral-200 rounded focus:ring-1 focus:ring-forest-500 focus:border-forest-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => images.handleDeleteExistingImage(img.id, [img.url_imagem, img.url_thumbnail, img.url_micro])}
+                                className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 cursor-pointer"
+                                title="Excluir imagem"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fotos dos espécimes neste local (somente leitura) */}
+                    {effectiveLocalId && specimenThumbnails.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-neutral-100">
+                        <h4 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                          Fotos dos espécimes neste local
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {specimenThumbnails.slice(0, 8).map((st) => (
+                            <div
+                              key={st.id}
+                              className="w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50"
+                            >
+                              <img
+                                src={st.url_thumbnail || st.url_micro || st.url_imagem}
+                                alt="Miniatura de espécime"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                          {specimenThumbnails.length > 8 && (
+                            <span className="text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-200 px-2.5 py-1.5 rounded-lg">
+                              +{specimenThumbnails.length - 8}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
 
               {/* Authorship Info — shown when editing */}
