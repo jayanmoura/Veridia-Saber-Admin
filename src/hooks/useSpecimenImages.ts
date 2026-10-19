@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage, compressForListing } from '../utils/imageCompressor';
 import { uploadFile, deleteImageVariants } from '../utils/storage';
@@ -66,6 +66,11 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
     const [newImageCredits, setNewImageCredits] = useState<string[]>([]);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const imagePreviewsRef = useRef<string[]>(imagePreviews);
+
+    useEffect(() => {
+        imagePreviewsRef.current = imagePreviews;
+    }, [imagePreviews]);
 
     // ==========================================
     // 1. Funções Base (Sem dependência de outras funções locais)
@@ -73,13 +78,13 @@ export function useSpecimenImages(): UseSpecimenImagesReturn {
 
     const reset = useCallback(() => {
         // Revoke object URLs to prevent memory leaks
-        imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        imagePreviewsRef.current.forEach(url => URL.revokeObjectURL(url));
         setImageFiles([]);
         setImagePreviews([]);
         setNewImageCredits([]);
         setExistingImages([]);
         setEditedCredits({});
-    }, [imagePreviews]);
+    }, []);
 
     const loadExistingImages = useCallback(async (specimenId: number) => {
         // Clear stale images immediately so previous specimen's images don't flash

@@ -71,20 +71,31 @@ export function SpecimenModal({
     const [uploadStage, setUploadStage] = useState<'idle' | 'compressing' | 'uploading' | 'saving'>('idle');
     const isSubmitting = useRef(false);
 
+    const { reset: resetImages, loadExistingImages } = images;
+    const latestFormRef = useRef({
+        localId: formData.local_id,
+        setFormData
+    });
+    latestFormRef.current = {
+        localId: formData.local_id,
+        setFormData
+    };
+
     // Setup initial state; reset when modal closes
     useEffect(() => {
         if (!isOpen) {
-            images.reset();
+            resetImages();
             return;
         }
 
         if (specimenId) {
             // Edit mode
-            images.loadExistingImages(specimenId);
+            loadExistingImages(specimenId);
             if (initialSpeciesName) setSelectedSpeciesName(initialSpeciesName);
             if (initialProjectName) setSelectedProjectName(initialProjectName);
         } else {
             // New mode
+            const { localId: formLocalId, setFormData: updateFormData } = latestFormRef.current;
             setSpeciesSearch('');
             setProjectSearch('');
             // Only clear if empty, parent might pre-set them (e.g. from ProjectDetails or Wizard)
@@ -95,7 +106,7 @@ export function SpecimenModal({
             }
 
             // Auto-fill or pre-fill project details
-            const targetLocalId = formData.local_id || profile?.local_id;
+            const targetLocalId = formLocalId || profile?.local_id;
             if (targetLocalId) {
                 if (initialProjectName) {
                     setSelectedProjectName(initialProjectName);
@@ -109,7 +120,7 @@ export function SpecimenModal({
                             .single();
 
                         if (localData) {
-                            setFormData(prev => ({
+                            updateFormData(prev => ({
                                 ...prev,
                                 local_id: localData.id.toString(),
                                 institution_id: prev.institution_id || localData.institution_id
@@ -128,22 +139,15 @@ export function SpecimenModal({
             }
 
             // Sets Defaults
-            setFormData(prev => ({
+            updateFormData(prev => ({
                 ...prev,
                 coletor: prev.coletor || profile?.full_name || '',
                 determinador: prev.determinador || profile?.full_name || '',
                 data_determinacao: prev.data_determinacao || new Date().toISOString().split('T')[0]
             }));
-            images.reset();
+            resetImages();
         }
-        // 'images' e 'setFormData' excluídos intencionalmente: 'images' é
-        // recriado a cada render pelo hook useSpecimenImages (incluí-lo
-        // causaria o efeito rodar em todo render); 'setFormData' é estável
-        // via useState e não precisa constar. 'formData.local_id' também
-        // não é necessário pois o efeito já lê o valor mais recente via
-        // closure no momento em que roda, disparado pelas deps corretas.
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- images e recriado a cada render pelo hook useSpecimenImages; inclusao causaria loop de reset
-    }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId]);
+    }, [isOpen, isEdit, initialSpeciesName, initialProjectName, formData.especie_id, profile, specimenId, resetImages, loadExistingImages]);
 
     // Species Search Effect
     useEffect(() => {

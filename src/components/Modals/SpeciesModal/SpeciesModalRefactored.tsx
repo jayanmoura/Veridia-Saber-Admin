@@ -87,28 +87,27 @@ export function SpeciesModalRefactored({
     };
   }, [isOpen, initialData?.id, effectiveLocalId]);
 
+  const { reset: resetImages, loadExistingImages } = images;
+  const { loadLocalData } = form;
+  const rawCurrentLocalId = initialData?.local_id || form.formData.local_id || (form.isLocalUser ? profile?.local_id : null);
+  const latestLocalIdRef = useRef<string | null>(rawCurrentLocalId ? String(rawCurrentLocalId) : null);
+  latestLocalIdRef.current = rawCurrentLocalId ? String(rawCurrentLocalId) : null;
+  const initialSpeciesId = initialData?.id;
+
   // Load images when editing; reset when modal closes or species changes
   useEffect(() => {
     if (!isOpen) {
-      images.reset();
+      resetImages();
       return;
     }
-    if (initialData?.id) {
-      const currentLocalId = initialData.local_id || form.formData.local_id || (form.isLocalUser ? profile?.local_id : null);
-      images.loadExistingImages(initialData.id, currentLocalId ? String(currentLocalId) : null);
-      form.loadLocalData(initialData.id, currentLocalId ? String(currentLocalId) : null);
+    if (initialSpeciesId) {
+      const currentLocalId = latestLocalIdRef.current;
+      loadExistingImages(initialSpeciesId, currentLocalId);
+      loadLocalData(initialSpeciesId, currentLocalId);
     } else {
-      images.reset();
+      resetImages();
     }
-    // 'form', 'images', 'initialData.local_id' e 'profile?.local_id'
-    // excluídos intencionalmente: 'form' e 'images' são objetos novos a
-    // cada render (retornados por useSpeciesForm/useSpeciesImages sem
-    // memoização), incluí-los faria este efeito rodar em todo render e
-    // resetar o formulário/imagens repetidamente. Este efeito já reage
-    // corretamente a 'isOpen' e 'initialData?.id', que são os gatilhos
-    // reais de troca de espécie/abertura do modal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- form e images sao novos a cada render e causariam reset continuo do formulario
-  }, [isOpen, initialData?.id]);
+  }, [isOpen, initialSpeciesId, resetImages, loadExistingImages, loadLocalData]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
