@@ -10,7 +10,6 @@ export interface ParteModelo {
 export interface ModeloOrgao {
   url: string;
   titulo: string;
-  topicoRelacionado: string;
   partes: ParteModelo[];
   naoSelecionaveis: string[];
 }
@@ -19,7 +18,6 @@ export const MODELOS_MORFOLOGIA: Record<string, ModeloOrgao> = {
   Raiz: {
     url: '/modelos3d/raiz.glb',
     titulo: 'Raiz de eudicotiledônea',
-    topicoRelacionado: 'Definição de Raiz e Suas Partes',
     naoSelecionaveis: ['solo_aderido'],
     partes: [
       {
@@ -91,12 +89,4 @@ export function parteDoNo(modelo: ModeloOrgao, nomeDoNo: string): ParteModelo | 
   }
 
   return null;
-}
-
-export function normalizarTitulo(t: string): string {
-  return t
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
 }

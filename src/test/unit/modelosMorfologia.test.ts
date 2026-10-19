@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getModeloOrgao,
-  parteDoNo,
-  normalizarTitulo
+  parteDoNo
 } from '../../pages/landingpage/components/morfologia3d/modelosMorfologia';
 
 describe('modelosMorfologia', () => {
@@ -12,7 +11,6 @@ describe('modelosMorfologia', () => {
       expect(modelo).not.toBeNull();
       expect(modelo?.titulo).toBe('Raiz de eudicotiledônea');
       expect(modelo?.url).toBe('/modelos3d/raiz.glb');
-      expect(modelo?.topicoRelacionado).toBe('Definição de Raiz e Suas Partes');
       expect(modelo?.partes).toHaveLength(6);
     });
 
@@ -36,12 +34,6 @@ describe('modelosMorfologia', () => {
     it('retorna null para nós não selecionáveis ou desconhecidos', () => {
       expect(parteDoNo(modeloRaiz, 'solo_aderido')).toBeNull();
       expect(parteDoNo(modeloRaiz, 'qualquer_coisa')).toBeNull();
-    });
-  });
-
-  describe('normalizarTitulo', () => {
-    it('remove espaços nas pontas, converte para minúsculas e remove acentos', () => {
-      expect(normalizarTitulo('  Definição de Raiz ')).toBe('definicao de raiz');
     });
   });
 });
