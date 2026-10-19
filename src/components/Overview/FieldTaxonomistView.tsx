@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { StatCard } from '../../components/Dashboard/StatCard';
 import { SpeciesModalRefactored } from '../Modals/SpeciesModal/SpeciesModalRefactored';
-import { PendingCuratorshipModal, type PendingItem } from '../../components/Modals/PendingCuratorshipModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -10,8 +9,7 @@ import {
     Pencil,
     Award,
     Leaf,
-    CheckCircle,
-    AlertTriangle,
+    TreeDeciduous,
     Loader2
 } from 'lucide-react';
 import type { GlobalStats, RecentWorkItem } from '../../hooks';
@@ -22,7 +20,6 @@ import type { Species } from '../../types/domain';
 interface FieldTaxonomistViewProps {
     stats: GlobalStats;
     recentWork: RecentWorkItem[];
-    pendingSpecies: PendingItem[];
     loading: boolean;
     refetch: () => Promise<void>;
 }
@@ -31,10 +28,9 @@ interface FieldTaxonomistViewProps {
  * Overview view for Taxonomista de Campo.
  * Similar to SeniorView but without Nova Família action (RBAC restriction).
  */
-export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading, refetch }: FieldTaxonomistViewProps) {
+export function FieldTaxonomistView({ stats, recentWork, loading, refetch }: FieldTaxonomistViewProps) {
     const { showToast } = useToast();
     const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
-    const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const [editingWork, setEditingWork] = useState<Species | null>(null);
     const [loadingWorkId, setLoadingWorkId] = useState<string | null>(null);
 
@@ -71,14 +67,7 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard title="Minhas Contribuições" value={stats.seniorContributions || 0} icon={Award} color="emerald" loading={loading} />
                 <StatCard title="Espécies no Projeto" value={stats.species} icon={Leaf} color="blue" loading={loading} />
-                <StatCard
-                    title={stats.seniorPending === 0 ? "Tudo Revisado" : "Pendente de Revisão"}
-                    value={stats.seniorPending === 0 ? "✓" : stats.seniorPending}
-                    icon={stats.seniorPending === 0 ? CheckCircle : AlertTriangle}
-                    color={stats.seniorPending === 0 ? "emerald" : "orange"}
-                    loading={loading}
-                    onClick={() => { if (stats.seniorPending > 0) setIsPendingModalOpen(true); }}
-                />
+                <StatCard title="Espécimes no Projeto" value={stats.specimens ?? 0} icon={TreeDeciduous} color="purple" loading={loading} />
             </div>
 
             {/* Quick Action - Only Nova Espécie (no Nova Família for field taxonomist) */}
@@ -155,7 +144,7 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
                             ) : (
                                 <tr>
                                     <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">
-                                        Nenhum registro recente. Comece catalogando uma nova espécie!
+                                        Você ainda não cadastrou espécies neste projeto. Comece catalogando uma nova espécie!
                                     </td>
                                 </tr>
                             )}
@@ -165,22 +154,6 @@ export function FieldTaxonomistView({ stats, recentWork, pendingSpecies, loading
             </div>
 
             {/* Modals */}
-            <PendingCuratorshipModal
-                isOpen={isPendingModalOpen}
-                onClose={() => setIsPendingModalOpen(false)}
-                items={pendingSpecies}
-                onFix={async (item) => {
-                    try {
-                        const fullSpecies = await speciesRepo.getFullSpeciesForEdit(item.id);
-                        setEditingWork(fullSpecies);
-                        setIsPendingModalOpen(false);
-                        setIsSpeciesModalOpen(true);
-                    } catch (err) {
-                        console.error('Erro ao buscar espécie para curadoria:', err);
-                        showToast('Erro ao carregar dados da espécie.', 'error');
-                    }
-                }}
-            />
             <SpeciesModalRefactored
                 isOpen={isSpeciesModalOpen}
                 onClose={() => setIsSpeciesModalOpen(false)}

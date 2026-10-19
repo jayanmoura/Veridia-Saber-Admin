@@ -72,6 +72,7 @@ export interface ProjectData {
 export interface GlobalStats {
     families: number;
     species: number;
+    specimens?: number;
     projects: number;
     users: number;
     seniorContributions: number;
@@ -82,6 +83,35 @@ export interface LocalStats {
     speciesCount: number;
     teamCount: number;
     imagesCount: number;
+}
+
+const RECENT_SPECIES_SELECT =
+    'id, nome_cientifico, created_at, local_id, familia_id, familia:familia_id(familia_nome), created_by, created_by_name';
+
+async function resolveCreatorNames<T extends { created_by?: string | null; created_by_name?: string | null }>(
+    items: T[]
+): Promise<Map<string, string>> {
+    const missingUserIds = Array.from(new Set(
+        items
+            .filter(item => !item.created_by_name && Boolean(item.created_by))
+            .map(item => item.created_by as string)
+    ));
+
+    return missingUserIds.length > 0
+        ? await fetchProfileNames(missingUserIds)
+        : new Map<string, string>();
+}
+
+function withResolvedCreator<T extends { created_by?: string | null; created_by_name?: string | null }>(
+    item: T,
+    nameMap: Map<string, string>
+): T & { created_by_name: string | null; creator: CreatorRef } {
+    const resolvedName = item.created_by_name || (item.created_by ? nameMap.get(item.created_by) : null) || null;
+    return {
+        ...item,
+        created_by_name: resolvedName,
+        creator: resolvedName ? { full_name: resolvedName } : null
+    };
 }
 
 export interface UseOverviewStatsReturn {
@@ -144,6 +174,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
     const [stats, setStats] = useState<GlobalStats>({
         families: 0,
         species: 0,
+        specimens: 0,
         projects: 0,
         users: 0,
         seniorContributions: 0,
@@ -245,7 +276,7 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         const [recentSpecies, recentFamilies] = await Promise.all([
             supabase
                 .from('especie')
-                .select('id, nome_cientifico, created_at, local_id, familia_id, familia:familia_id(familia_nome), created_by, created_by_name')
+                .select(RECENT_SPECIES_SELECT)
                 .is('local_id', null)
                 .order('created_at', { ascending: false })
                 .limit(10),
@@ -259,34 +290,10 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         const rawSpecies = (recentSpecies.data || []).map(item => ({ ...item, type: 'especie' as const }));
         const rawFamilies = (recentFamilies.data || []).map(item => ({ ...item, type: 'familia' as const }));
 
-        // Coleta IDs de criadores cujos registros não possuem created_by_name preenchido
-        const missingUserIds = Array.from(new Set(
-            [...rawSpecies, ...rawFamilies]
-                .filter(item => !item.created_by_name && Boolean(item.created_by))
-                .map(item => item.created_by as string)
-        ));
+        const nameMap = await resolveCreatorNames([...rawSpecies, ...rawFamilies]);
 
-        const nameMap = missingUserIds.length > 0
-            ? await fetchProfileNames(missingUserIds)
-            : new Map<string, string>();
-
-        const speciesItems: RecentSpecies[] = rawSpecies.map(item => {
-            const resolvedName = item.created_by_name || (item.created_by ? nameMap.get(item.created_by) : null) || null;
-            return {
-                ...item,
-                created_by_name: resolvedName,
-                creator: resolvedName ? { full_name: resolvedName } : null
-            };
-        });
-
-        const familyItems: RecentFamily[] = rawFamilies.map(item => {
-            const resolvedName = item.created_by_name || (item.created_by ? nameMap.get(item.created_by) : null) || null;
-            return {
-                ...item,
-                created_by_name: resolvedName,
-                creator: resolvedName ? { full_name: resolvedName } : null
-            };
-        });
+        const speciesItems: RecentSpecies[] = rawSpecies.map(item => withResolvedCreator(item, nameMap));
+        const familyItems: RecentFamily[] = rawFamilies.map(item => withResolvedCreator(item, nameMap));
 
         const combined: RecentWorkItem[] = [...speciesItems, ...familyItems]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -294,6 +301,77 @@ export function useOverviewStats(): UseOverviewStatsReturn {
 
         setRecentWork(combined);
     }, [profile?.id]);
+
+    // Fetch field taxonomist stats (scoped to profile.local_id)
+    const fetchFieldStats = useCallback(async () => {
+        if (!profile?.id || !profile?.local_id) {
+            setStats({
+                families: 0,
+                species: 0,
+                specimens: 0,
+                projects: 0,
+                users: 0,
+                seniorContributions: 0,
+                seniorPending: 0
+            });
+            setRecentWork([]);
+            setPendingSpecies([]);
+            return;
+        }
+
+        const numericLocalId = Number(profile.local_id);
+
+        const [
+            localSpeciesCount,
+            localSpecimensCount,
+            mySpeciesCount,
+            mySpecimensCount,
+            recentSpecies
+        ] = await Promise.all([
+            supabase
+                .from('especie')
+                .select('*', { count: 'exact', head: true })
+                .eq('local_id', numericLocalId),
+            supabase
+                .from('especie_local')
+                .select('*', { count: 'exact', head: true })
+                .eq('local_id', numericLocalId),
+            supabase
+                .from('especie')
+                .select('*', { count: 'exact', head: true })
+                .eq('created_by', profile.id)
+                .eq('local_id', numericLocalId),
+            supabase
+                .from('especie_local')
+                .select('*', { count: 'exact', head: true })
+                .eq('created_by', profile.id)
+                .eq('local_id', numericLocalId),
+            supabase
+                .from('especie')
+                .select(RECENT_SPECIES_SELECT)
+                .eq('created_by', profile.id)
+                .eq('local_id', numericLocalId)
+                .order('created_at', { ascending: false })
+                .limit(10)
+        ]);
+
+        const myContributions = (mySpeciesCount.count || 0) + (mySpecimensCount.count || 0);
+
+        setPendingSpecies([]);
+        setStats(prev => ({
+            ...prev,
+            species: localSpeciesCount.count || 0,
+            specimens: localSpecimensCount.count || 0,
+            seniorContributions: myContributions,
+            seniorPending: 0
+        }));
+
+        const rawSpecies = (recentSpecies.data || []).map(item => ({ ...item, type: 'especie' as const }));
+        const nameMap = await resolveCreatorNames(rawSpecies);
+        const speciesItems: RecentSpecies[] = rawSpecies.map(item => withResolvedCreator(item, nameMap));
+
+        setRecentWork(speciesItems);
+    }, [profile?.id, profile?.local_id]);
 
     // Fetch local admin stats
     const fetchLocalStats = useCallback(async () => {
@@ -437,15 +515,17 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 await fetchGlobalStats();
             } else if (isLocalAdmin) {
                 await fetchLocalStats();
-            } else if (isSenior || isFieldTaxonomist) {
-                await fetchSeniorStats(); // Reuse same logic for field taxonomist
+            } else if (isSenior) {
+                await fetchSeniorStats();
+            } else if (isFieldTaxonomist) {
+                await fetchFieldStats();
             } else if (isCataloger) {
                 await fetchPersonalStats();
             }
         } finally {
             setLoading(false);
         }
-    }, [isGlobalAdmin, isLocalAdmin, isSenior, isFieldTaxonomist, isCataloger, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchPersonalStats]);
+    }, [isGlobalAdmin, isLocalAdmin, isSenior, isFieldTaxonomist, isCataloger, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchFieldStats, fetchPersonalStats]);
 
     // Initial load
     useEffect(() => {

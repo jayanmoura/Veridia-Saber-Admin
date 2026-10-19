@@ -78,7 +78,6 @@ export default function Overview() {
             <FieldTaxonomistView
                 stats={stats}
                 recentWork={recentWork}
-                pendingSpecies={pendingSpecies}
                 loading={loading}
                 refetch={refetch}
             />
