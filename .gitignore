@@ -31,3 +31,4 @@ Contratos/
 .agent/
 .vscode/*
 !.vscode/extensions.json *.blend1
+*.blend1
