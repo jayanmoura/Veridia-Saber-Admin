@@ -114,7 +114,6 @@ export function SpeciesModalRefactored({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting.current) return;
-    isSubmitting.current = true;
 
     if (!form.formData.nome_cientifico.trim()) {
       showToast('O nome científico é obrigatório.', 'warning');
@@ -127,6 +126,7 @@ export function SpeciesModalRefactored({
 
     const hasNewImages = canUpload && images.imageFiles.length > 0;
 
+    isSubmitting.current = true;
     setLoading(true);
     if (hasNewImages) setUploadStage('saving');
 

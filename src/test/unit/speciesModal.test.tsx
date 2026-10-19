@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
-import { render, screen, waitFor, renderHook, act } from '@testing-library/react';
+import { render, screen, waitFor, renderHook, act, fireEvent } from '@testing-library/react';
 import * as storageUtils from '../../utils/storage';
 
 vi.mock('../../utils/storage', () => {
@@ -46,11 +46,24 @@ import { supabase } from '../../lib/supabase';
 // Apontando para o SpeciesModalRefactored — versão refatorada em uso ativo
 import { SpeciesModalRefactored } from '../../components/Modals/SpeciesModal/SpeciesModalRefactored';
 import { useSpeciesImages } from '../../hooks/useSpeciesImages';
+import { useToast } from '../../hooks/useToast';
 import { ToastProvider } from '../../contexts/ToastContext';
+
+const ToastEcho = () => {
+  const { toasts } = useToast();
+  return (
+    <>
+      {toasts.map((t) => (
+        <div key={t.id} role="alert">{t.message}</div>
+      ))}
+    </>
+  );
+};
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ToastProvider>
     {children}
+    <ToastEcho />
   </ToastProvider>
 );
 
@@ -211,6 +224,64 @@ describe('SpeciesModal Integration Tests', () => {
         expect(screen.getByText('Galeria de Imagens')).toBeInTheDocument();
       });
       expect(screen.queryByText('Etiqueta de Herbário')).not.toBeInTheDocument();
+    });
+
+    it('regressão: enviar sem família mostra aviso e permite gravar na tentativa seguinte após selecionar a família', async () => {
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'nova-esp-123' }, error: null }),
+        }),
+      });
+
+      (supabase.from as Mock).mockImplementation((table: string) => {
+        if (table === 'familia') {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [{ id: 'fam1', familia_nome: 'Acanthaceae' }],
+                error: null,
+              }),
+            }),
+          };
+        }
+        if (table === 'locais') {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [{ id: 1, nome: 'Projeto X' }],
+                error: null,
+              }),
+            }),
+          };
+        }
+        if (table === 'especie') {
+          return { insert: mockInsert };
+        }
+        return {};
+      });
+
+      render(<SpeciesModalRefactored {...defaultProps} />, { wrapper });
+
+      const nomeInput = await screen.findByPlaceholderText('Ex: Justicia brandegeeana');
+      fireEvent.change(nomeInput, { target: { value: 'Justicia brandegeeana' } });
+
+      const submitBtn = screen.getByRole('button', { name: 'Criar Espécie' });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText('Selecione uma família.')).toBeInTheDocument();
+      });
+      expect(mockInsert).not.toHaveBeenCalled();
+
+      const familySelect = screen.getByDisplayValue('Selecione uma família...');
+      fireEvent.change(familySelect, { target: { value: 'fam1' } });
+
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledTimes(1);
+      });
+      expect(defaultProps.onSave).toHaveBeenCalledTimes(1);
     });
   });
 });
