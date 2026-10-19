@@ -30,4 +30,4 @@ Contratos/
 # Agent workflows e configurações locais de IDE
 .agent/
 .vscode/*
-!.vscode/extensions.json 
+!.vscode/extensions.json *.blend1
