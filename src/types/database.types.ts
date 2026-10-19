@@ -1200,26 +1200,15 @@ export type Database = {
       }
     }
     Functions: {
-      _rls_rewrite_initplan: { Args: { expr: string }; Returns: string }
-      buscar_botanica:
-        | {
-            Args: { termo: string }
-            Returns: {
-              descricao: string
-              id: string
-              nome: string
-              tipo: string
-            }[]
-          }
-        | {
-            Args: { termo_busca: string; tipo_filtro: string }
-            Returns: {
-              descricao: string
-              id: string
-              nome: string
-              tipo: string
-            }[]
-          }
+      buscar_botanica: {
+        Args: { termo_busca: string; tipo_filtro: string }
+        Returns: {
+          descricao: string
+          id: string
+          nome: string
+          tipo: string
+        }[]
+      }
       buscar_especie_autocomplete: {
         Args: { termo: string }
         Returns: {
