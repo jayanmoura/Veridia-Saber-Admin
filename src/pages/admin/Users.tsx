@@ -227,8 +227,8 @@ export default function Users() {
         try {
             const updateData: { role: UserRole; local_id: number | null } = {
                 role: editRole,
-                // TAREFA 3: Cargos globais SEMPRE têm local_id = null
-                local_id: isGlobalRole(editRole) ? null : (editProjectId ? Number(editProjectId) : null)
+                // TAREFA 3: Cargos globais e Consulente SEMPRE têm local_id = null
+                local_id: (isGlobalRole(editRole) || editRole === 'Consulente') ? null : (editProjectId ? Number(editProjectId) : null)
             };
 
             const { error } = await supabase
@@ -269,18 +269,23 @@ export default function Users() {
 
         try {
             // Rebaixa para Consulente ao invés de deletar
-            const { error } = await supabase
-                .from('profiles')
-                .update({ role: 'Consulente', local_id: null })
-                .eq('id', userToDelete.id);
+            const { error } = await supabase.rpc('rebaixar_membro_projeto', {
+                p_user_id: userToDelete.id
+            });
 
             if (error) throw error;
 
-            setProfiles(prev => prev.map(p =>
-                p.id === userToDelete.id
-                    ? { ...p, role: 'Consulente' as UserRole, local_id: null, locais: undefined }
-                    : p
-            ));
+            setProfiles(prev => {
+                const next = myLevel === 4
+                    ? prev.filter(p => p.id !== userToDelete.id)
+                    : prev.map(p =>
+                        p.id === userToDelete.id
+                            ? { ...p, role: 'Consulente' as UserRole, local_id: null, locais: undefined }
+                            : p
+                    );
+                calculateStats(next);
+                return next;
+            });
             showToast('Usuário rebaixado para Consulente com sucesso!');
         } catch (error) {
             console.error('Demote error:', error);
@@ -479,14 +484,16 @@ export default function Users() {
                                                             >
                                                                 <Pencil size={18} />
                                                             </button>
-                                                            <button
-                                                                onClick={() => openDeleteModal(user)}
-                                                                disabled={deleteLoading}
-                                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                                                title="Rebaixar para Consulente"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
+                                                            {user.role !== 'Consulente' && (
+                                                                <button
+                                                                    onClick={() => openDeleteModal(user)}
+                                                                    disabled={deleteLoading}
+                                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                                    title="Rebaixar para Consulente"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <span className="p-2 text-gray-300" title="Sem permissão">
@@ -595,15 +602,15 @@ export default function Users() {
                                         {editRole === 'Gestor de Acervo' && <span className="text-red-500">*</span>}
                                     </label>
                                     <select
-                                        value={isGlobalRole(editRole) ? '' : (editProjectId || '')}
+                                        value={(isGlobalRole(editRole) || editRole === 'Consulente') ? '' : (editProjectId || '')}
                                         onChange={(e) => setEditProjectId(e.target.value || null)}
-                                        disabled={isReadOnly || isGlobalRole(editRole)}
-                                        className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none bg-white ${(isReadOnly || isGlobalRole(editRole)) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                                        disabled={isReadOnly || isGlobalRole(editRole) || editRole === 'Consulente'}
+                                        className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none bg-white ${(isReadOnly || isGlobalRole(editRole) || editRole === 'Consulente') ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
                                     >
                                         <option value="">
-                                            {isGlobalRole(editRole) ? '🌐 Global (Veridia Saber)' : 'Selecione um local'}
+                                            {isGlobalRole(editRole) ? '🌐 Global (Veridia Saber)' : editRole === 'Consulente' ? 'Sem vínculo com projeto' : 'Selecione um local'}
                                         </option>
-                                        {!isGlobalRole(editRole) && projects.map((project) => (
+                                        {!isGlobalRole(editRole) && editRole !== 'Consulente' && projects.map((project) => (
                                             <option key={project.id} value={project.id}>
                                                 {project.nome}
                                             </option>

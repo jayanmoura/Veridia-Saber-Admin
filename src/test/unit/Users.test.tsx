@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 
 
 // Mocks GLOBAIS
@@ -14,7 +14,7 @@ vi.mock('../../contexts/authContext', () => ({
 
 // Mock do supabase (usando nosso setup de src/test/mocks/supabase)
 vi.mock('../../lib/supabase');
-import { mockSupabaseResponse } from '../mocks/supabase';
+import { mockSupabaseResponse, supabase } from '../mocks/supabase';
 
 import Users from '../../pages/admin/Users';
 import { useAuth } from '../../contexts/authContext';
@@ -22,9 +22,11 @@ import { isGlobalRole, type UserRole } from '../../types/auth';
 
 describe('Users Page RBAC', () => {
   const mockUseAuth = useAuth as Mock;
+  const defaultFromImpl = (supabase.from as Mock).getMockImplementation()!;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (supabase.from as Mock).mockImplementation(defaultFromImpl);
 
     // Default: Listas vazias no fetchProfiles e fetchProjects para evitar warnings ou renders longos
     mockSupabaseResponse('profiles', 'select', { data: [], error: null });
@@ -248,5 +250,174 @@ describe('Users Page RBAC', () => {
         expect(isGlobalRole(role)).toBe(false);
       }
     );
+  });
+
+  // --------------------------------------------------------------------------
+  // GRUPO: Rebaixamento e vínculo de Consulente
+  // --------------------------------------------------------------------------
+  describe('Rebaixamento e vínculo de Consulente', () => {
+    it('rebaixar chama supabase.rpc com "rebaixar_membro_projeto" e { p_user_id } e NÃO chama .update', async () => {
+      mockUseAuth.mockReturnValue({
+        profile: { id: 'curador-1', role: 'Curador Mestre' as UserRole, local_id: null },
+      });
+
+      mockSupabaseResponse('profiles', 'select', {
+        data: [
+          {
+            id: 'target-1',
+            role: 'Taxonomista de Campo' as UserRole,
+            full_name: 'Alvo Rebaixar',
+            email: 'alvo@test.com',
+            avatar_url: null,
+            local_id: 1,
+          },
+        ],
+        error: null,
+      });
+
+      const mockUpdate = vi.fn();
+      const baseFrom = (supabase.from as Mock).getMockImplementation()!;
+      (supabase.from as Mock).mockImplementation((table: string) => {
+        const builder = baseFrom(table);
+        if (table === 'profiles') {
+          builder.update = mockUpdate;
+        }
+        return builder;
+      });
+
+      render(<Users />);
+
+      const row = await screen.findByText('Alvo Rebaixar');
+      const tr = row.closest('tr')!;
+      fireEvent.click(within(tr).getByTitle('Rebaixar para Consulente'));
+
+      const confirmBtn = await screen.findByRole('button', { name: /Sim, Rebaixar/i });
+      fireEvent.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(supabase.rpc).toHaveBeenCalledWith('rebaixar_membro_projeto', {
+          p_user_id: 'target-1',
+        });
+      });
+
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it('como Gestor, a linha some após o sucesso do rebaixamento', async () => {
+      mockUseAuth.mockReturnValue({
+        profile: { id: 'gestor-1', role: 'Gestor de Acervo' as UserRole, local_id: 1 },
+      });
+
+      mockSupabaseResponse('profiles', 'select', {
+        data: [
+          {
+            id: 'target-campo',
+            role: 'Taxonomista de Campo' as UserRole,
+            full_name: 'Taxonomista Removido',
+            email: 'tax@test.com',
+            avatar_url: null,
+            local_id: 1,
+          },
+        ],
+        error: null,
+      });
+
+      render(<Users />);
+
+      const row = await screen.findByText('Taxonomista Removido');
+      const tr = row.closest('tr')!;
+      fireEvent.click(within(tr).getByTitle('Rebaixar para Consulente'));
+
+      const confirmBtn = await screen.findByRole('button', { name: /Sim, Rebaixar/i });
+      fireEvent.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Taxonomista Removido')).not.toBeInTheDocument();
+      });
+    });
+
+    it('editar para Consulente envia local_id null', async () => {
+      mockUseAuth.mockReturnValue({
+        profile: { id: 'curador-1', role: 'Curador Mestre' as UserRole, local_id: null },
+      });
+
+      mockSupabaseResponse('profiles', 'select', {
+        data: [
+          {
+            id: 'target-edit',
+            role: 'Taxonomista de Campo' as UserRole,
+            full_name: 'Alvo Edição',
+            email: 'edit@test.com',
+            avatar_url: null,
+            local_id: 10,
+          },
+        ],
+        error: null,
+      });
+
+      mockSupabaseResponse('locais', 'select', {
+        data: [{ id: 10, nome: 'Projeto 10' }],
+        error: null,
+      });
+
+      const mockEq = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+      const baseFrom = (supabase.from as Mock).getMockImplementation()!;
+      (supabase.from as Mock).mockImplementation((table: string) => {
+        const builder = baseFrom(table);
+        if (table === 'profiles') {
+          builder.update = mockUpdate;
+        }
+        return builder;
+      });
+
+      render(<Users />);
+
+      const row = await screen.findByText('Alvo Edição');
+      const tr = row.closest('tr')!;
+      fireEvent.click(within(tr).getByTitle('Editar Cargo'));
+
+      const roleSelect = await screen.findByLabelText('Cargo');
+      fireEvent.change(roleSelect, { target: { value: 'Consulente' } });
+
+      const saveBtn = screen.getByRole('button', { name: /Salvar Alterações/i });
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith({
+          role: 'Consulente',
+          local_id: null,
+        });
+      });
+      expect(mockEq).toHaveBeenCalledWith('id', 'target-edit');
+    });
+
+    it('a lixeira não aparece para Consulente, mas o lápis de edição continua visível', async () => {
+      mockUseAuth.mockReturnValue({
+        profile: { id: 'curador-1', role: 'Curador Mestre' as UserRole, local_id: null },
+      });
+
+      mockSupabaseResponse('profiles', 'select', {
+        data: [
+          {
+            id: 'target-consulente',
+            role: 'Consulente' as UserRole,
+            full_name: 'Alvo Já Consulente',
+            email: 'consulente@test.com',
+            avatar_url: null,
+            local_id: null,
+          },
+        ],
+        error: null,
+      });
+
+      render(<Users />);
+
+      const row = await screen.findByText('Alvo Já Consulente');
+      const tr = row.closest('tr')!;
+
+      expect(within(tr).getByTitle('Editar Cargo')).toBeInTheDocument();
+      expect(within(tr).queryByTitle('Rebaixar para Consulente')).not.toBeInTheDocument();
+    });
   });
 });
