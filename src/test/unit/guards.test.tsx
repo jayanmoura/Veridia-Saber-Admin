@@ -157,11 +157,61 @@ describe('Route Guards', () => {
   });
 
   // --------------------------------------------------------------------------
+  // GRUPO: PrivateRoute — sessão sem perfil
+  // --------------------------------------------------------------------------
+  describe('PrivateRoute — sessão sem perfil', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        session: { user: { id: '123' } },
+        loading: false,
+        profile: null,
+      });
+    });
+
+    it('não deve renderizar o children e deve mostrar "Não foi possível carregar seu perfil"', () => {
+      renderWithRouter(
+        <PrivateRoute>
+          <DummyChild />
+        </PrivateRoute>
+      );
+      expect(screen.queryByTestId('conteudo-protegido')).not.toBeInTheDocument();
+      expect(screen.getByText(/Não foi possível carregar seu perfil/i)).toBeInTheDocument();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // GRUPO: PrivateRoute — papel desconhecido
+  // --------------------------------------------------------------------------
+  describe('PrivateRoute — papel desconhecido', () => {
+    it.each(['catalogador', ''])(
+      'com role "%s" deve mostrar "Seu perfil não tem acesso" e não renderizar o children',
+      (role) => {
+        mockUseAuth.mockReturnValue({
+          session: { user: { id: '123' } },
+          loading: false,
+          profile: { role: role as UserRole },
+        });
+
+        renderWithRouter(
+          <PrivateRoute>
+            <DummyChild />
+          </PrivateRoute>
+        );
+
+        expect(screen.queryByTestId('conteudo-protegido')).not.toBeInTheDocument();
+        expect(screen.getByText(/Seu perfil não tem acesso/i)).toBeInTheDocument();
+      }
+    );
+  });
+
+  // --------------------------------------------------------------------------
   // GRUPO: PrivateRoute — acesso liberado
   // --------------------------------------------------------------------------
   describe('PrivateRoute — acesso liberado', () => {
     it.each<UserRole>([
       'Curador Mestre',
+      'Coordenador Científico',
+      'Taxonomista Sênior',
       'Gestor de Acervo',
       'Taxonomista de Campo',
     ])('com sessão válida e role "%s" deve renderizar o children normalmente', (role) => {

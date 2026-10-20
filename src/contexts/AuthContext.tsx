@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const isFetchingProfile = useRef(false);
+    const currentProfileUserId = useRef<string | null>(null);
 
     const fetchProfile = async (userId: string) => {
         if (isFetchingProfile.current) return;
@@ -21,9 +22,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .single();
 
             if (error) throw error;
+            currentProfileUserId.current = userId;
             setProfile(data as UserProfile);
         } catch (error) {
             console.error('Error fetching profile:', error);
+            if (currentProfileUserId.current !== userId) {
+                currentProfileUserId.current = null;
+                setProfile(null);
+            }
         } finally {
             setLoading(false);
             isFetchingProfile.current = false;
@@ -34,8 +40,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'TOKEN_REFRESHED') return;
             setSession(session);
-            if (session) fetchProfile(session.user.id);
-            else {
+            if (session) {
+                if (currentProfileUserId.current !== session.user.id) {
+                    setLoading(true);
+                }
+                fetchProfile(session.user.id);
+            } else {
+                currentProfileUserId.current = null;
                 setProfile(null);
                 setLoading(false);
             }

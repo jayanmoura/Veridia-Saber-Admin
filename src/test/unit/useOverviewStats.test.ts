@@ -57,7 +57,6 @@ describe('useOverviewStats — Classificação de roles', () => {
     expect(result.current.isLocalAdmin).toBe(false);
     expect(result.current.isSenior).toBe(false);
     expect(result.current.isFieldTaxonomist).toBe(false);
-    expect(result.current.isCataloger).toBe(false);
   });
 
   it('Coordenador Científico → isGlobalAdmin: true', async () => {
@@ -107,15 +106,17 @@ describe('useOverviewStats — Classificação de roles', () => {
     expect(result.current.isSenior).toBe(false);
   });
 
-  it('Consulente → isCataloger: true', async () => {
+  it('Consulente → nenhum supabase.from é chamado e todas as flags de papel são false', async () => {
     currentProfile = { id: 'consulente1', role: 'Consulente', local_id: null };
     const { result } = renderHook(() => useOverviewStats());
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.isCataloger).toBe(true);
+    expect(supabase.from).not.toHaveBeenCalled();
     expect(result.current.isGlobalAdmin).toBe(false);
     expect(result.current.isLocalAdmin).toBe(false);
+    expect(result.current.isSenior).toBe(false);
+    expect(result.current.isFieldTaxonomist).toBe(false);
   });
 });
 
@@ -240,60 +241,6 @@ describe('useOverviewStats — fetchLocalStats (Gestor de Acervo)', () => {
       expect(result.current.isLocalAdmin).toBe(true);
       expect(result.current.localStats.speciesCount).toBe(3);
     });
-  });
-});
-
-// ============================================================
-// GRUPO 4 — fetchPersonalStats (Consulente)
-// ============================================================
-
-describe('useOverviewStats — fetchPersonalStats (Consulente)', () => {
-
-  beforeEach(() => {
-    currentProfile = { id: 'consulente1', role: 'Consulente', local_id: null };
-    mockSupabaseResponse('especie', 'select', { data: [], error: null, count: 2 });
-  });
-
-  it('NÃO chama audit_logs nem locais', async () => {
-    const { result } = renderHook(() => useOverviewStats());
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(supabase.from).not.toHaveBeenCalledWith('audit_logs');
-    expect(supabase.from).not.toHaveBeenCalledWith('locais');
-  });
-
-  it('chama especie filtrada por created_by', async () => {
-    const { result } = renderHook(() => useOverviewStats());
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(supabase.from).toHaveBeenCalledWith('especie');
-  });
-
-  it('loading termina em false', async () => {
-    const { result } = renderHook(() => useOverviewStats());
-
-    await waitFor(() => {
-      expect(result.current.isCataloger).toBe(true);
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('seleciona familia_id (não family_id) e calcula contagem de famílias únicas', async () => {
-    mockSupabaseResponse('especie', 'select', {
-      data: [{ familia_id: 'fam-1' }, { familia_id: 'fam-2' }, { familia_id: 'fam-1' }],
-      error: null,
-      count: 3,
-    });
-
-    const { result } = renderHook(() => useOverviewStats());
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(supabase.from).toHaveBeenCalledWith('especie');
-    expect(result.current.stats.families).toBe(2);
-    expect(result.current.stats.species).toBe(3);
   });
 });
 

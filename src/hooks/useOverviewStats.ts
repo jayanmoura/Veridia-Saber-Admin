@@ -120,7 +120,6 @@ export interface UseOverviewStatsReturn {
     isLocalAdmin: boolean;
     isSenior: boolean;
     isFieldTaxonomist: boolean;
-    isCataloger: boolean;
 
     // Global stats
     stats: GlobalStats;
@@ -152,7 +151,7 @@ export interface UseOverviewStatsReturn {
  * @description Hook central do dashboard (Overview) que muda drasticamente a query e retorno baseado na Hierarchy Role do usuário.
  *
  * @returns {UseOverviewStatsReturn} Permissões computadas e blocos de dados de dashboard:
- *   - Roles: `isGlobalAdmin`, `isLocalAdmin`, `isSenior`, `isFieldTaxonomist`, `isCataloger`
+ *   - Roles: `isGlobalAdmin`, `isLocalAdmin`, `isSenior`, `isFieldTaxonomist`
  *   - Stats: `stats` gerais/projetos
  *   - Senior/Global: `recentLogs` e `recentWork`
  *   - Específicos Locais: `projectData`, `localStats`, `recentLocalSpecies`
@@ -168,7 +167,6 @@ export function useOverviewStats(): UseOverviewStatsReturn {
     const isLocalAdmin = profile?.role === 'Gestor de Acervo';
     const isSenior = profile?.role === 'Taxonomista Sênior';
     const isFieldTaxonomist = profile?.role === 'Taxonomista de Campo';
-    const isCataloger = profile?.role === 'Consulente';
 
     // Global stats
     const [stats, setStats] = useState<GlobalStats>({
@@ -449,29 +447,6 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         }
     }, [profile?.local_id]);
 
-    // Fetch personal stats (Cataloger)
-    const fetchPersonalStats = useCallback(async () => {
-        if (!profile?.id) return;
-
-        const { count: mySpeciesCount } = await supabase
-            .from('especie')
-            .select('*', { count: 'exact', head: true })
-            .eq('created_by', profile.id);
-
-        const { data: mySpecies, error: mySpeciesError } = await supabase
-            .from('especie')
-            .select('familia_id')
-            .eq('created_by', profile.id);
-
-        if (mySpeciesError) {
-            console.warn('Error fetching personal species families:', mySpeciesError);
-        }
-
-        const uniqueFamilies = new Set(mySpecies?.map(s => s.familia_id).filter(Boolean)).size;
-
-        setStats(prev => ({ ...prev, species: mySpeciesCount || 0, families: uniqueFamilies }));
-    }, [profile?.id]);
-
     // Fetch local families
     const fetchLocalFamilies = useCallback(async () => {
         if (!profile?.local_id) return;
@@ -519,13 +494,11 @@ export function useOverviewStats(): UseOverviewStatsReturn {
                 await fetchSeniorStats();
             } else if (isFieldTaxonomist) {
                 await fetchFieldStats();
-            } else if (isCataloger) {
-                await fetchPersonalStats();
             }
         } finally {
             setLoading(false);
         }
-    }, [isGlobalAdmin, isLocalAdmin, isSenior, isFieldTaxonomist, isCataloger, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchFieldStats, fetchPersonalStats]);
+    }, [isGlobalAdmin, isLocalAdmin, isSenior, isFieldTaxonomist, fetchGlobalStats, fetchLocalStats, fetchSeniorStats, fetchFieldStats]);
 
     // Initial load
     useEffect(() => {
@@ -537,7 +510,6 @@ export function useOverviewStats(): UseOverviewStatsReturn {
         isLocalAdmin,
         isSenior,
         isFieldTaxonomist,
-        isCataloger,
         stats,
         recentLogs,
         recentWork,

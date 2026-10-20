@@ -4,13 +4,13 @@
  * Original: 1252 lines
  * Refactored: ~60 lines
  */
+import { Navigate } from 'react-router-dom';
 import { useOverviewStats } from '../../hooks';
 import {
     GlobalAdminView,
     LocalAdminView,
     SeniorView,
-    FieldTaxonomistView,
-    CatalogerView
+    FieldTaxonomistView
 } from '../../components/Overview';
 
 export default function Overview() {
@@ -84,12 +84,5 @@ export default function Overview() {
         );
     }
 
-    // Default: Cataloger / Consulente
-    return (
-        <CatalogerView
-            stats={stats}
-            loading={loading}
-        />
-    );
+    return <Navigate to='/unauthorized' replace />;
 }
-
