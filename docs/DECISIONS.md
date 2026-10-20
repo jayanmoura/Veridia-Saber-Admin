@@ -38,6 +38,8 @@ O cliente Supabase é instanciado com `persistSession: false` e `autoRefreshToke
 
 ### PWA (Progressive Web App)
 
+Status: Substituída em 18/10/2026 por: Remoção do plugin PWA (sem manifest nem service worker no build do painel administrativo).
+
 O Vite está configurado com `vite-plugin-pwa` em modo `autoUpdate`, com service worker habilitado inclusive em desenvolvimento. O cache máximo por arquivo é 5MB.
 
 > **Implicação**: O painel admin é instalável como app nativo em mobile/desktop. O componente `InstallPWA.tsx` detecta suporte e exibe o prompt.
@@ -94,6 +96,8 @@ Helpers como `canManage()`, `hasMinLevel()` e `getRoleLevel()` permitem verifica
 ---
 
 ### Guards de Rota (2 níveis)
+
+Status: Substituída em 20/10/2026 por: Painel admin falha fechado com lista permitida ADMIN_PANEL_ROLES (ver decisão de 20/10/2026).
 
 - **`PrivateRoute`**: Exige sessão ativa e bloqueia `Consulente`
 - **`OnlyGlobalAdmin`**: Restringe a `Curador Mestre` e `Coordenador Científico`
@@ -183,6 +187,8 @@ Esta refatoração foi concluída em janeiro de 2026. Os resultados foram reduç
 
 ### Dashboard por Role (Strategy Pattern)
 
+Status: Substituída em 20/10/2026 por: Remoção de CatalogerView e da visão pessoal de estatísticas do Overview, com fallback para /unauthorized.
+
 A tela `Overview.tsx` renderiza **visões diferentes por role**, implementando um padrão semelhante ao Strategy:
 
 - `GlobalAdminView.tsx` → Curador Mestre / Coordenador Científico
@@ -208,6 +214,8 @@ As políticas RLS utilizam funções auxiliares `is_staff()` e `is_admin()` com
 ---
 
 #### ⚠️ Bug Conhecido: Inconsistência de Roles nas Funções RLS
+
+Status: Substituída em 03/09/2026 por: Fase 4 do RBAC, na qual is_admin inclui apenas Curador Mestre e Coordenador Científico (sem Gestor de Acervo e sem aliases legados super_admin e admin).
 
 **Problema:** A coluna `profiles.role` armazena **nomes de exibição**
 (ex: `'Curador Mestre'`, `'Gestor de Acervo'`), mas as funções `is_admin()` e
@@ -259,6 +267,8 @@ migration `003_fix_especie_local_delete.sql`**, que deverá incluir:
 
 ### Storage: 4 Buckets Públicos
 
+Status: Substituída em 17/10/2026 por: Storage próprio (Nginx + reboot-api validando o JWT do Supabase) no domínio storage.veridiasaber.com.br.
+
 Todos os buckets são **públicos** (acessíveis para leitura sem autenticação):
 
 | Bucket | Conteúdo |
@@ -286,6 +296,8 @@ A geração de PDFs e CSVs é feita **inteiramente no frontend** via:
 ## 7. Migrações de Banco
 
 ### Dual-Track de Migrações
+
+Status: Substituída em 20/10/2026 por: Trilha única em supabase/migrations/ com timestamp; mudanças aplicadas via SQL Editor devem ser registradas como arquivo no mesmo dia.
 
 O projeto mantém scripts SQL em **dois locais diferentes**:
 
@@ -399,6 +411,8 @@ Os novos uploads gravam os tamanhos automaticamente via `useSpeciesImages` e `us
 
 ## 13. Edge Functions
 
+Status: Substituída em 20/10/2026 por: Remoção da função backfill-image-sizes; as Edge Functions reais em operação são login-proxy (sem JWT) e cleanup-user-storage (com JWT).
+
 | Função | JWT | Propósito |
 |---|---|---|
 | `login-proxy` | ❌ | Proxy de autenticação por senha |
@@ -455,4 +469,138 @@ O projeto Arbosis é de estágio universitário e não deve ser usado como stagi
 
 ---
 
-*Criado em: 29/03/2026 — Última atualização: 05/04/2026*
+## 14. Atualizações Arquiteturais e de Segurança (Agosto a Outubro de 2026)
+
+### Hospedagem na VPS "veridia-server" (29/08/2026)
+
+**Contexto:** A hospedagem doméstica inicial em Raspberry Pi dependia de rede residencial e não atendia aos requisitos de disponibilidade e operação contínua dos serviços do projeto.
+
+**Decisão:** Migrar a hospedagem para a VPS dedicada `veridia-server`.
+
+**Motivo:** Garantir estabilidade de rede, controle de infraestrutura e operação centralizada dos serviços web e de armazenamento.
+
+**Data:** 29/08/2026.
+
+---
+
+### Escopo Restrito de `is_admin()` e Isolamento por `local_id` na Fase 4 (03/09/2026)
+
+**Contexto:** A função `is_admin()` continha aliases técnicos legados (`super_admin`, `admin`) e incluía `Gestor de Acervo`, concedendo permissão global indevida a um papel que deve atuar apenas no próprio projeto (`local_id`).
+
+**Decisão:** Restringir `public.is_admin()` exclusivamente aos papéis `Curador Mestre` e `Coordenador Científico`, removendo `Gestor de Acervo` e os aliases legados, e criar `is_local_staff_for(target_local_id)` e `is_global_taxonomist()` para separar permissões globais de permissões locais.
+
+**Motivo:** Fechar a elevação de privilégio entre projetos distintos e alinhar as funções SQL aos nomes reais de papéis em `profiles.role`.
+
+**Data:** 03/09/2026.
+
+---
+
+### Storage Próprio com Nginx e reboot-api (17/10/2026)
+
+**Contexto:** Os buckets públicos do Supabase Storage eram utilizados anteriormente para armazenar as imagens de catálogo, conteúdo e espécimes.
+
+**Decisão:** Substituir o uso dos buckets públicos de imagens do Supabase Storage por storage próprio servido no domínio `storage.veridiasaber.com.br`, utilizando Nginx para entrega e `reboot-api` validando o JWT do Supabase para operações autenticadas.
+
+**Motivo:** Reduzir custos e limites de banda do BaaS, mantendo controle direto sobre armazenamento, variantes de imagem e validação de token JWT.
+
+**Data:** 17/10/2026.
+
+---
+
+### Remoção de PWA e Service Worker no Painel Admin (18/10/2026)
+
+**Contexto:** O painel administrativo utilizava `vite-plugin-pwa` com geração de manifest e service worker em modo `autoUpdate`.
+
+**Decisão:** Remover o plugin PWA e o service worker do build do painel administrativo.
+
+**Motivo:** Evitar retenção de bundles antigos em cache no navegador dos operadores e simplificar o ciclo de atualização do painel web.
+
+**Data:** 18/10/2026.
+
+---
+
+### Painel Admin Falha Fechado por Lista Permitida de Papéis (20/10/2026)
+
+**Contexto:** Anteriormente, o `PrivateRoute` bloqueava apenas `role === 'Consulente'`, permitindo que sessões sem perfil carregado (quando `fetchProfile` falhava) ou com valor de `role` desconhecido atravessassem o guard.
+
+**Decisão:** O `PrivateRoute` passa a liberar acesso somente quando existe perfil carregado e `profile.role` pertence à lista fechada `ADMIN_PANEL_ROLES` (`src/routes/roleConstants.ts`: `Curador Mestre`, `Coordenador Científico`, `Taxonomista Sênior`, `Gestor de Acervo`, `Taxonomista de Campo`). Quando o perfil está ausente, exibe a tela "Não foi possível carregar seu perfil" com botões "Tentar novamente" e "Sair". Quando o papel é `Consulente` ou qualquer papel desconhecido, exibe tela 403 com botão de saída que encerra a sessão antes de redirecionar ao login. No `AuthContext`, `setLoading(true)` só é acionado quando o `session.user.id` muda em relação ao perfil já carregado, preservando o perfil atual em caso de erro transitório de rede para o mesmo usuário.
+
+**Motivo:** Garantir que papel desconhecido ou falha ao carregar perfil nunca abra brecha de acesso ao painel administrativo, e evitar que o painel seja remontado ao refocar a aba do navegador.
+
+**Data:** 20/10/2026.
+
+---
+
+### Consulente Sempre sem Vínculo com Projeto e Rebaixamento via RPC (20/10/2026)
+
+**Contexto:** Usuários com papel `Consulente` não devem manter vínculo com projetos (`local_id`), e o rebaixamento de membros feito por `Gestor de Acervo` via `UPDATE` direto na tabela `profiles` falhava na política RLS `profiles_select_scoped`.
+
+**Decisão:** Adicionar a constraint `profiles_consulente_sem_local` (`CHECK (role <> 'Consulente' OR local_id IS NULL)`) na tabela `public.profiles` e realizar o rebaixamento de membros por meio da RPC `SECURITY DEFINER` `rebaixar_membro_projeto(p_user_id)` (o Gestor só pode rebaixar membros do próprio projeto, administradores globais podem rebaixar qualquer membro subordinado, o ator deve possuir nível hierárquico menor que o alvo e ninguém pode rebaixar a si mesmo). No frontend (`Users.tsx`), ao rebaixar como Gestor, o usuário é removido imediatamente da listagem local do projeto, e editar um usuário para `Consulente` sempre envia `local_id: null`.
+
+**Motivo:** Um `UPDATE` direto falhava na RLS porque a linha atualizada (`local_id = NULL`) deixava de ser visível ao Gestor pela policy `profiles_select_scoped`; a RPC executa a validação de negócio no banco sem afrouxar a política de leitura de `profiles`.
+
+**Data:** 20/10/2026.
+
+---
+
+### Revogação de SELECT e EXECUTE para anon e PUBLIC em Tabelas, Views e Funções Internas (20/10/2026)
+
+**Contexto:** No PostgreSQL, privilégios concedidos ao pseudo-papel `PUBLIC` são herdados por `anon`, de modo que revogar permissões apenas de `anon` não impede o acesso caso o privilégio venha de `PUBLIC`.
+
+**Decisão:** Revogar `SELECT` de `PUBLIC` e `anon` nas tabelas internas (`analytics_events`, `audit_logs`, `colecao_imagens`, `colecoes`, `institutions`, `plantas_da_colecao`, `relatorios_periodicos`) e nas views internas (`analytics_daily_active_users`, `analytics_events_summary`, `user_roles_display`, `locais_estatisticas`, `view_pendentes_oficial`), além de revogar `EXECUTE` de `PUBLIC` e `anon` nas funções `fn_agregar_audit_logs(timestamptz, timestamptz)` e `fn_somar_dados_relatorios(bigint[])`.
+
+**Motivo:** Garantir que objetos internos de auditoria, relatórios e coleções não fiquem expostos a requisições não autenticadas via PostgREST, estabelecendo como regra obrigatória sempre executar `REVOKE ... FROM PUBLIC, anon`.
+
+**Data:** 20/10/2026.
+
+---
+
+### Remoção de CatalogerView e da Visão Pessoal de Estatísticas no Overview (20/10/2026)
+
+**Contexto:** O componente `CatalogerView.tsx` e a função `fetchPersonalStats` (`isCataloger`) em `useOverviewStats.ts` existiam como fallback no `Overview.tsx` para usuários com papel `Consulente` ou papéis não mapeados.
+
+**Decisão:** Remover `CatalogerView.tsx`, a flag `isCataloger` e `fetchPersonalStats` de `useOverviewStats.ts`. O componente `Overview.tsx` passa a encerrar com redirecionamento explícito para `/unauthorized` (`<Navigate to='/unauthorized' replace />`).
+
+**Motivo:** Quem não possui um dos cinco papéis do painel administrativo é barrado no `PrivateRoute` e nunca chega ao `Overview`, tornando esse código morto e desnecessário.
+
+**Data:** 20/10/2026.
+
+---
+
+### Trilha Única de Migrations e Remoção de SQLs Avulsos (20/10/2026)
+
+**Contexto:** O repositório mantinha scripts SQL avulsos em `src/database/` e na raiz de `supabase/` (`add_codigo_vs.sql`, `add_sigla_and_tombo.sql`, `optimize_indexes.sql`), além de uma separação histórica entre arquivos numerados e scripts executados manualmente no SQL Editor.
+
+**Decisão:** Apagar o diretório `src/database/` e os scripts SQL soltos da raiz de `supabase/`, consolidando uma trilha única de migrations em `supabase/migrations/` nomeadas com timestamp. Qualquer alteração aplicada via SQL Editor deve ser registrada como arquivo em `supabase/migrations/` no mesmo dia. A fonte única do schema são as migrations em `supabase/migrations/` e o documento `SCHEMA-SUPABASE.md` da pasta de contexto do projeto.
+
+**Motivo:** Os scripts soltos estavam obsoletos, referenciavam tabelas já removidas (`etiquetas`, `admin_notifications`) ou continham políticas antigas cuja reexecução desfazia o endurecimento de RLS aplicado em outubro de 2026.
+
+**Data:** 20/10/2026.
+
+---
+
+### Fonte Única da Matriz de RBAC e Remoção de `hierarquia_usuarios.csv` (20/10/2026)
+
+**Contexto:** O arquivo `docs/hierarquia_usuarios.csv` mantinha uma tabela paralela de permissões por cargo que divergia da evolução recente das regras de acesso.
+
+**Decisão:** Remover `docs/hierarquia_usuarios.csv` do repositório e adotar o `INFRA-ADMIN.md` (na pasta de contexto do projeto) como fonte única de verdade para a matriz de RBAC.
+
+**Motivo:** Evitar a existência de uma segunda fonte de verdade desatualizada sobre permissões de papéis.
+
+**Data:** 20/10/2026.
+
+---
+
+### Edge Functions Ativas e Remoção de `backfill-image-sizes` (20/10/2026)
+
+**Contexto:** A Edge Function `backfill-image-sizes` havia sido criada apenas para um backfill pontual concluído em abril de 2026 e operava sem verificação de JWT.
+
+**Decisão:** Remover `backfill-image-sizes` e manter apenas duas Edge Functions ativas no projeto: `login-proxy` (sem JWT, por atuar no fluxo de login antes da sessão) e `cleanup-user-storage` (com verificação de JWT).
+
+**Motivo:** Eliminar superfície de exposição desnecessária de função auxiliar já encerrada.
+
+**Data:** 20/10/2026.
+
+---
+
+*Criado em: 29/03/2026 | Última atualização: 20/10/2026*
