@@ -346,14 +346,7 @@ A landing page pública (veridiasaber.com.br) é servida a partir de um **Raspbe
 
 ### Posicionamento como Ferramenta de Botânica Sistemática
 
-O produto é apresentado institucionalmente como uma **ferramenta de botânica sistemática**, não como um software ou sistema de gestão.
-
-**Motivação:** herbários, jardins botânicos e universidades respondem melhor a propostas alinhadas ao vocabulário do domínio científico. A palavra "software" cria distância; "ferramenta de catalogação sistemática" cria identificação.
-
-**Implicações:**
-- Todo material de outreach (apresentações, emails, conversas) usa linguagem botânica como framing primário
-- O desenvolvimento técnico é secundário na comunicação externa — o foco é o problema científico que o produto resolve
-- Essa decisão influencia inclusive os nomes de roles no sistema: "Curador Mestre", "Taxonomista de Campo", "Coordenador Científico" — não "Admin", "Editor", "Viewer"
+Movida em 20/10/2026 para a memória do projeto (visão geral do Veridia Saber), por ser decisão de negócio e não de arquitetura. Resumo: o produto é apresentado como "ferramenta de botânica sistemática", com linguagem do domínio científico em todo material de outreach, o que também define os nomes dos papéis (Curador Mestre, Coordenador Científico, Taxonomista de Campo).
 
 ---
 
