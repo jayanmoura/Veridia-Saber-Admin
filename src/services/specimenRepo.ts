@@ -25,7 +25,7 @@ export const specimenRepo = {
                     autor,
                     nome_popular,
                     familia:familia_id(id, familia_nome),
-                    imagens(url_imagem, url_thumbnail)
+                    imagens(url_imagem, url_thumbnail, url_micro)
                 ),
                 locais:local_id (
                     id,
@@ -135,4 +135,3 @@ export const specimenRepo = {
         if (elDelError) throw elDelError;
     }
 };
-

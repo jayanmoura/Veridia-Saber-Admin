@@ -11,6 +11,12 @@ import { supabase } from '../../lib/supabase';
 import { Loader2, Layers, Map as MapIcon, RotateCcw } from 'lucide-react';
 import L from 'leaflet';
 import { specimenRepo } from '../../services/specimenRepo';
+import { fetchProfileNames } from '../../services/profileNames';
+import {
+    mapSpecimenToPlantLocation,
+    type PlantLocation,
+    type RawPlantRow
+} from '../../utils/mapSpecimenToPlantLocation';
 
 // Utility to create custom div icons for Project Balloons
 const createProjectIcon = (name: string, count: number) => {
@@ -32,19 +38,6 @@ const createProjectIcon = (name: string, count: number) => {
     });
 };
 
-interface PlantLocation {
-    id: number;
-    latitude: number;
-    longitude: number;
-    species_name: string;
-    family_name: string;
-    project_id: number;
-    project_name: string;
-    image?: string;
-    project_lat?: number;
-    project_lng?: number;
-}
-
 interface ProjectCluster {
     id: number;
     name: string;
@@ -58,23 +51,6 @@ interface ProjectRow {
     nome: string;
     latitude: number | null;
     longitude: number | null;
-}
-
-interface RawPlantRow {
-    id: number;
-    latitude: number;
-    longitude: number;
-    local_id: number;
-    especie?: {
-        nome_cientifico?: string | null;
-        familia?: { familia_nome?: string | null } | null;
-        imagens?: { url_thumbnail?: string | null; url_imagem?: string | null }[] | null;
-    } | null;
-    locais?: {
-        nome?: string | null;
-        latitude?: number | string | null;
-        longitude?: number | string | null;
-    } | null;
 }
 
 const MapController = () => {
@@ -125,18 +101,15 @@ export function ProjectMapViz() {
                 withCoordinates: true
             });
 
-            const mappedPlants: PlantLocation[] = ((plantsData || []) as RawPlantRow[]).map((item) => ({
-                id: item.id,
-                latitude: Number(item.latitude),
-                longitude: Number(item.longitude),
-                species_name: item.especie?.nome_cientifico || 'Espécie Desconhecida',
-                family_name: item.especie?.familia?.familia_nome || 'Sem Família',
-                project_id: item.local_id,
-                project_name: item.locais?.nome || 'Projeto Desconhecido',
-                project_lat: item.locais?.latitude ? Number(item.locais.latitude) : undefined,
-                project_lng: item.locais?.longitude ? Number(item.locais.longitude) : undefined,
-                image: item.especie?.imagens?.[0]?.url_thumbnail || item.especie?.imagens?.[0]?.url_imagem || undefined
-            }));
+            const rawPlants = (plantsData || []) as RawPlantRow[];
+            const userIds = rawPlants
+                .map((item) => item.created_by)
+                .filter((id): id is string => Boolean(id));
+            const profileNames = await fetchProfileNames(userIds);
+
+            const mappedPlants: PlantLocation[] = rawPlants.map((item) =>
+                mapSpecimenToPlantLocation(item, profileNames)
+            );
 
             setProjects(projectsData || []);
             setPlants(mappedPlants);
@@ -305,22 +278,32 @@ export function ProjectMapViz() {
                     {/* Render Individual Plants */}
                     {viewMode === 'plants' && (
                         <MarkerClusterGroup iconCreateFunction={createClusterIcon} maxClusterRadius={50} spiderfyOnMaxZoom>
-                            {visiblePlants.map(plant => (
-                                <Marker
-                                    key={plant.id}
-                                    position={[plant.latitude, plant.longitude]}
-                                    icon={createDotIcon('#4F46E5')}
-                                >
-                                    <Popup maxWidth={260} autoPan={false}>
-                                        <SpecimenPopupCard
-                                            imagemUrl={plant.image}
-                                            nomeCientifico={plant.species_name}
-                                            familiaNome={plant.family_name}
-                                            localNome={plant.project_name}
-                                        />
-                                    </Popup>
-                                </Marker>
-                            ))}
+                            {visiblePlants.map(plant => {
+                                const coletorExibicao = plant.coletor && plant.coletor !== plant.cadastrado_por ? plant.coletor : null;
+
+                                return (
+                                    <Marker
+                                        key={plant.id}
+                                        position={[plant.latitude, plant.longitude]}
+                                        icon={createDotIcon('#4F46E5')}
+                                    >
+                                        <Popup maxWidth={260} autoPan={false}>
+                                            <SpecimenPopupCard
+                                                imagemUrl={plant.image}
+                                                nomeCientifico={plant.species_name}
+                                                nomePopular={plant.nome_popular}
+                                                familiaNome={plant.family_name}
+                                                tombo={plant.tombo}
+                                                localNome={plant.project_name}
+                                                cadastradoPor={plant.cadastrado_por}
+                                                coletor={coletorExibicao}
+                                                dataRegistro={plant.created_at}
+                                                origem="Painel"
+                                            />
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
                         </MarkerClusterGroup>
                     )}
                 </MapContainer>
