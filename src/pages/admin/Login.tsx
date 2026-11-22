@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { Lock, Mail } from 'lucide-react';
 
@@ -17,19 +18,24 @@ export default function Login() {
         setError(null);
 
         try {
-            // USANDO PROXY PARA EVITAR ERRO 400 NO CONSOLE
-            // Invocamos nossa Edge Function 'login-proxy'
             const { data, error: functionError } = await supabase.functions.invoke('login-proxy', {
                 body: { email, password }
             });
 
-            // Erro de rede na chamada da function (ex: internet caiu)
-            if (functionError) throw functionError;
+            if (functionError) {
+                if (
+                    functionError instanceof FunctionsHttpError &&
+                    typeof functionError.context === 'object' &&
+                    functionError.context !== null &&
+                    'status' in functionError.context &&
+                    functionError.context.status === 401
+                ) {
+                    throw new Error('Invalid login credentials');
+                }
+                throw functionError;
+            }
 
-            // Logica do Proxy: Ele retorna 200 OK mesmo se falhar o login,
-            // mas manda um objeto { error: 'mensagem' } no corpo.
-            if (data.error) {
-                // Lançamos o erro para cair no catch abaixo e exibir a msg amigável
+            if (data?.error) {
                 throw new Error(data.error);
             }
 

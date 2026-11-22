@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 // Mock do supabase — padrão compartilhado com os outros testes
 vi.mock('../../lib/supabase');
@@ -161,6 +162,40 @@ describe('Login — Sucesso (credenciais válidas)', () => {
 // ============================================================
 
 describe('Login — Credenciais inválidas', () => {
+
+  it('FunctionsHttpError com status 401 → exibe "E-mail ou senha incorretos." e não navega', async () => {
+    (supabase.functions.invoke as Mock).mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(null, { status: 401 })),
+    });
+
+    renderLogin();
+    submitForm();
+
+    await waitFor(() => {
+      expect(screen.getByText('E-mail ou senha incorretos.')).toBeTruthy();
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('FunctionsHttpError com status 500 → exibe mensagem genérica', async () => {
+    (supabase.functions.invoke as Mock).mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(null, { status: 500 })),
+    });
+
+    renderLogin();
+    submitForm();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Ocorreu um erro ao fazer login. Tente novamente.')
+      ).toBeTruthy();
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
 
   it('data.error "Invalid login credentials" → exibe "E-mail ou senha incorretos."', async () => {
     (supabase.functions.invoke as Mock).mockResolvedValue({

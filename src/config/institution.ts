@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database.types';
 
 /**
  * Institution Configuration
@@ -18,29 +19,29 @@ let cachedDefaultInstitutionId: string | null = null;
  * Fetches the default institution ID from the database.
  * Caches the result for subsequent calls.
  */
-export async function getDefaultInstitutionId(supabase: SupabaseClient): Promise<string | null> {
-    if (cachedDefaultInstitutionId) {
-        return cachedDefaultInstitutionId;
+export async function getDefaultInstitutionId(supabase: SupabaseClient<Database>): Promise<string | null> {
+  if (cachedDefaultInstitutionId) {
+    return cachedDefaultInstitutionId;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('institutions')
+      .select('id')
+      .eq('name', DEFAULT_INSTITUTION_NAME)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching default institution:', error);
+      return null;
     }
 
-    try {
-        const { data, error } = await supabase
-            .from('institutions')
-            .select('id')
-            .eq('nome', DEFAULT_INSTITUTION_NAME)
-            .single();
-
-        if (error) {
-            console.error('Error fetching default institution:', error);
-            return null;
-        }
-
-        cachedDefaultInstitutionId = data?.id || null;
-        return cachedDefaultInstitutionId;
-    } catch (err) {
-        console.error('Error getting default institution:', err);
-        return null;
-    }
+    cachedDefaultInstitutionId = data?.id || null;
+    return cachedDefaultInstitutionId;
+  } catch (err) {
+    console.error('Error getting default institution:', err);
+    return null;
+  }
 }
 
 /**

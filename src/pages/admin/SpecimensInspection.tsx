@@ -21,6 +21,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/authContext';
 import { useToast } from '../../hooks/useToast';
+import { downloadCSV } from '../../utils/csvGenerator';
 
 interface Project {
     id: number;
@@ -225,37 +226,57 @@ function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRo
         distinctSpecies: new Set(filteredSpecimens.map(s => s.especie_id)).size
     };
 
-    const generateCSV = () => {
-        const headers = ['Espécime ID', 'Espécie ID', 'Nome Científico', 'Família', 'Coletor', 'Determinador', 'Localização', 'Latitude', 'Longitude', 'Possui Imagens', 'Qtd Imagens'];
-        if (includeImageUrls) headers.push('URLs das Imagens');
+    const generateCSV = async (): Promise<boolean> => {
+        try {
+            const urlsBySpecimen = new Map<number, string[]>();
 
-        const rows = filteredSpecimens.map(s => {
-            const row = [
-                s.id,
-                s.especie_id,
-                s.especie?.nome_cientifico || '',
-                s.especie?.familia?.familia_nome || '',
-                s.coletor || '',
-                s.determinador || '',
-                s.detalhes_localizacao || '',
-                s.latitude?.toString() || '',
-                s.longitude?.toString() || '',
-                (s.imageCount || 0) > 0 ? 'Sim' : 'Não',
-                (s.imageCount || 0).toString()
-            ];
-            return row;
-        });
+            if (includeImageUrls && filteredSpecimens.length > 0) {
+                const ids = filteredSpecimens.map((s) => s.id);
+                const { data: imgRows, error: imgError } = await supabase
+                    .from('imagens')
+                    .select('especime_id, url_imagem')
+                    .in('especime_id', ids)
+                    .order('created_at');
 
-        const csvContent = [headers, ...rows]
-            .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-            .join('\n');
+                if (imgError) throw imgError;
 
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        link.download = `relatorio-especimes-${slug}-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
+                (imgRows ?? []).forEach((img) => {
+                    if (img.especime_id !== null && img.url_imagem) {
+                        const existing = urlsBySpecimen.get(img.especime_id) ?? [];
+                        existing.push(img.url_imagem);
+                        urlsBySpecimen.set(img.especime_id, existing);
+                    }
+                });
+            }
+
+            const csvData = filteredSpecimens.map((s) => {
+                const row: Record<string, unknown> = {
+                    'Espécime ID': s.id,
+                    'Espécie ID': s.especie_id,
+                    'Nome Científico': s.especie?.nome_cientifico || '',
+                    'Família': s.especie?.familia?.familia_nome || '',
+                    'Coletor': s.coletor || '',
+                    'Determinador': s.determinador || '',
+                    'Localização': s.detalhes_localizacao || '',
+                    'Latitude': s.latitude ?? '',
+                    'Longitude': s.longitude ?? '',
+                    'Possui Imagens': (s.imageCount || 0) > 0 ? 'Sim' : 'Não',
+                    'Qtd Imagens': s.imageCount || 0,
+                };
+                if (includeImageUrls) {
+                    row['URLs das Imagens'] = (urlsBySpecimen.get(s.id) ?? []).join(' | ');
+                }
+                return row;
+            });
+
+            const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            downloadCSV(csvData, `relatorio-especimes-${slug}-${new Date().toISOString().split('T')[0]}.csv`);
+            return true;
+        } catch (error) {
+            console.error('Error generating CSV:', error);
+            showToast('Erro ao exportar CSV.', 'error');
+            return false;
+        }
     };
 
     const generatePDF = async () => {
@@ -343,7 +364,8 @@ function ReportModal({ isOpen, onClose, projectName, specimens, userName, userRo
                 await generatePDF();
             }
             if (format === 'csv' || format === 'both') {
-                generateCSV();
+                const ok = await generateCSV();
+                if (!ok) return;
             }
             onClose();
         } catch (error) {

@@ -11,7 +11,7 @@ export default function Privacy() {
     <LegalPageLayout
       title="Política de Privacidade"
       tag="Privacidade"
-      updatedAt="Última atualização: Janeiro de 2026"
+      updatedAt="Última atualização: Novembro de 2026"
     >
       <p className="text-neutral-700 leading-relaxed">
         O Veridia Saber ("nós", "nosso") preza pela sua privacidade. Esta política descreve como coletamos, usamos e protegemos suas informações ao utilizar nosso aplicativo móvel.
@@ -42,7 +42,7 @@ export default function Privacy() {
           <strong className="text-forest-900 font-semibold">Sincronização:</strong> Para salvar seu progresso na nuvem (via Supabase), garantindo que você não perca dados se trocar de celular.
         </li>
         <li className="marker:text-forest-400">
-          <strong className="text-forest-900 font-semibold">Melhorias:</strong> Podemos usar dados anônimos para corrigir erros (crashes) e melhorar a performance do app.
+          <strong className="text-forest-900 font-semibold">Melhorias:</strong> Usamos os eventos de uso descritos na seção 5 para corrigir erros e melhorar a performance do app.
         </li>
       </ul>
 
@@ -58,11 +58,14 @@ export default function Privacy() {
 
       <h2 className="text-lg font-semibold text-forest-900 mt-8 mb-3">5. Coleta de Dados e Analytics</h2>
       <p className="text-neutral-700 leading-relaxed mb-4">
-        O Veridia Saber coleta dados anônimos de uso do aplicativo para melhorar a experiência do usuário. Os dados coletados incluem:
+        O Veridia Saber registra eventos de uso do aplicativo para entender como ele é utilizado e melhorar a experiência. Esses eventos ficam vinculados à sua conta (identificador de usuário e de sessão) e incluem:
       </p>
       <ul className="list-disc pl-5 space-y-3 text-neutral-700 mb-4">
         <li className="marker:text-forest-400">
-          <strong className="text-forest-900 font-semibold">Eventos de uso:</strong> login, logout, criação de coleções, adição de plantas
+          <strong className="text-forest-900 font-semibold">Eventos de uso:</strong> login, logout, criação de coleções, adição de plantas e sincronização
+        </li>
+        <li className="marker:text-forest-400">
+          <strong className="text-forest-900 font-semibold">Dados técnicos:</strong> plataforma (Android ou iOS) e versão do aplicativo
         </li>
         <li className="marker:text-forest-400">
           <strong className="text-forest-900 font-semibold">Localização:</strong> apenas quando você adiciona uma planta com geolocalização
@@ -72,7 +75,7 @@ export default function Privacy() {
         </li>
       </ul>
       <p className="text-neutral-700 leading-relaxed mb-4">
-        <strong className="text-forest-900 font-semibold">Não coletamos dados pessoais sensíveis.</strong> Todos os dados são transmitidos de forma criptografada (HTTPS) e os dados de analytics são automaticamente excluídos após 90 dias.
+        Os eventos de uso só podem ser consultados pela administração global da plataforma, servem para métricas internas e são excluídos automaticamente após 90 dias. <strong className="text-forest-900 font-semibold">Não coletamos dados pessoais sensíveis</strong> e todos os dados são transmitidos de forma criptografada (HTTPS).
       </p>
       <p className="text-neutral-700 leading-relaxed">
         O aplicativo está em conformidade com a <strong className="text-forest-900 font-semibold">LGPD (Lei Geral de Proteção de Dados)</strong>. Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo e-mail{' '}

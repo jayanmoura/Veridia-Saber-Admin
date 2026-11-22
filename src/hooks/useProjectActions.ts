@@ -267,7 +267,7 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
                 projectInstitutionId = await getDefaultInstitutionId(supabase);
 
                 if (!projectInstitutionId) {
-                    showToast('Erro: Nenhuma instituição disponível. Execute o script de migração no Supabase.', 'error');
+                    showToast('Seu perfil não está vinculado a uma instituição. Peça a um administrador global para fazer o vínculo antes de criar o projeto.', 'error');
                     setNewProjectLoading(false);
                     return;
                 }
@@ -457,9 +457,16 @@ export function useProjectActions({ profile, onSuccess }: UseProjectActionsOptio
 
         setDeleteLoading(true);
         try {
-            await projectRepo.deleteProject(projectToDelete.id);
+            const { arquivosPendentes } = await projectRepo.deleteProject(projectToDelete.id);
 
-            showToast('Projeto excluído com sucesso!');
+            if (arquivosPendentes > 0) {
+                showToast(
+                    `Projeto excluído. ${arquivosPendentes} arquivo(s) não puderam ser removidos do armazenamento e ficaram registrados para nova tentativa.`,
+                    'warning'
+                );
+            } else {
+                showToast('Projeto excluído com sucesso!');
+            }
             closeDeleteModal();
             onSuccess();
         } catch (error) {

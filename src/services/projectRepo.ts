@@ -1,83 +1,99 @@
 import { supabase } from '../lib/supabase';
 import { deleteFolder, deleteImageVariants } from '../utils/storage';
 
+interface PendingCleanupItem {
+  id: number;
+  tipo: string;
+  valor: string;
+}
+
+async function removerItens(itens: PendingCleanupItem[]): Promise<number> {
+  let falhas = 0;
+
+  for (const item of itens) {
+    try {
+      if (item.tipo === 'url') {
+        await deleteImageVariants([item.valor]);
+      } else if (item.tipo === 'pasta') {
+        const slashIdx = item.valor.indexOf('/');
+        if (slashIdx === -1) {
+          throw new Error(`Formato de pasta inválido: ${item.valor}`);
+        }
+        const bucket = item.valor.slice(0, slashIdx);
+        const prefixo = item.valor.slice(slashIdx + 1);
+        await deleteFolder(bucket, prefixo);
+      } else {
+        throw new Error(`Tipo de limpeza desconhecido: ${item.tipo}`);
+      }
+
+      const { error } = await supabase
+        .from('storage_limpeza_pendente')
+        .delete()
+        .eq('id', item.id);
+
+      if (error) throw error;
+    } catch {
+      falhas += 1;
+    }
+  }
+
+  return falhas;
+}
+
+export async function limparStoragePendente(): Promise<{ removidos: number; falhas: number }> {
+  const { data, error } = await supabase
+    .from('storage_limpeza_pendente')
+    .select('id, tipo, valor');
+
+  if (error) throw error;
+
+  const itens = data ?? [];
+  const falhas = await removerItens(itens);
+  return {
+    removidos: itens.length - falhas,
+    falhas,
+  };
+}
+
 export const projectRepo = {
+  limparStoragePendente,
+
   /**
-   * Exclui um projeto completamente (Storage + Banco).
-   * Regra de produto: Storage SEMPRE antes do banco; se o storage falhar, não apaga nada no banco.
+   * Exclui um projeto de forma transacional no banco via RPC `excluir_projeto`
+   * e remove os arquivos correspondentes do storage em seguida.
+   * Exceção à regra "storage antes do banco": aqui a RPC grava antes as URLs/pastas
+   * em `storage_limpeza_pendente`, permitindo nova tentativa caso o storage falhe.
    */
-  async deleteProject(id: string | number): Promise<void> {
+  async deleteProject(id: string | number): Promise<{ arquivosPendentes: number }> {
     const numericId = Number(id);
     if (isNaN(numericId)) {
       throw new Error('ID do projeto inválido');
     }
 
-    // 1. Storage ANTES do banco
-    // Busca URLs de imagens associadas ao local para apagar variantes
-    const { data: projectImages, error: imgFetchError } = await supabase
-      .from('imagens')
-      .select('url_imagem, url_thumbnail, url_micro')
-      .eq('local_id', numericId);
-
-    if (imgFetchError) throw imgFetchError;
-
-    if (projectImages && projectImages.length > 0) {
-      const urls = projectImages.flatMap((img) => [img.url_imagem, img.url_thumbnail, img.url_micro]);
-      await deleteImageVariants(urls);
+    try {
+      await projectRepo.limparStoragePendente();
+    } catch {
+      // Falhas ao limpar pendências anteriores não interrompem a exclusão atual
     }
 
-    // Apaga toda a pasta do projeto no bucket arquivos-gerais
-    await deleteFolder('arquivos-gerais', `locais/${numericId}`);
-
-    // 2. Banco de dados (somente após sucesso no storage)
-    // Deleta registros na tabela imagens vinculados ao local
-    const { error: imgDelError } = await supabase
-      .from('imagens')
-      .delete()
-      .eq('local_id', numericId);
-    if (imgDelError) throw imgDelError;
-
-    // Deleta espécimes (especie_local) do local
-    const { error: elError } = await supabase
-      .from('especie_local')
-      .delete()
-      .eq('local_id', numericId);
-    if (elError) throw new Error(`Não foi possível excluir espécimes: ${elError.message}`);
-
-    // Desvincula espécies do projeto
-    const { error: espError } = await supabase
-      .from('especie')
-      .update({ local_id: null })
-      .eq('local_id', numericId);
-    if (espError) throw espError;
-
-    // Desvincula usuários do projeto e rebaixa para Consulente
-    const { error: profError } = await supabase
-      .from('profiles')
-      .update({
-        local_id: null,
-        role: 'Consulente',
-      })
-      .eq('local_id', numericId);
-    if (profError) throw profError;
-
-    // Deleta o registro em locais
-    const { error: delLocalError } = await supabase
-      .from('locais')
-      .delete()
-      .eq('id', numericId);
-    if (delLocalError) throw new Error(`Não foi possível excluir o projeto: ${delLocalError.message}`);
-
-    // Verifica se realmente foi deletado
-    const { data: stillExists, error: checkError } = await supabase
-      .from('locais')
-      .select('id')
-      .eq('id', numericId)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-    if (stillExists) {
-      throw new Error('Não foi possível excluir o projeto. Verifique suas permissões.');
+    const { data, error } = await supabase.rpc('excluir_projeto', { p_local_id: numericId });
+    if (error) {
+      if (error.code === '42501') {
+        throw new Error('Sem permissão para excluir projetos.');
+      }
+      if (error.code === 'P0002') {
+        throw new Error('Projeto não encontrado.');
+      }
+      throw new Error(error.message);
     }
+
+    const itens: PendingCleanupItem[] = (data ?? []).map((row) => ({
+      id: row.item_id,
+      tipo: row.item_tipo,
+      valor: row.item_valor,
+    }));
+
+    const arquivosPendentes = await removerItens(itens);
+    return { arquivosPendentes };
   },
 };

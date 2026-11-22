@@ -353,6 +353,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "especie_local_especie_id_fkey"
+            columns: ["especie_id"]
+            isOneToOne: false
+            referencedRelation: "especie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "especie_local_especie_id_fkey"
+            columns: ["especie_id"]
+            isOneToOne: false
+            referencedRelation: "view_pendentes_oficial"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "especie_local_institution_id_fkey"
             columns: ["institution_id"]
             isOneToOne: false
@@ -372,20 +386,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locais_estatisticas"
             referencedColumns: ["local_id"]
-          },
-          {
-            foreignKeyName: "fk_especie_local_cascade"
-            columns: ["especie_id"]
-            isOneToOne: false
-            referencedRelation: "especie"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_especie_local_cascade"
-            columns: ["especie_id"]
-            isOneToOne: false
-            referencedRelation: "view_pendentes_oficial"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -969,6 +969,30 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_limpeza_pendente: {
+        Row: {
+          created_at: string
+          id: number
+          origem: string
+          tipo: string
+          valor: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          origem: string
+          tipo: string
+          valor: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          origem?: string
+          tipo?: string
+          valor?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       analytics_daily_active_users: {
@@ -1046,6 +1070,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "especie_local_especie_id_fkey"
+            columns: ["especie_id"]
+            isOneToOne: false
+            referencedRelation: "especie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "especie_local_especie_id_fkey"
+            columns: ["especie_id"]
+            isOneToOne: false
+            referencedRelation: "view_pendentes_oficial"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "especie_local_institution_id_fkey"
             columns: ["institution_id"]
             isOneToOne: false
@@ -1065,20 +1103,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locais_estatisticas"
             referencedColumns: ["local_id"]
-          },
-          {
-            foreignKeyName: "fk_especie_local_cascade"
-            columns: ["especie_id"]
-            isOneToOne: false
-            referencedRelation: "especie"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_especie_local_cascade"
-            columns: ["especie_id"]
-            isOneToOne: false
-            referencedRelation: "view_pendentes_oficial"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -1219,6 +1243,14 @@ export type Database = {
           nome_popular: string
         }[]
       }
+      excluir_projeto: {
+        Args: { p_local_id: number }
+        Returns: {
+          item_id: number
+          item_tipo: string
+          item_valor: string
+        }[]
+      }
       fn_agregar_audit_logs: {
         Args: { p_fim: string; p_inicio: string }
         Returns: Json
@@ -1252,6 +1284,23 @@ export type Database = {
       rebaixar_membro_projeto: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      storage_cleanup_claim: {
+        Args: { p_job_id: number; p_secret: string }
+        Returns: string
+      }
+      storage_cleanup_finish: {
+        Args: {
+          p_erro: string
+          p_job_id: number
+          p_ok: boolean
+          p_removidos: number
+        }
+        Returns: undefined
+      }
+      storage_cleanup_list_objects: {
+        Args: { p_job_id: number }
+        Returns: string[]
       }
     }
     Enums: {

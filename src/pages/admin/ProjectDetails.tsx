@@ -131,9 +131,17 @@ export default function ProjectDetailsPage() {
         if (!id || !project) return;
         setDeleteLoading(true);
         try {
-            await projectRepo.deleteProject(id);
+            const { arquivosPendentes } = await projectRepo.deleteProject(id);
             setShowDeleteModal(false);
-            setShowSuccessModal(true);
+            if (arquivosPendentes > 0) {
+                showToast(
+                    `Projeto excluído. ${arquivosPendentes} arquivo(s) não puderam ser removidos do armazenamento e ficaram registrados para nova tentativa.`,
+                    'warning'
+                );
+                navigate('/projects');
+            } else {
+                setShowSuccessModal(true);
+            }
         } catch (error) {
             const err = error as { message?: string };
             showToast(err.message || 'Erro inesperado ao excluir projeto.', 'error');
@@ -269,8 +277,8 @@ export default function ProjectDetailsPage() {
                     'Nome Popular': sp?.nome_popular || '',
                     'Família': familia?.familia_nome || '',
                     'Data Cadastro': new Date(item.created_at).toLocaleDateString('pt-BR'),
-                    'Latitude': item.latitude || '',
-                    'Longitude': item.longitude || '',
+                    'Latitude': item.latitude ?? '',
+                    'Longitude': item.longitude ?? '',
                     'Localização': item.detalhes_localizacao || '',
                     'Projeto': project.nome
                 };

@@ -404,12 +404,12 @@ Os novos uploads gravam os tamanhos automaticamente via `useSpeciesImages` e `us
 
 ## 13. Edge Functions
 
-Status: Substituída em 20/10/2026 por: Remoção da função backfill-image-sizes; as Edge Functions reais em operação são login-proxy (sem JWT) e cleanup-user-storage (com JWT).
+Status: Substituída em 20/10/2026 (e atualizada em 22/11/2026) por: Remoção da função backfill-image-sizes; as Edge Functions reais em operação são login-proxy (sem JWT) e cleanup-user-storage (sem JWT, autenticada por cabeçalho x-webhook-secret conferido contra o Vault — ver entrada de 22/11/2026).
 
 | Função | JWT | Propósito |
 |---|---|---|
 | `login-proxy` | ❌ | Proxy de autenticação por senha |
-| `cleanup-user-storage` | ✅ | Limpeza de arquivos ao deletar usuário |
+| `cleanup-user-storage` | ❌ (`x-webhook-secret`) | Limpeza de arquivos ao deletar usuário |
 | `backfill-image-sizes` | ❌ | Backfill pontual de tamanhos reais via storage.list() — uso concluído em 03/04/2026 |
 
 > ⚠️ `backfill-image-sizes` está sem JWT. Considerar reativar JWT ou desativar a função após uso.
@@ -462,7 +462,7 @@ O projeto Arbosis é de estágio universitário e não deve ser usado como stagi
 
 ---
 
-## 14. Atualizações Arquiteturais e de Segurança (Agosto a Outubro de 2026)
+## 14. Atualizações Arquiteturais e de Segurança (Agosto a Novembro de 2026)
 
 ### Hospedagem na VPS "veridia-server" (29/08/2026)
 
@@ -588,7 +588,7 @@ O projeto Arbosis é de estágio universitário e não deve ser usado como stagi
 
 **Contexto:** A Edge Function `backfill-image-sizes` havia sido criada apenas para um backfill pontual concluído em abril de 2026 e operava sem verificação de JWT.
 
-**Decisão:** Remover `backfill-image-sizes` e manter apenas duas Edge Functions ativas no projeto: `login-proxy` (sem JWT, por atuar no fluxo de login antes da sessão) e `cleanup-user-storage` (com verificação de JWT).
+**Decisão:** Remover `backfill-image-sizes` e manter apenas duas Edge Functions ativas no projeto: `login-proxy` (sem JWT, por atuar no fluxo de login antes da sessão) e `cleanup-user-storage` (originalmente com verificação de JWT; atualizada em 22/11/2026 para `verify_jwt` desligado e autenticação via `x-webhook-secret` no Vault — ver entrada abaixo).
 
 **Motivo:** Eliminar superfície de exposição desnecessária de função auxiliar já encerrada.
 
@@ -596,4 +596,16 @@ O projeto Arbosis é de estágio universitário e não deve ser usado como stagi
 
 ---
 
-*Criado em: 29/03/2026 | Última atualização: 20/10/2026*
+### Webhook Seguro e Fonte Única da `cleanup-user-storage` (22/11/2026)
+
+**Contexto:** O trigger antigo em `auth.users` enviava um JWT `service_role` literal na definição do webhook para acionar a Edge Function `cleanup-user-storage`, cujo código-fonte residia no repositório do aplicativo mobile (`veridia-saber`).
+
+**Decisão:** A `cleanup-user-storage` passou a ser chamada pelo trigger `trg_auth_users_enqueue_storage_cleanup` (fila `private.storage_cleanup_jobs`), enviando apenas o `job_id` e o segredo `cleanup_webhook_secret` armazenado no Vault. A função opera com `verify_jwt` desligado (`--no-verify-jwt`) e realiza autenticação pelo cabeçalho `x-webhook-secret` conferido no banco via `public.storage_cleanup_claim`. O código-fonte único da função passa a morar em `supabase/functions/cleanup-user-storage/` deste repositório (`Veridia-Saber-Admin`), tendo sido removido do repositório do aplicativo mobile.
+
+**Motivo:** Eliminar exposição de JWT `service_role` na definição de trigger do banco e consolidar as Edge Functions de infraestrutura em uma única fonte de verdade.
+
+**Data:** 22/11/2026.
+
+---
+
+*Criado em: 29/03/2026 | Última atualização: 22/11/2026*
